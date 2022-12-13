@@ -17,29 +17,56 @@ class Rectangle:
 
 import pytest
  
-def test_rectangle_area():
-    rectangle = Rectangle(10, 5)
+ 
+@pytest.fixture
+def rectangle():
+    return Rectangle(5, 10)
+ 
+ 
+def test_get_area(rectangle):
     assert rectangle.get_area() == 50
  
-def test_rectangle_set_width():
-    rectangle = Rectangle(10, 5)
+ 
+def test_set_width(rectangle):
     rectangle.set_width(20)
-    assert rectangle.get_area() == 100
+    assert rectangle.width == 20
  
-def test_rectangle_set_height():
-    rectangle = Rectangle(10, 5)
-    rectangle.set_height(20)
-    assert rectangle.get_area() == 200
+ 
+def test_set_height(rectangle):
+    rectangle.set_height(30)
+    assert rectangle.height == 30
+
+# To run the tests, use the following command:
+
+# pytest test_rectangle.py
+
+# The output should be:
+
+# ========================= test session starts =========================
+# platform linux -- Python 3.6.9, pytest-5.4.1, py-1.8.1, pluggy-0.13
 
 
 
-def test_rectangle():
-    rectangle = Rectangle(5, 10)
-    assert rectangle.width == 5
-    assert rectangle.height == 10
-    assert rectangle.get_area() == 50
-    rectangle.set_height(20)
-    rectangle.set_width(10)
+def test_rectangle_initialization():
+    rectangle = Rectangle(10, 20)
     assert rectangle.width == 10
     assert rectangle.height == 20
+ 
+def test_rectangle_area():
+    rectangle = Rectangle(10, 20)
     assert rectangle.get_area() == 200
+ 
+def test_rectangle_set_width():
+    rectangle = Rectangle(10, 20)
+    rectangle.set_width(30)
+    assert rectangle.width == 30
+ 
+def test_rectangle_set_height():
+    rectangle = Rectangle(10, 20)
+    rectangle.set_height(30)
+    assert rectangle.height == 30
+ 
+def test_rectangle_set_negative_width():
+    rectangle = Rectangle(10, 20)
+    with pytest.raises(ValueError):
+        rectangle.set_

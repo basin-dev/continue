@@ -41,7 +41,6 @@ def naive_pipeline(unit_test_framework: str, code_to_test: str):
     """Generate unit tests in a single prompt."""
     prompt = whole_code_prompt(unit_test_framework, code_to_test)
     completion = llm.complete(prompt, max_tokens=500)
-    print(completion)
     return completion
 
 
@@ -71,6 +70,3 @@ if __name__ == "__main__":
 
     test_code = naive_pipeline("pytest", code_to_test)
     write_to_file(code_to_test, test_code, "naive.py")
-
-    test_code = better_pipeine("pytest", code_to_test)
-    write_to_file(code_to_test, test_code, "better.py")
