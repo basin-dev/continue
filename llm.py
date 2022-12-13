@@ -12,7 +12,7 @@ class LLM:
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0,
-            stop=[]):
+            stop=None):
         """Return the completion of the text with the given temperature."""
         raise NotImplementedError
     
@@ -30,8 +30,8 @@ class OpenAI(LLM):
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0,
-            stop=[]):
-        return self.openai.Completion.create(
+            stop=None):
+        return openai.Completion.create(
             engine=self.engine,
             prompt=prompt,
             temperature=temp,

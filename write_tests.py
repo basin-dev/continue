@@ -1,35 +1,35 @@
 from llm import OpenAI
 
 ## UTILITIES ##
-llm = OpenAI()
+llm = OpenAI(engine="code-davinci-002")
 
 def whole_code_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""
-    return f""""
-    {code_to_test}
-    "
+    return f"""{code_to_test}
 
-    Write unit tests for the above code using {unit_test_framework}."""
+# Unit tests for the above code using {unit_test_framework}:"""
 
 def single_function_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""
-    return f""""
-    {code_to_test}
-    "
+    return f"""{code_to_test}
 
-    Write unit tests for the above function using {unit_test_framework}."""
+# Unit tests for the above code using {unit_test_framework}:"""
 
 def split_into_functions(code: str) -> list:
-    """Split the code into a list of functions."""
-    pass
+    """Split the code into a list of functions/classes."""
+
+    # TODO: This can be much smarter.
+    # Should act like a tokenizer, going line by line, checking for starting def/class and following until whitespace is what you expect.
+    return list(map(lambda f: "class " + f, code.split("class ")))
 
 def validate_tests(test_code: str) -> bool:
     """Check that the tests are valid."""
     pass
 
-def write_to_file(test_code: str, file_name: str):
+def write_to_file(code_to_test: str, test_code: str, file_name: str):
     """Write the test code to a file."""
     with open(file_name, "w") as f:
+        f.write(code_to_test + "\n\n")
         f.write(test_code)
 
 
@@ -40,8 +40,8 @@ Different combinations of code splitting and context injection, different prompt
 def naive_pipeline(unit_test_framework: str, code_to_test: str):
     """Generate unit tests in a single prompt."""
     prompt = whole_code_prompt(unit_test_framework, code_to_test)
-    completion = llm.complete(prompt)
-    
+    completion = llm.complete(prompt, max_tokens=500)
+    print(completion)
     return completion
 
 
@@ -53,7 +53,7 @@ def better_pipeine(unit_test_framework: str, code_to_test: str):
 
     for function in functions:
         prompt = single_function_prompt(unit_test_framework, code_to_test)
-        completion = llm.complete(prompt)
+        completion = llm.complete(prompt, max_tokens=200)
         tests.append(completion)
 
     # May want to deduplicate any overhead code that it writes, or maybe it won't write any, we'll have to add separately.
@@ -63,3 +63,14 @@ def better_pipeine(unit_test_framework: str, code_to_test: str):
 def even_better_pipeine(unit_test_framework: str, code_to_test: str):
     """Split into functions and complete for each separately, adding context determined by analyzing dependencies in the code (which variables are used)."""
     pass
+
+
+
+if __name__ == "__main__":
+    code_to_test = open("code_to_test.py", "r").read()
+
+    test_code = naive_pipeline("pytest", code_to_test)
+    write_to_file(code_to_test, test_code, "naive.py")
+
+    test_code = better_pipeine("pytest", code_to_test)
+    write_to_file(code_to_test, test_code, "better.py")
