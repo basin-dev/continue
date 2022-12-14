@@ -1,3 +1,4 @@
+import os
 from llm import OpenAI
 
 ## UTILITIES ##
@@ -8,6 +9,18 @@ def whole_code_prompt(unit_test_framework: str, code_to_test: str) -> str:
     return f"""{code_to_test}
 
 # Unit tests for the above code using {unit_test_framework}:"""
+
+def whole_code_prompt2(unit_test_framework: str, code_to_test: str) -> str:
+    """Return the prompt for the unit test."""
+    return f"""{code_to_test}
+
+# Unit tests for the above code using {unit_test_framework}. Be sure to effectively sample from the input space, considering equivalence partitioning, boundary analysis, and other best testing practice."""
+
+def whole_code_prompt3(unit_test_framework: str, code_to_test: str) -> str:
+    """Return the prompt for the unit test."""
+    return f"""{code_to_test}
+
+# Unit tests for the above code using {unit_test_framework}. Make sure they are concise and complete."""
 
 def single_function_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""
@@ -39,7 +52,7 @@ def write_to_file(code_to_test: str, test_code: str, file_name: str):
 Different combinations of code splitting and context injection, different prompts, deterministic checkers/editors, etc."""
 def naive_pipeline(unit_test_framework: str, code_to_test: str):
     """Generate unit tests in a single prompt."""
-    prompt = whole_code_prompt(unit_test_framework, code_to_test)
+    prompt = whole_code_prompt3(unit_test_framework, code_to_test)
     completion = llm.complete(prompt, max_tokens=500)
     return completion
 
@@ -51,7 +64,7 @@ def better_pipeine(unit_test_framework: str, code_to_test: str):
     tests = []
 
     for function in functions:
-        prompt = single_function_prompt(unit_test_framework, code_to_test)
+        prompt = single_function_prompt(unit_test_framework, function)
         completion = llm.complete(prompt, max_tokens=200)
         tests.append(completion)
 
@@ -59,14 +72,23 @@ def better_pipeine(unit_test_framework: str, code_to_test: str):
     
     return "\n\n".join(tests)
 
-def even_better_pipeine(unit_test_framework: str, code_to_test: str):
+def even_better_pipeline(unit_test_framework: str, code_to_test: str):
     """Split into functions and complete for each separately, adding context determined by analyzing dependencies in the code (which variables are used)."""
     pass
 
 
 
 if __name__ == "__main__":
-    code_to_test = open("code_to_test.py", "r").read()
+    prompts = []
+    file_names = os.listdir("code")
+    for file_name in file_names:
+        code_to_test = open("code/" + file_name, "r").read()
+        prompts.append(whole_code_prompt3("pytest", code_to_test))
 
-    test_code = naive_pipeline("pytest", code_to_test)
-    write_to_file(code_to_test, test_code, "naive.py")
+    completions = llm.parallel_complete(prompts, max_tokens=500)
+    
+    for i in range(len(file_names)):
+        file_name = file_names[i]
+        completion = completions[i]
+        code_to_test = open("code/" + file_name, "r").read()
+        write_to_file(code_to_test, completion, "tests/" + file_name)
