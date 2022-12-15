@@ -1,9 +1,8 @@
 import os
-from llm import OpenAI
+from llm import OpenAI, LLM, HuggingFace
 
 ## UTILITIES ##
 tuned_model = "davinci:ft-personal-2022-12-15-19-12-04"
-llm = OpenAI(engine=tuned_model)
 
 def whole_code_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""
@@ -51,14 +50,14 @@ def write_to_file(code_to_test: str, test_code: str, file_name: str):
 
 """Here we write a series of pipelines to see which works best.
 Different combinations of code splitting and context injection, different prompts, deterministic checkers/editors, etc."""
-def naive_pipeline(unit_test_framework: str, code_to_test: str):
+def naive_pipeline(unit_test_framework: str, code_to_test: str, llm: LLM):
     """Generate unit tests in a single prompt."""
     prompt = whole_code_prompt3(unit_test_framework, code_to_test)
     completion = llm.complete(prompt, max_tokens=500)
     return completion
 
 
-def better_pipeine(unit_test_framework: str, code_to_test: str):
+def better_pipeine(unit_test_framework: str, code_to_test: str, llm: LLM):
     """Split into functions and complete for each separately, no context."""
     functions = split_into_functions(code_to_test)
 
@@ -73,23 +72,34 @@ def better_pipeine(unit_test_framework: str, code_to_test: str):
     
     return "\n\n".join(tests)
 
-def even_better_pipeline(unit_test_framework: str, code_to_test: str):
+def even_better_pipeline(unit_test_framework: str, code_to_test: str, llm: LLM):
     """Split into functions and complete for each separately, adding context determined by analyzing dependencies in the code (which variables are used)."""
     pass
 
 
 
 if __name__ == "__main__":
-    prompts = []
-    file_names = os.listdir("code")
-    for file_name in file_names:
-        code_to_test = open("code/" + file_name, "r").read()
-        prompts.append(whole_code_prompt3("pytest", code_to_test))
+    # Flow with OpenAI Codex
 
-    completions = llm.parallel_complete(prompts, max_tokens=500)
+    # llm = OpenAI(engine=tuned_model)
+    # prompts = []
+    # file_names = os.listdir("code")
+    # for file_name in file_names:
+    #     code_to_test = open("code/" + file_name, "r").read()
+    #     prompts.append(whole_code_prompt3("pytest", code_to_test))
+
+    # completions = llm.parallel_complete(prompts, max_tokens=500)
     
-    for i in range(len(file_names)):
-        file_name = file_names[i]
-        completion = completions[i]
+    # for i in range(len(file_names)):
+    #     file_name = file_names[i]
+    #     completion = completions[i]
+    #     code_to_test = open("code/" + file_name, "r").read()
+    #     write_to_file(code_to_test, completion, "tests/" + file_name)
+
+    # Flow with Salesforce Codegen
+    llm = HuggingFace("microsoft/CodeGPT-small-py")
+    for file_name in os.listdir("code"):
         code_to_test = open("code/" + file_name, "r").read()
-        write_to_file(code_to_test, completion, "tests/" + file_name)
+        completion = naive_pipeline("pytest", code_to_test, llm)
+        write_to_file("", completion, "tests/" + file_name)
+        print("Wrote to file: " + file_name)

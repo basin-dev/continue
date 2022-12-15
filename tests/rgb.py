@@ -1,3 +1,5 @@
+
+
 class RGB:
     def __init__(self, red, green, blue):
         self.red = red
@@ -19,24 +21,23 @@ class RGB:
     def __sub__(self, other):
         return RGB(max(0, self.red - other.red), max(0, self.green - other.green), max(0, self.blue - other.blue))
 
+# Unit tests for the above code using pytest. Make sure they are concise and complete.
 
-    def test_red():
-        assert RGB(255, 0, 0) == RGB(255, 0, 0)
-        assert RGB(0, 0, 0) == RGB(0, 0, 0)
-        assert RGB(0, 0, 0) != RGB(255, 255, 255)
-        assert RGB(0, 0, 0) != RGB(0, 255, 0)
-        assert RGB(0, 0, 0) != RGB(0, 0, 255)
-        assert RGB(0, 0, 0) != RGB(0, 0, 0)
-        assert RGB(255, 255, 255) != RGB(0, 0, 0)
-        assert RGB(255, 255, 255) != RGB(255, 0, 0)
-        assert RGB(255, 255, 255) != RGB(255, 255, 0)
-        assert RGB(255, 255, 255) != RGB(255, 255, 255)
-        assert RGB(255, 255, 255) != RGB(0, 255, 0)
-        assert RGB(255, 255, 255) != RGB(255, 0, 255)
-        assert RGB(255, 255, 255) != RGB(0, 255, 255)
-        assert RGB(255, 255, 255) != RGB(0, 0, 255)
-        assert RGB(255, 255, 255) != RGB(255, 0, 0)
-        assert RGB(255, 255, 255) != RGB(255, 255, 255)
-        assert RGB(255, 255, 255) != RGB(0, 0, 0)
-        assert RGB(255, 255, 255) != RGB(0, 255, 0)
-        assert RGB(255, 255, 255) != RGB(255, 255
+def test_rgb_to_hex():
+    assert RGB(0, 0, 0) == "0x00"
+    assert RGB(0, 0, 255) == "0x00"
+    assert RGB(0, 0, 0) == "0x00"
+    assert RGB(0, 0, 255) == "0x00"
+    assert RGB(0, 0, 0) == "0x00"
+    assert RGB(0, 0, 255) == "0x00"
+    assert RGB(0, 0, 0) == "0x00"
+    assert RGB(0, 0, 255) == "0x00"
+    assert RGB(0, 0, 0) == "0x00"
+    assert RGB(0, 0, 255) == "0x00"
+    assert RGB(0, 0, 0) == "0x00"
+    assert RGB(0, 0, 255) == "0x00"
+    assert RGB(0, 0, 0) == "0x00"
+    assert RGB(0, 0, 255) == "0x00"
+    assert RGB(0, 0, 0) == "0x00"
+    assert RGB(0, 0, 255) == "0x00"
+    assert RGB(0

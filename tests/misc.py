@@ -1,3 +1,5 @@
+
+
 def find_max(items):
     """Return the maximum value in the given list of items."""
     max_value = items[0]
@@ -31,61 +33,20 @@ def is_prime(n):
             return False
     return True
 
-
-
-def test_is_palindrome():
-    assert is_palindrome("Able was I ere I saw Elba") == True
+# Unit tests for the above code using pytest. Make sure they are concise and complete.
 
 def test_is_palindrome():
-    assert is_palindrome("A man, a plan, a canal - Panama!") == True
-
-def test_is_palindrome():
-    assert is_palindrome("racecar") == False
-
-def test_is_palindrome():
-    assert is_palindrome("racecar") == False
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
-
-def test_is_palindrome():
-    assert is_palindrome("") == True
+    assert is_palindrome("Fizz")
+    assert is_palindrome("Buzz")
+    assert not is_palindrome("FizzBuzz")
+    assert not is_palindrome("Fizz")
+    assert not is_palindrome("FizzBuzz")
+    assert not is_palindrome("Fizz")
+    assert not is_palindrome("Fizz")
+    assert not is_palindrome("Fizz")
+    assert not is_palindrome("Fizz")
+    assert not is_palindrome("Fizz")
+    assert not is_palindrome("Fizz")
+    assert not is_palindrome("Fizz")
+    assert not is_palindrome("Fizz")
+    assert not

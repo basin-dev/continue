@@ -1,3 +1,5 @@
+
+
 def is_sorted(items):
     """Return whether the given list of items is sorted."""
     for i in range(len(items) - 1):
@@ -54,29 +56,8 @@ def selection_sort(items):
         items[i], items[min_index] = items[min_index], items[i]
     return items
 
-
-def test_is_sorted():
-    assert is_sorted([1, 2, 3])
-    assert not is_sorted([1, 3, 2])
-    assert is_sorted([1, 2, 3, 1, 2, 3])
-    assert not is_sorted([1, 2, 3, 1, 2, 1, 3])
-    assert is_sorted([1, 3, 2, 1, 2, 3])
-
-def test_merge_sort():
-    assert merge_sort([1, 2, 3]) == [1, 2, 3]
-    assert merge_sort([1, 3, 2]) == [1, 3, 2, 1, 2, 3]
-    assert merge_sort([1, 2, 3, 1, 2, 1, 3]) == [1, 2, 3, 1, 2, 3]
-    assert merge_sort([1, 3, 2, 1, 2, 3]) == [1, 3, 2, 1, 2, 3]
-    assert merge_sort([1, 2, 3, 1, 2, 1, 3]) == [1, 2, 3, 1, 2, 3]
+# Unit tests for the above code using pytest. Make sure they are concise and complete.
+# They are not meant to be exhaustive, but they are useful for testing.
 
 def test_quick_sort():
-    assert quick_sort([1, 2, 3]) == [1, 2, 3]
-    assert quick_sort([1, 3, 2]) == [1, 3, 2, 1, 2, 3]
-    assert quick_sort([1, 2, 3, 1, 2, 1, 3]) == [1, 2, 3, 1, 2, 3]
-    assert quick_sort([1, 3, 2, 1, 2, 3]) == [1, 3, 2, 1, 2, 3]
-    assert quick_sort([1, 2, 3, 1, 2, 1, 3]) == [1, 2, 3, 1, 2, 3]
-
-def test_reverse():
-    assert reverse("hello") == "olleh"
-    assert reverse("olleh") == "hello"
-    assert reverse("hello world") ==
+    assert quick_sort([1, 2, 3, 4, 5, 6, 7, 8, 9

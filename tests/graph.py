@@ -1,3 +1,5 @@
+
+
 # This file contains graph algorithms, including Djikstra's algorithm, and a graph class.
 
 from collections import defaultdict
@@ -27,42 +29,8 @@ class Graph:
 
         return dist
 
+# Unit tests for the above code using pytest. Make sure they are concise and complete.
 
-
-def test_add_edge():
-    assert len(g.graph[0]) == 1
-    assert len(g.graph[1]) == 1
-    assert len(g.graph[2]) == 2
-    assert len(g.graph[3]) == 2
-    assert len(g.graph[4]) == 2
-    assert len(g.graph[5]) == 2
-    assert len(g.graph[6]) == 2
-    assert len(g.graph[7]) == 2
-    assert len(g.graph[8]) == 2
-
-def test_dijkstra():
-    assert g.dijkstra(0) == 0
-    assert g.dijkstra(1) == 1
-    assert g.dijkstra(2) == 3
-    assert g.dijkstra(3) == 4
-    assert g.dijkstra(4) == 5
-    assert g.dijkstra(5) == 6
-    assert g.dijkstra(6) == 7
-    assert g.dijkstra(7) == 8
-    assert g.dijkstra(8) == 9
-
-def test_dijkstra_single_source():
-    assert g.dijkstra(0) == 0
-    assert g.dijkstra(1) == 1
-    assert g.dijkstra(2) == 3
-    assert g.dijkstra(3) == 4
-    assert g.dijkstra(4) == 5
-    assert g.dijkstra(5) == 6
-    assert g.dijkstra(6) == 7
-    assert g.dijkstra(7) == 8
-    assert g.dijkstra(8) == 9
-
-def test_dijkstra_single_dest():
-    assert g.dijkstra(0, 8) == 9
-    assert g.dijkstra(1, 8) == 9
-    assert g.dijkstra(2, 8) == 9
+def test_graph():
+    g = Graph(range(10))
+    assert g.V == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,

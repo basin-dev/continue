@@ -3,6 +3,7 @@ import openai
 import os
 from dotenv import load_dotenv
 import aiohttp
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 load_dotenv()
 api_key = os.environ.get("OPENAI_API_KEY")
@@ -12,9 +13,6 @@ class LLM:
     def complete(self, prompt: str,
             temp=0.5,
             max_tokens=100,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
             stop=None):
         """Return the completion of the text with the given temperature."""
         raise NotImplementedError
@@ -23,6 +21,20 @@ class LLM:
         """Fine tune the model on the given prompt/completion pairs."""
         raise NotImplementedError
 
+class HuggingFace(LLM):
+    def __init__(self, model_path: str = "Salesforce/codegen-2B-mono"):
+        self.model_path = model_path
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = AutoModelForCausalLM.from_pretrained(model_path)
+    
+    def complete(self, prompt: str,
+            temp=0.5,
+            max_tokens=100,
+            stop=None):
+        input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids
+        generated_ids = self.model.generate(input_ids, max_length=max_tokens)
+        return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+
 class OpenAI(LLM):
     def __init__(self, engine: str = "davinci"):
         self.engine = engine
@@ -30,18 +42,12 @@ class OpenAI(LLM):
     def complete(self, prompt: str,
             temp=0.5,
             max_tokens=100,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
             stop=None):
         return openai.Completion.create(
             engine=self.engine,
             prompt=prompt,
             temperature=temp,
             max_tokens=max_tokens,
-            top_p=top_p,
-            frequency_penalty=frequency_penalty,
-            presence_penalty=presence_penalty,
             stop=stop
         ).choices[0].text
 
@@ -60,7 +66,7 @@ class OpenAI(LLM):
                     async with session.post("https://api.openai.com/v1/completions", headers={
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + api_key
-                    }, json={"model": self.engine, "prompt": prompt, "temperature": temp, "max_tokens": max_tokens, "frequency_penalty": frequency_penalty, "top_p": top_p, "presence_penalty": presence_penalty}) as resp:
+                    }, json={"model": self.engine, "prompt": prompt, "temperature": temp, "max_tokens": max_tokens}) as resp:
                         json = await resp.json()
                         if "error" in json:
                             print("ERROR IN GPT-3 RESPONSE: ", json)
