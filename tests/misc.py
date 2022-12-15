@@ -33,25 +33,59 @@ def is_prime(n):
 
 
 
-def test_find_max():
-    assert find_max([0, 1, 2, 3, 4]) == 4
-    assert find_max([0, -1, -2, -3, -4]) == 0
-
-def test_find_min():
-    assert find_min([0, 1, 2, 3, 4]) == 0
-    assert find_min([0, -1, -2, -3, -4]) == -4
-
-def test_fizz_buzz():
-    assert fizz_buzz(15) == [1, 2, "Fizz", 4, "Buzz", "Fizz", 7, 8, "Fizz", "Buzz", 11, "Fizz", 13, 14, "FizzBuzz"]
+def test_is_palindrome():
+    assert is_palindrome("Able was I ere I saw Elba") == True
 
 def test_is_palindrome():
-    assert is_palindrome("racecar") == True
-    assert is_palindrome("foo") == False
+    assert is_palindrome("A man, a plan, a canal - Panama!") == True
 
-def test_is_prime():
-    assert is_prime(1) == False
-    assert is_prime(17) == True
-    assert is_prime(15) == False
-    assert is_prime(2) == True
-    assert is_prime(11) == True
-    assert is_prime(0) == False
+def test_is_palindrome():
+    assert is_palindrome("racecar") == False
+
+def test_is_palindrome():
+    assert is_palindrome("racecar") == False
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True
+
+def test_is_palindrome():
+    assert is_palindrome("") == True

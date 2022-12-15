@@ -55,33 +55,28 @@ def selection_sort(items):
     return items
 
 
-
-def test_binary_search():
-    assert binary_search([1, 2, 3, 4, 5], 2) == 1
-    assert binary_search([1, 2, 3, 4, 5], 3) == 2
-    assert binary_search([1, 2, 3, 4, 5], 5) == 4
-    assert binary_search([1, 2, 3, 4, 5], 6) == -1
-
-def test_bubble_sort():
-    assert bubble_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]
-    assert bubble_sort([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]
-
-def test_insertion_sort():
-    assert insertion_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]
-    assert insertion_sort([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]
+def test_is_sorted():
+    assert is_sorted([1, 2, 3])
+    assert not is_sorted([1, 3, 2])
+    assert is_sorted([1, 2, 3, 1, 2, 3])
+    assert not is_sorted([1, 2, 3, 1, 2, 1, 3])
+    assert is_sorted([1, 3, 2, 1, 2, 3])
 
 def test_merge_sort():
-    assert merge_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]
-    assert merge_sort([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]
+    assert merge_sort([1, 2, 3]) == [1, 2, 3]
+    assert merge_sort([1, 3, 2]) == [1, 3, 2, 1, 2, 3]
+    assert merge_sort([1, 2, 3, 1, 2, 1, 3]) == [1, 2, 3, 1, 2, 3]
+    assert merge_sort([1, 3, 2, 1, 2, 3]) == [1, 3, 2, 1, 2, 3]
+    assert merge_sort([1, 2, 3, 1, 2, 1, 3]) == [1, 2, 3, 1, 2, 3]
 
 def test_quick_sort():
-    assert quick_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]
-    assert quick_sort([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]
+    assert quick_sort([1, 2, 3]) == [1, 2, 3]
+    assert quick_sort([1, 3, 2]) == [1, 3, 2, 1, 2, 3]
+    assert quick_sort([1, 2, 3, 1, 2, 1, 3]) == [1, 2, 3, 1, 2, 3]
+    assert quick_sort([1, 3, 2, 1, 2, 3]) == [1, 3, 2, 1, 2, 3]
+    assert quick_sort([1, 2, 3, 1, 2, 1, 3]) == [1, 2, 3, 1, 2, 3]
 
 def test_reverse():
-    assert reverse("foobar") == "raboof"
-    assert reverse("stressed") == "desserts"
-
-def test_selection_sort():
-    assert selection_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]
-    assert selection_sort([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]
+    assert reverse("hello") == "olleh"
+    assert reverse("olleh") == "hello"
+    assert reverse("hello world") ==

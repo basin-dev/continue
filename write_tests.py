@@ -2,7 +2,8 @@ import os
 from llm import OpenAI
 
 ## UTILITIES ##
-llm = OpenAI(engine="code-davinci-002")
+tuned_model = "davinci:ft-personal-2022-12-15-19-12-04"
+llm = OpenAI(engine=tuned_model)
 
 def whole_code_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""

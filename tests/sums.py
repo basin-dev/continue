@@ -11,25 +11,32 @@ def sum_of_squares_of_digits(n):
     return sum(int(digit) ** 2 for digit in str(n))
 
 
-# Try to test every possible case.
+    def test_sum_of_digits():
+    assert sum_of_digits(1) == 1
+    assert sum_of_digits(2) == 2
+    assert sum_of_digits(3) == 5
+    assert sum_of_digits(4) == 10
+    assert sum_of_digits(5) == 15
 
-def test_sum_of_digits():
-    assert sum_of_digits(12) == 3
-    assert sum_of_digits(123456789) == 45
-    assert sum_of_digits(0) == 0
-    assert sum_of_digits(-1) == 1
-    assert sum_of_digits(10) == 1
-
-def test_sum_of_squares():
+#    def test_sum_of_squares():
     assert sum_of_squares(1) == 1
-    assert sum_of_squares(2) == 5
-    assert sum_of_squares(3) == 14
-    assert sum_of_squares(4) == 30
-    assert sum_of_squares(5) == 55
+    assert sum_of_squares(2) == 4
+    assert sum_of_squares(3) == 9
+    assert sum_of_squares(4) == 16
+    assert sum_of_squares(5) == 25
 
-def test_sum_of_squares_of_digits():
+#    def test_sum_of_squares_of_digits():
     assert sum_of_squares_of_digits(1) == 1
-    assert sum_of_squares_of_digits(12) == 5
-    assert sum_of_squares_of_digits(123) == 14
-    assert sum_of_squares_of_digits(1234) == 30
-    assert sum_of_squares_of_digits(12345) == 55
+    assert sum_of_squares_of_digits(2) == 4
+    assert sum_of_squares_of_digits(3) == 5
+    assert sum_of_squares_of_digits(4) == 10
+    assert sum_of_squares_of_digits(5) == 15
+
+#    def test_sum_of_squares_of_digits_with_leading_zero():
+    assert sum_of_squares_of_digits_with_leading_zero(1) == 1
+    assert sum_of_squares_of_digits_with_leading_zero(2) == 4
+    assert sum_of_squares_of_digits_with_leading_zero(3) == 5
+    assert sum_of_squares_of_digits_with_leading_zero(4) == 10
+    assert sum_of_squares_of_digits_with_leading_zero(5) == 15
+
+#    def test_sum_of_squares_of_digits_with

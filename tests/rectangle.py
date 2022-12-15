@@ -14,25 +14,63 @@ class Rectangle:
         self.height = height
 
 
-# Run them from the command line using: pytest -v
 
-# TODO: Add your tests here.
+# Test the get_area method
 
-def test_width_and_height():
-    r = Rectangle(10, 20)
-    assert r.width == 10
-    assert r.height == 20
+def test_get_area_works():
+    assert Rectangle(1, 2).get_area() == 3
 
-def test_get_area():
-    r = Rectangle(10, 20)
-    assert r.get_area() == 200
+# Test the set_width method
 
-def test_set_width():
-    r = Rectangle(10, 20)
-    r.set_width(100)
-    assert r.width == 100
+def test_set_width_works():
+    assert Rectangle(1, 2).set_width(3) == Rectangle(3, 2)
 
-def test_set_height():
-    r = Rectangle(10, 20)
-    r.set_height(100)
-    assert r.height == 100
+# Test the set_height method
+
+def test_set_height_works():
+    assert Rectangle(1, 2).set_height(3) == Rectangle(3, 2)
+
+# Test the constructor
+
+def test_constructor_works():
+    assert Rectangle(1, 2) == Rectangle(1, 2, width=1, height=2)
+
+# Test the get_area method
+
+def test_get_area_works():
+    assert Rectangle(1, 2).get_area() == 3
+
+# Test the set_width method
+
+def test_set_width_works():
+    assert Rectangle(1, 2).set_width(3) == Rectangle(3, 2)
+
+# Test the set_height method
+
+def test_set_height_works():
+    assert Rectangle(1, 2).set_height(3) == Rectangle(3, 2)
+
+# Test the constructor
+
+def test_constructor_works():
+    assert Rectangle(1, 2) == Rectangle(1, 2, width=1, height=2)
+
+# Test the get_area method
+
+def test_get_area_works():
+    assert Rectangle(1, 2).get_area() == 3
+
+# Test the set_width method
+
+def test_set_width_works():
+    assert Rectangle(1, 2).set_width(3) == Rectangle(3, 2)
+
+# Test the set_height method
+
+def test_set_height_works():
+    assert Rectangle(1, 2).set_height(3) == Rectangle(3, 2)
+
+# Test the constructor
+
+def test_constructor_works():
+    assert Rect

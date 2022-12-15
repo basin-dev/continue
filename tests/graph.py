@@ -29,45 +29,40 @@ class Graph:
 
 
 
-def test_graph():
-    g = Graph(4)
-    g.add_edge(0, 1, 1)
-    g.add_edge(0, 2, 2)
-    g.add_edge(1, 2, 3)
-    g.add_edge(2, 3, 4)
-    g.add_edge(3, 0, 5)
-    assert g.dijkstra(0) == [0, 1, 2, 6]
+def test_add_edge():
+    assert len(g.graph[0]) == 1
+    assert len(g.graph[1]) == 1
+    assert len(g.graph[2]) == 2
+    assert len(g.graph[3]) == 2
+    assert len(g.graph[4]) == 2
+    assert len(g.graph[5]) == 2
+    assert len(g.graph[6]) == 2
+    assert len(g.graph[7]) == 2
+    assert len(g.graph[8]) == 2
 
-def test_graph2():
-    g = Graph(4)
-    g.add_edge(0, 1, 1)
-    g.add_edge(0, 2, 2)
-    g.add_edge(1, 2, 3)
-    g.add_edge(2, 3, 4)
-    g.add_edge(3, 0, 5)
-    assert g.dijkstra(1) == [float("Inf"), 0, 3, 7]
+def test_dijkstra():
+    assert g.dijkstra(0) == 0
+    assert g.dijkstra(1) == 1
+    assert g.dijkstra(2) == 3
+    assert g.dijkstra(3) == 4
+    assert g.dijkstra(4) == 5
+    assert g.dijkstra(5) == 6
+    assert g.dijkstra(6) == 7
+    assert g.dijkstra(7) == 8
+    assert g.dijkstra(8) == 9
 
-def test_graph3():
-    g = Graph(4)
-    g.add_edge(0, 1, 1)
-    g.add_edge(0, 2, 2)
-    g.add_edge(1, 2, 3)
-    g.add_edge(2, 3, 4)
-    g.add_edge(3, 0, 5)
-    assert g.dijkstra(2) == [float("Inf"), float("Inf"), 0, 4]
+def test_dijkstra_single_source():
+    assert g.dijkstra(0) == 0
+    assert g.dijkstra(1) == 1
+    assert g.dijkstra(2) == 3
+    assert g.dijkstra(3) == 4
+    assert g.dijkstra(4) == 5
+    assert g.dijkstra(5) == 6
+    assert g.dijkstra(6) == 7
+    assert g.dijkstra(7) == 8
+    assert g.dijkstra(8) == 9
 
-def test_graph4():
-    g = Graph(4)
-    g.add_edge(0, 1, 1)
-    g.add_edge(0, 2, 2)
-    g.add_edge(1, 2, 3)
-    g.add_edge(2, 3, 4)
-    g.add_edge(3, 0, 5)
-    assert g.dijkstra(3) == [5, 6, 10, 0]
-
-def test_graph5():
-    g = Graph(4)
-    g.add_edge(0, 1, 1)
-    g.add_edge(0, 2, 2)
-    g.add_edge(1, 2, 3)
-    g.add_edge(
+def test_dijkstra_single_dest():
+    assert g.dijkstra(0, 8) == 9
+    assert g.dijkstra(1, 8) == 9
+    assert g.dijkstra(2, 8) == 9
