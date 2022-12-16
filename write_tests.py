@@ -2,7 +2,8 @@ import os
 from llm import OpenAI, LLM, HuggingFace
 
 ## UTILITIES ##
-tuned_model = "davinci:ft-personal-2022-12-15-19-12-04"
+shitty_tuned_model = "davinci:ft-personal-2022-12-15-19-12-04"
+tuned_model = "curie:ft-personal-2022-12-16-16-39-52"
 
 def whole_code_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""
@@ -81,25 +82,26 @@ def even_better_pipeline(unit_test_framework: str, code_to_test: str, llm: LLM):
 if __name__ == "__main__":
     # Flow with OpenAI Codex
 
-    # llm = OpenAI(engine=tuned_model)
-    # prompts = []
-    # file_names = os.listdir("code")
-    # for file_name in file_names:
-    #     code_to_test = open("code/" + file_name, "r").read()
-    #     prompts.append(whole_code_prompt3("pytest", code_to_test))
+    llm = OpenAI(engine=tuned_model)
+    prompts = []
+    file_names = os.listdir("code")
+    for file_name in file_names:
+        code_to_test = open("code/" + file_name, "r").read()
+        prompts.append(whole_code_prompt3("pytest", code_to_test))
 
-    # completions = llm.parallel_complete(prompts, max_tokens=500)
+    completions = llm.parallel_complete(prompts, max_tokens=500)
     
-    # for i in range(len(file_names)):
-    #     file_name = file_names[i]
-    #     completion = completions[i]
-    #     code_to_test = open("code/" + file_name, "r").read()
-    #     write_to_file(code_to_test, completion, "tests/" + file_name)
+    for i in range(len(file_names)):
+        file_name = file_names[i]
+        completion = completions[i]
+        code_to_test = open("code/" + file_name, "r").read()
+        write_to_file(code_to_test, completion, "tests/" + file_name)
 
     # Flow with Salesforce Codegen
-    llm = HuggingFace("microsoft/CodeGPT-small-py")
-    for file_name in os.listdir("code"):
-        code_to_test = open("code/" + file_name, "r").read()
-        completion = naive_pipeline("pytest", code_to_test, llm)
-        write_to_file("", completion, "tests/" + file_name)
-        print("Wrote to file: " + file_name)
+    
+    # llm = HuggingFace("microsoft/CodeGPT-small-py")
+    # for file_name in os.listdir("code"):
+    #     code_to_test = open("code/" + file_name, "r").read()
+    #     completion = naive_pipeline("pytest", code_to_test, llm)
+    #     write_to_file("", completion, "tests/" + file_name)
+    #     print("Wrote to file: " + file_name)

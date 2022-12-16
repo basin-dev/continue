@@ -1,5 +1,3 @@
-
-
 def is_sorted(items):
     """Return whether the given list of items is sorted."""
     for i in range(len(items) - 1):
@@ -56,8 +54,82 @@ def selection_sort(items):
         items[i], items[min_index] = items[min_index], items[i]
     return items
 
-# Unit tests for the above code using pytest. Make sure they are concise and complete.
-# They are not meant to be exhaustive, but they are useful for testing.
 
-def test_quick_sort():
-    assert quick_sort([1, 2, 3, 4, 5, 6, 7, 8, 9
+
+def test_selection_sort(items):
+    """Test selection_sort."""
+    assert selection_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+def test_merge_sort(items):
+    """Test merge_sort."""
+    assert merge_sort([1, 4, 7]) == [1, 4, 7]
+
+def test_merge_sort_quickly(items):
+    """Test merge_sort_quickly."""
+    assert [0, 1, 4, 7] == [0, 1, 4, 7]
+
+def test_quick_sort(items):
+    """Test quick_sort."""
+    assert [0, 1, 4, 7] == [0, 1, 4, 7]
+    assert [1, 4, 7, 0] == [1, 4, 7, 0]
+
+def test_selection_sort_quickly(items):
+    """Test selection_sort_quickly."""
+    assert [0, 1, 4, 7] == [0, 1, 4, 7]
+
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
