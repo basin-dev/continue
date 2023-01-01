@@ -22,6 +22,46 @@ for example in dataset:
 with_pytest = list(filter(lambda f: 'import pytest' in f['content'], good))
 repos_with_pytest = list(set(map(lambda f: f['repository_name'], with_pytest)))
 
+default_file_contents = """import pytest\n\n"""
+
+def remove_copyright(contents: str) -> str:
+    """Remove the copyright header from a file."""
+    lines = contents.splitlines()
+
+    # Find the top comment block. This is usually what contains the copyright.
+    non_block_lines = []
+    block_lines = []
+    comment_block_started = False
+    comment_block_ended = False
+    for line in lines:
+        if comment_block_ended:
+            non_block_lines.append(line)
+        elif line.strip().startswith('#'):
+            comment_block_started = True
+            block_lines.append(line)
+        elif comment_block_started:
+            comment_block_ended = True
+            non_block_lines.append(line)
+
+    block = "\n".join(block_lines)
+
+    # Determine if the block should be discarded
+    if "Copyright" in block or "License" in block:
+        return "\n".join(non_block_lines)
+    else:
+        return "\n".join(block_lines + non_block_lines)
+
+def clean_file(contents: str) -> str:
+    """Remove unnecessary import and comments from a file."""
+    contents = remove_copyright(contents)
+
+    lines = contents.splitlines()
+    new_lines = []
+    for line in lines:
+        if line.startswith('import') or line.startswith("from"):
+            continue
+        new_lines.append(line)
+    return "\n".join(new_lines)
 
 def compile_completion(file):
     deps = find_import_dependencies(file['content'])
@@ -60,7 +100,7 @@ def compile_completion(file):
     
     return {
         "prompt": prompt,
-        "completion": file['content']
+        "completion": file['content'] + "<|endoftext|>"
     }
 
 completions = []
