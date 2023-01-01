@@ -3,7 +3,7 @@ from llm import OpenAI, LLM, HuggingFace
 
 ## UTILITIES ##
 shitty_tuned_model = "davinci:ft-personal-2022-12-15-19-12-04"
-tuned_model = "curie:ft-personal-2022-12-16-16-39-52"
+tuned_model = "curie:ft-personal-2023-01-01-18-44-14"
 
 def whole_code_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""

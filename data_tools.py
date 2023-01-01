@@ -1,4 +1,7 @@
 import requests
+from transformers import GPT2TokenizerFast
+
+gpt2_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
 
 def gh_raw(repo: str, path: str):
     """Get the raw text of a file from GitHub. Try both master and main branches."""
@@ -39,3 +42,7 @@ def dependency_paths(path: str, dependencies: list[str], repo: str):
             paths_to_download.add(path)
 
     return list(paths_to_download)
+
+def count_tokens(text: str):
+    """Count the number of tokens in a string."""
+    return len(gpt2_tokenizer.encode(text))
