@@ -2,7 +2,7 @@ import os
 from llm import OpenAI, LLM, HuggingFace
 
 ## UTILITIES ##
-tuned_model = "curie:ft-personal-2023-01-01-18-44-14"
+tuned_model = "curie:ft-personal-2023-01-03-05-09-08"
 
 # Previously fine-tuned models
 # davinci:ft-personal-2022-12-15-19-12-04
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         code_to_test = open("code/" + file_name, "r").read()
         prompts.append(whole_code_prompt3("pytest", code_to_test))
 
-    completions = llm.parallel_complete(prompts, max_tokens=500)
+    completions = llm.parallel_complete(prompts, max_tokens=1024)
     
     for i in range(len(file_names)):
         file_name = file_names[i]

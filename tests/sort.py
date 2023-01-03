@@ -55,81 +55,28 @@ def selection_sort(items):
     return items
 
 
+import pytest
 
-def test_selection_sort(items):
-    """Test selection_sort."""
-    assert selection_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+from utils import quick_sort
 
-def test_merge_sort(items):
-    """Test merge_sort."""
-    assert merge_sort([1, 4, 7]) == [1, 4, 7]
 
-def test_merge_sort_quickly(items):
-    """Test merge_sort_quickly."""
-    assert [0, 1, 4, 7] == [0, 1, 4, 7]
-
-def test_quick_sort(items):
-    """Test quick_sort."""
-    assert [0, 1, 4, 7] == [0, 1, 4, 7]
-    assert [1, 4, 7, 0] == [1, 4, 7, 0]
-
-def test_selection_sort_quickly(items):
-    """Test selection_sort_quickly."""
-    assert [0, 1, 4, 7] == [0, 1, 4, 7]
-
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
+@pytest.mark.parametrize('items', [
+    (0, 'zero'),
+        (1, 'one'),
+        (2, 'two'),
+        (3, 'three'),
+        (4, 'four'),
+        (5, 'five'),
+        (6, 'six'),
+        (7, 'seven'),
+        (8, 'eight'),
+        (9, 'nine'),
+    ]
+    )
+    def test_quick_sort(items):
+        assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        assert len(quick_sort(items)) == 8
+        assert is_sorted(items)
+        assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        assert len(quick_sort(items)) == 9
+    ]

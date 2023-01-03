@@ -11,40 +11,75 @@ def sum_of_squares_of_digits(n):
     return sum(int(digit) ** 2 for digit in str(n))
 
 
-
-# Tests should be in module tests so they can be imported from other tests
-
 import pytest
-
-# Test the functions work as expected
+from decimal import Decimal
 
 @pytest.mark.parametrize(
-    "n",
-    [10, 100, 1000, 10000],
+    "input,expected",
+    [
+        (Decimal("42"), 6),
+        (Decimal("42"), 12),
+        (Decimal("1000000"), 200),
+        (Decimal("1.5"), 150),
+        (Decimal("1.5"), 225),
+        (Decimal("0"), 0),
+        (Decimal("5"), 5),
+        (Decimal("5"), 10),
+        (Decimal("5.2"), 620),
+        (Decimal("5.2"), 880),
+        (Decimal("1.6"), 170),
+        (Decimal("1.6"), 250),
+    ]
     )
-def test_sum_of_squares_of_digits(n):
-    """Test the sum_of_squares_of_digits function works as expected."""
-    assert sum_of_squares_of_digits(n) == 1100
-    assert sum_of_squares_of_digits(1000) == 900
-    assert sum_of_squares_of_digits(100) == 50
-    assert sum_of_squares_of_digits(10) == 1
+    @pytest.mark.parametrize(
+    "input,expected",
+    [
+        (Decimal("42"), 6),
+        (Decimal("42"), 12),
+        (Decimal("1000000"), 200),
+        (Decimal("1.5"), 150),
+        (Decimal("1.5"), 225),
+        (Decimal("5"), 10),
+        (Decimal("5.2"), 620),
+        (Decimal("5.2"), 880),
+        (Decimal("1.6"), 170),
+        (Decimal("1.6"), 250),
+        (Decimal("0"), 0),
+        (Decimal("5.2"), 880),
+        (Decimal("1.6"), 250),
+        (Decimal("0"), 0),
+        (Decimal("5.2"), 880),
+        (Decimal("1.6"), 250),
+    ]
+    )
+    def test_sum_of_digits(input, expected):
+        assert sum_of_digits(input) == expected
 
-def test_sum_of_digits(n):
-    """Test the sum_of_digits function works as expected."""
-    assert int(str(n)) == sum_of_digits(n)
+@pytest.mark.parametrize(
+    "input,expected",
+    [
+        (Decimal("42"), 6),
+        (Decimal("42"), 12),
+        (Decimal("1000000"), 200),
+        (Decimal("1.5"), 150),
+        (Decimal("1.5"), 225),
+        (Decimal("0"), 0),
+        (Decimal("5"), 10),
+        (Decimal("5.2"), 620),
+        (Decimal("5.2"), 880),
+        (Decimal("1.6"), 170),
+        (Decimal("1.6"), 250),
+        (Decimal("0"), 0),
+        (Decimal("5.2"), 880),
+        (Decimal("1.6"), 250),
+        (Decimal("0"), 0),
+        (Decimal("5.2"), 880),
+        (Decimal("1.6"), 250),
+    ]
+    )
+    def test_sum_of_squares(input, expected):
+        assert sum_of_squares(input) == expected
 
-def test_sum_of_squares(n):
-    """Test the sum_of_squares function works as expected."""
-    assert sum(1, 2, 3, 4) == sum_of_squares(n)
-
-def test_sum_of_squares_of_digits(n):
-    """Test the sum_of_squares_of_digits function works as expected."""
-    assert sum(int(str(n)), int(str(n)), int(str(n)), int(str(n))) ==
-        sum_of_squares_of_digits(n)
-
-
-def test_sum_of_squares_of_digits_with_negative_n(n):
-    """Test the sum_of_squares_of_digits function works as expected."""
-    assert sum_of_squares_of_digits(-1) == -1100
-
-def test_sum_of_squares_of_digits_with_invalid_digit(n
+def test_sum_of_squares_of_digits(input, expected):
+    """
+    Test the sum_of_squares_of_digits

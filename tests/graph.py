@@ -28,27 +28,52 @@ class Graph:
         return dist
 
 
+# Copyright (c) 2020, Mark A. Yoder. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
- # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+import pytest
 
-def test_dijkstra(self, src):
-        assert len(self.dijkstra(src)) == 1, "Expected 1 edge"
-        assert self.dijkstra(src[0]) == src[0]
-        assert self.dijkstra(src[1]) == src[1]
+from graph import Graph
 
-    def test_add_edge(self, src):
-        assert len(self.add_edge(src, (0, 1), (2, 3))) == 2, "Expected 2 edges"
-        assert self.add_edge(src[0], src[1], src[2])
-        assert self.add_edge(src[0], (2, 3), (4, 5))
+from unit import dijkstra
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
- # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def test_dijkstra_heappop(self, src):
-        assert len(self.dijkstra(src)) == 1, "Expected 1 edge"
-        assert heappop(self.dijkstra(src[0])) == src[0], "Dijkstra should return self"
-        assert self.dijkstra(src[0]) == src[0]
-        assert heappop(self.dijkstra(src[0])) == src[0], "Dijkstra should return self"
+@pytest.fixture(scope='module')
+def g():
+    return Graph(["a", "b", "c"], [0, 1, 2])
 
-def test_dijkstra_
+
+@pytest.fixture(scope='module')
+def g2():
+    return g
+
+
+def test_add_edge_invokes_add_edge():
+    g = g2()
+    g.add_edge(0, 1)
+    assert g.add_edge(0, 2)
+
+
+def test_add_edge_invokes_add_edge_slow():
+    g = g2()
+    g.add_edge(0, 1)
+    g.add_edge(1, 2)
+    assert g.add_edge(0, 2)
+    assert g.add_edge(1, 2)
