@@ -17,7 +17,7 @@ def const_signature(const: ast.Constant) -> str:
 def type_signature(returns: ast.AST) -> str:
     """Get the signature of a return statement."""
     if isinstance(returns, ast.Subscript):
-        return f"{returns.value.id}[{type_signature(returns.slice)}]"
+        return f"{type_signature(returns.value)}[{type_signature(returns.slice)}]"
     elif isinstance(returns, ast.Name):
         return returns.id
     elif isinstance(returns, ast.List):
@@ -27,7 +27,11 @@ def type_signature(returns: ast.AST) -> str:
     elif isinstance(returns, ast.Constant):
         return const_signature(returns)
     elif isinstance(returns, ast.Attribute):
-        return f"{returns.value.id}.{returns.attr}"
+        return f"{type_signature(returns.value)}.{returns.attr}"
+    elif isinstance(returns, ast.BinOp) and isinstance(returns.op, ast.BitOr):
+        return f"{type_signature(returns.left)} | {type_signature(returns.right)}"
+    elif isinstance(returns, ast.Call):
+        return f"{type_signature(returns.func)}({', '.join([type_signature(arg) for arg in returns.args])})"
     else:
         raise Exception(f"Unknown return type: {returns} {type(returns)} {returns.__dict__}")
 
@@ -69,8 +73,28 @@ def fn_signature(fn: ast.FunctionDef) -> str:
 def class_signature(cls: ast.ClassDef) -> str:
     """Get the signature of a class."""
     sig = f"class {cls.name}"
-    if cls.bases is not None and False: #Giving an error, leaving for now
-        sig += f"({', '.join([base.id for base in cls.bases])})"
+
+    # Base classes
+    if cls.bases is not None and len(cls.bases) > 0:
+        sig += f"({', '.join([type_signature(base) for base in cls.bases])})"
+
+    sig += ":\n"
+
+    # Docstring
+    docstring = ast.get_docstring(cls)
+    if docstring is not None and len(docstring) > 0:
+        sig = f'"""{docstring}"""\n' + sig
+    
+    # Body - condense functions, keep assignments, ignore everything else
+    for child in cls.body:
+        if isinstance(child, ast.FunctionDef):
+            # print(ast.unparse(child))
+            fn_sig = fn_signature(child)
+            sig += "\t" + "\n\t".join(fn_sig.splitlines()) + "\n"
+        elif isinstance(child, ast.Assign) or isinstance(child, ast.AnnAssign):
+            sig += "\t" + ast.unparse(child).strip() + "\n"
+        else:
+            pass
     
     return sig
 

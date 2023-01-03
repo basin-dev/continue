@@ -2,8 +2,13 @@ import os
 from llm import OpenAI, LLM, HuggingFace
 
 ## UTILITIES ##
-shitty_tuned_model = "davinci:ft-personal-2022-12-15-19-12-04"
 tuned_model = "curie:ft-personal-2023-01-01-18-44-14"
+
+# Previously fine-tuned models
+# davinci:ft-personal-2022-12-15-19-12-04
+# curie:ft-personal-2023-01-01-18-44-14
+# Accidentally trained on only the handwritten code I wanted to test: curie:ft-personal-2023-01-02-18-42-04
+# Latest Curie (after getting 243 examples of pytest): curie:ft-personal-2023-01-03-05-09-08
 
 def whole_code_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""

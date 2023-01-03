@@ -1,4 +1,8 @@
-class Rectangle:
+class Rectangle(object):
+    """A class that represents a rectangle."""
+
+    width: int = 10
+    height: int = 10
 
     def __init__(self, width, height):
         self.width = width
