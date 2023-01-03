@@ -52,9 +52,6 @@ import pytest
 
 from graph import Graph
 
-from unit import dijkstra
-
-
 @pytest.fixture(scope='module')
 def g():
     return Graph(["a", "b", "c"], [0, 1, 2])
