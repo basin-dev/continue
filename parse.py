@@ -59,7 +59,7 @@ def fn_signature(fn: ast.FunctionDef) -> str:
         else:
             return arg.arg
     
-    sig = f"fn {fn.name}({', '.join([arg_signature(arg) for arg in fn.args.args])})"
+    sig = f"def {fn.name}({', '.join([arg_signature(arg) for arg in fn.args.args])})"
     if fn.returns is not None:
         sig += f" -> {type_signature(fn.returns)}"
     elif ds_return is not None:
