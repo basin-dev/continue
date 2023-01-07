@@ -10,22 +10,18 @@ def get_code(file_path: str):
 
     functions = []
     classes = []
-    for node in ast.walk(tree):
+    for node in tree.body: # Only traverses top-level nodes
 
         if isinstance(node, ast.FunctionDef):
-            if hasattr(node, "parent") and isinstance(node.parent, ast.ClassDef):
-                continue
-            else:
-                functions.append(ast.unparse(node))
+            functions.append(ast.unparse(node))
 
-        if isinstance(node, ast.ClassDef):
+        elif isinstance(node, ast.ClassDef):
             classes.append({'name': node.name, 'methods': []})
             for child in node.body:
                 if isinstance(child, ast.FunctionDef) and child.name == "__init__":
                     classes[-1]['init'] = ast.unparse(child)
                 else:
                     classes[-1]['methods'].append(ast.unparse(child))
-                child.parent = node # ast.walk traverses ClassDef nodes before FunctionsDef nodes
 
     return functions, classes
 
@@ -41,9 +37,12 @@ def iterate_files(dir: str):
     
     return dir_code
 
-def generate_function_unit_tests(dir, dir_code):
+def generate_function_unit_tests(dir_code, out_dir="./generated_tests"):
     """Generate unit tests for all functions in the code directory."""
     for file in dir_code:
+        with open(f'{out_dir}/test_{file["name"]}', 'w') as output:
+            output.write("import pytest")
+
         for function in file['functions']:
             prompt = f"""{function}
 
@@ -57,14 +56,14 @@ def generate_function_unit_tests(dir, dir_code):
                 top_p=1,
                 frequency_penalty=0,
                 presence_penalty=0
-            )
+            )['choices'][0]['text']
 
-            with open(f'''./generated_tests/test_{file["name"]}''', 'a') as output:
-                output.write(response['choices'][0]['text'] + "\n\n")
+            with open(f'{out_dir}/test_{file["name"]}', 'a') as output:
+                output.write(response.replace("import pytest\n", "") + "\n\n")
 
 if __name__ == "__main__":
     """Get the code for all functions and class methods in the code directory."""
     dir = "./dlt_code"
     dir_code = iterate_files(dir)
 
-    generate_function_unit_tests(dir, dir_code)
+    generate_function_unit_tests(dir_code)
