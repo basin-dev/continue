@@ -1,3 +1,11 @@
+# This is the same as stack.py, except we take a different approach
+# Instead of shortening functions into signatures, just include all the code
+# We chunk things instead in order to avoid token overflow
+# For now we take the naive chunking approach, with basically a sliding window
+# that makes sure not to cut off functions or classes
+
+# But how do we assign labels to these chunks?
+
 import json
 from datasets import load_dataset
 from data_tools import *
@@ -21,7 +29,7 @@ good = []
 files_by_repository = {}
 
 i = 0
-desired_examples = 10000
+desired_examples = 200
 
 j = 0
 offset = 0

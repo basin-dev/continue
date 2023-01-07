@@ -1,5 +1,6 @@
 import ast
 import docstring_parser
+from ds_gen import write_ds_for_fn, write_ds_for_class
 
 def const_signature(const: ast.Constant) -> str:
     if type(const.value) is str:
@@ -67,6 +68,13 @@ def fn_signature(fn: ast.FunctionDef) -> str:
 
     if docstring is not None:
         sig = f'"""{docstring}"""\n' + sig
+    else:
+        # Generate a docstring
+        pass
+        # ds = write_ds_for_fn(fn)
+        # if ds is not None:
+        #     ds = ds.split('"""')[1].split('"""')[0].strip()
+        #     sig = f'"""{ds}"""\n' + sig
     
     return sig
 
@@ -84,6 +92,13 @@ def class_signature(cls: ast.ClassDef) -> str:
     docstring = ast.get_docstring(cls)
     if docstring is not None and len(docstring) > 0:
         sig = f'"""{docstring}"""\n' + sig
+    else:
+        # Generate a docstring
+        pass
+        # ds = write_ds_for_class(cls)
+        # if ds is not None:
+        #     ds = ds.split('"""')[1].split('"""')[0].strip()
+        #     sig = f'"""{ds}"""\n' + sig
     
     # Body - condense functions, keep assignments, ignore everything else
     for child in cls.body:
@@ -99,7 +114,8 @@ def class_signature(cls: ast.ClassDef) -> str:
     return sig
 
 def get_signatures(node: ast.AST) -> list[str]:
-    """Get the signatures of all top-level functions and classes in a file."""
+    """Get the signatures of all top-level functions and classes in a file.
+    Also includes docstring generation."""
     signatures = []
     for child in ast.iter_child_nodes(node):
         if isinstance(child, ast.FunctionDef):
@@ -117,3 +133,22 @@ def get_signatures(node: ast.AST) -> list[str]:
 def parse_text(text: str):
     """Parse a string of Python code."""
     return ast.parse(text)
+
+
+def compile_prompt(code: str, file_name: str) -> str:
+    """Compile a prompt from a file."""
+    prompt = f"\n\n### {file_name} ###\n\n{code}"
+
+    # Now compress into function signatures
+    try:
+        ass_tree = parse_text(prompt)
+        sigs = get_signatures(ass_tree)
+        if len(sigs) == 0:
+            return None
+    except:
+        print("Failed to parse.")
+        return None
+
+    prompt = "\n\n".join(sigs)
+    prompt += "\n\n### Unit tests for the above files using pytest. Make sure they are concise and complete. ###\n\n"
+    return prompt

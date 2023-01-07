@@ -31,17 +31,29 @@ def is_prime(n):
             return False
     return True
 
-
 import pytest
 
-from fizzbuzz import fizz_buzz, find_max, find_min, is_prime
-from itertools import chain
+from .utils import find_max, find_min
 
-@pytest.mark.parametrize("n,x", [1, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31])
-def test_fizz_buzz(n, x):
-    """Test the functions fizz_buzz, find_max, find_min, and is_prime."""
-    assert fizz_buzz(n) == x
-    assert find_max(x) == n
-    assert find_min(x) == 1
+def test_find_max(n):
+    assert find_max(n) == n
+
+    def test_find_min(n):
+        assert find_min(n) == n
+
+
+def test_fizz_buzz(n):
+        assert fizz_buzz(n) == [n for n in range(1, n + 1) if n % 3 == 0 and n % 5 == 0]
+
+def test_is_prime(n):
+    assert not is_prime(n)
+    assert not is_prime(n)
     assert is_prime(n)
-    assert chain.is_subchain(n, x)
+    assert is_prime(n)
+
+def test_is_palindrome(s):
+    assert not is_palindrome(s)
+    assert is_palindrome(s)
+
+def test_is_palindrome2(s):
+    assert is_palindrome2(s)

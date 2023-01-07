@@ -54,29 +54,54 @@ def selection_sort(items):
         items[i], items[min_index] = items[min_index], items[i]
     return items
 
-
 import pytest
 
-from utils import quick_sort
+from mergesort import quick_sort
+from helpers import is_sorted
 
 
-@pytest.mark.parametrize('items', [
-    (0, 'zero'),
-        (1, 'one'),
-        (2, 'two'),
-        (3, 'three'),
-        (4, 'four'),
-        (5, 'five'),
-        (6, 'six'),
-        (7, 'seven'),
-        (8, 'eight'),
-        (9, 'nine'),
-    ]
-    )
-    def test_quick_sort(items):
-        assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        assert len(quick_sort(items)) == 8
-        assert is_sorted(items)
-        assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        assert len(quick_sort(items)) == 9
-    ]
+@pytest.mark.parametrize("items", [
+    [-1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    [-1, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    [-1, 1, 2, 3, 4, 5, 6, 7, 8],
+    [-1, 1, 2, 3, 4, 5, 6, 7],
+    [-1, 1, 2, 3, 4, 5, 6],
+    [-1, 1, 2, 3, 4, 5],
+    [-1, 1, 2, 3, 4],
+    [-1, 1, 2, 3],
+    [-1, 1, 2],
+    [-1, 1, 3],
+    [-1, 2, 3],
+    [-1, 3, 4],
+    [-1, 3, 5],
+    [-1, 3, 6],
+    [-1, 3, 7],
+    [-1, 3, 8],
+],
+)
+def test_quick_sort_int_sorted(items):
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5]
+    assert quick_sort(items) == [0, 1, 2, 3, 4]
+    assert quick_sort(items) == [0, 1, 2, 3]
+    assert quick_sort(items) == [0, 1, 2]
+    assert quick_sort(items) == [0, 1, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 3, 4, 5, 6, 7, 8, 9]
+    assert quick_sort(items) == [0, 1, 3, 4, 5, 6, 7, 8]
+    assert quick_sort(items) == [0, 1, 3, 4, 5, 6, 7]
+    assert quick_sort(items) == [0, 1, 3, 4, 5, 6]
+    assert quick_sort(items) == [0, 1, 3, 4, 5]
+    assert quick_sort(items) == [0, 1, 3, 4]
+    assert quick_sort(items) == [0, 1, 3]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert quick_sort(items) == [0, 1, 2, 3, 4

@@ -69,3 +69,10 @@ def dependency_paths(path: str, dependencies: list[str], repo: str):
 def count_tokens(text: str):
     """Count the number of tokens in a string."""
     return len(gpt2_tokenizer.encode(text))
+    
+price_per_token = {
+    "davinci": 0.03,
+    "curie": 0.03,
+    "babbage": 0.0006,
+    "ada": 0.0004,
+}

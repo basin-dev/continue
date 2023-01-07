@@ -19,52 +19,67 @@ class RGB:
     def __sub__(self, other):
         return RGB(max(0, self.red - other.red), max(0, self.green - other.green), max(0, self.blue - other.blue))
 
-
 import pytest
+from unittest.mock import Mock
 
-from bicolor import RGB
-from .test_support import assert_red, assert_green, assert_blue
+from colours import RGB
 
-    def test_red():
-        assert_red(RGB("0", 0, 0))
+pytestmark = pytest.mark.colour
 
-    def test_green():
-        assert_green(RGB("0", 0, 0))
 
-    def test_blue():
-        assert_blue(RGB("0", 0, 0))
+def test_str_str(mock_str):
+    assert mock_str("red") == "red"
+    assert mock_str("green") == "green"
+    assert mock_str("blue") == "blue"
+    with pytest.raises(TypeError):
+        mock_str("foo")
 
-    def test_all():
-        assert_red(RGB("255", 255, 0))
-        assert_green(RGB("255", 255, 0))
-        assert_blue(RGB("255", 255, 0))
 
-    def test_invalid():
-        assert_red(RGB("1", 1, 1))
-        assert_green(RGB("1", 1, 1))
-        assert_blue(RGB("1", 1, 1))
+def test_str_eq(mock_str, str_str):
+    assert mock_str("red") == str_str("red")
+    assert mock_str("green") == str_str("green")
+    assert mock_str("blue") == str_str("blue")
 
-    def test_invalid_str():
-        assert_red(str("")["0"])
-        assert_green(str("")["0"])
-        assert_blue(str("")["0"])
 
-    def test_invalid_repr():
-        assert_red(RGB("")).repr()
-        assert_green(RGB("")).repr()
-        assert_blue(RGB("")).repr()
+def test_str_eq_eq(mock_str, eq_str):
+    assert mock_str("red") == eq_str("red")
+    assert mock_str("green") == eq_str("green")
+    assert mock_str("blue") == eq_str("blue")
 
-    def test_invalid_eq():
-        assert_red(RGB("1", 1, 1) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0))
-        assert_green(RGB("1", 1, 1) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("255", 255, 255))
-        assert_blue(RGB("1", 1, 1) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 255, 255) + RGB("0", 0, 0))
 
-    def test_invalid_add():
-        assert_red(RGB("1", 1, 1) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0))
-        assert_green(RGB("1", 1, 1) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("255", 255, 255))
-        assert_blue(RGB("1", 1, 1) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 255) + RGB("0", 0, 0) + RGB("0", 255, 255))
+def test_mock_str_str(mock_str):
+    with pytest.raises(AttributeError):
+        assert mock_str()
 
-    def test_invalid_sub():
-        assert_red(RGB("1", 1, 1) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0))
-        assert_green(RGB("1", 1, 1) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 255, 255))
-        assert_blue(RGB("1", 1, 1) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 255, 255) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0) + RGB("0", 0, 0
+    with pytest.raises(TypeError):
+            mock_str("foo")
+
+
+def test_mock_str_eq(mock_str):
+    assert mock_str() == "red"
+    assert mock_str() == "green"
+    assert mock_str() == "blue"
+
+
+def test_mock_str_eq_eq(mock_str):
+    assert mock_str() == eq_str("red")
+    assert mock_str() == eq_str("green")
+    assert mock_str() == eq_str("blue")
+
+
+def test_eq_str(mock_str):
+    assert mock_str == "red"
+    assert mock_str == "green"
+    assert mock_str == "blue"
+
+
+def test_eq_eq(mock_str):
+    assert mock_str == eq_str("red")
+    assert mock_str == eq_str("green")
+    assert mock_str == eq_str("blue")
+
+
+def test_mock_str_eq_eq(mock_str):
+    assert mock_str == eq_str("red")
+    assert mock_str == eq_str("green")
+    assert mock_str == eq_str("blue")

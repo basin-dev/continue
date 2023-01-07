@@ -1,14 +1,16 @@
 import os
 from llm import OpenAI, LLM, HuggingFace
+from parse import compile_prompt as c_p
 
 ## UTILITIES ##
-tuned_model = "curie:ft-personal-2023-01-03-05-09-08"
+tuned_model = "davinci:ft-personal:pytest-davinci-1-2023-01-04-23-41-34"
 
 # Previously fine-tuned models
 # davinci:ft-personal-2022-12-15-19-12-04
 # curie:ft-personal-2023-01-01-18-44-14
 # Accidentally trained on only the handwritten code I wanted to test: curie:ft-personal-2023-01-02-18-42-04
 # Latest Curie (after getting 243 examples of pytest): curie:ft-personal-2023-01-03-05-09-08
+# $30 Davinci: davinci:ft-personal:pytest-davinci-1-2023-01-04-23-41-34
 
 def whole_code_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""
@@ -24,9 +26,7 @@ def whole_code_prompt2(unit_test_framework: str, code_to_test: str) -> str:
 
 def whole_code_prompt3(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""
-    return f"""{code_to_test}
-
-# Unit tests for the above code using {unit_test_framework}. Make sure they are concise and complete."""
+    return f"""{code_to_test}\n\n### Unit tests for the above files using {unit_test_framework}. Make sure they are concise and complete. ###\n\n"""
 
 def single_function_prompt(unit_test_framework: str, code_to_test: str) -> str:
     """Return the prompt for the unit test."""
@@ -89,17 +89,20 @@ if __name__ == "__main__":
 
     llm = OpenAI(engine=tuned_model)
     prompts = []
-    file_names = os.listdir("code")
+    directory = "dlt_code"
+    file_names = os.listdir(directory)
     for file_name in file_names:
-        code_to_test = open("code/" + file_name, "r").read()
-        prompts.append(whole_code_prompt3("pytest", code_to_test))
+        code_to_test = open(directory + "/" + file_name, "r").read()
+        compressed = c_p(code_to_test, file_name)
 
-    completions = llm.parallel_complete(prompts, max_tokens=1024)
+        prompts.append(compressed)
+
+    completions = llm.parallel_complete(prompts, max_tokens=1024, stop=["<|endoftext|>"])
     
     for i in range(len(file_names)):
         file_name = file_names[i]
         completion = completions[i]
-        code_to_test = open("code/" + file_name, "r").read()
+        code_to_test = open(directory + "/" + file_name, "r").read()
         write_to_file(code_to_test, completion, "tests/" + file_name)
 
     # Flow with Salesforce Codegen

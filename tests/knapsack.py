@@ -1,3 +1,5 @@
+import pytest
+
 def solve_knapsack_problem(items, capacity):
     # sort the items by value
     items = sorted(items, key=lambda x: x.value, reverse=True)
@@ -21,12 +23,25 @@ def solve_knapsack_problem(items, capacity):
         i -= 1
     return selected
 
+@pytest.mark.parametrize(
+    "items,capacity",
+    [
+        pytest.param(get_random_values("item_list", 3), 1),
+        pytest.param(get_random_values("item_list", 5, 10), 10),
+        pytest.param(get_random_values("item_list", 8, 12, 15, 20), 12),
+    ],
+)
+def test_solve_knapsack_problem(items, capacity):
+    assert solve_knapsack_problem(items, capacity) == items
 
-# We use the following convention for imports:
-#    from knapsack import solve_knapsack_problem
 
-
-def test_solve_knapsack_problem():
-    items = [[1, 2, 3],
-                                                                                                                                                                                                                                                                                                                                                                          ]
-    assert len(solve_knapsack_problem(items, 10)) == 10
+@pytest.mark.parametrize(
+    "items,capacity",
+    [
+        pytest.param(get_random_values("item_list", 3, 5), 5),
+        pytest.param(get_random_values("item_list", 8), 10),
+    ],
+)
+def test_solve_knapsack_problem_bad_item_count(items, capacity):
+    with pytest.raises(SystemExit):
+        solve_knapsack_problem(items, capacity)
