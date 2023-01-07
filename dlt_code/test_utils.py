@@ -1,5 +1,5 @@
 import pytest
-from ..dlt_code.utils import *
+from utils import *
 
 @pytest.mark.parametrize("seq, n, expected_chunks", [
     ((1,2,3,4,5,6,7,8), 2, [(1,2), (3,4), (5,6), (7,8)]),
