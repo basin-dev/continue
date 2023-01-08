@@ -1,25 +1,14 @@
-import openai
-from dotenv import load_dotenv
 import os
 import ast
 import docstring_parser
 import typer
+from llm import OpenAI
 
 app = typer.Typer()
+gpt = OpenAI()
 
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai.api_key = OPENAI_API_KEY
 CURIE_FINE_TUNE = "curie:ft-personal-2023-01-03-17-34-19"
 DAVINCI_FINE_TUNE = "davinci:ft-personal:docstring-completions-davinci-1-2023-01-03-18-02-05"
-
-def complete(prompt: str, **kwargs):
-    """Complete a prompt using OpenAI's API"""
-    defaults = { "engine": "text-davinci-003", "max_tokens": 100, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 }
-    return openai.Completion.create(
-        prompt=prompt,
-        **(defaults | kwargs)
-    ).choices[0].text
 
 def write_ds_for_fn(fn: ast.FunctionDef, format: docstring_parser.DocstringStyle=docstring_parser.DocstringStyle.GOOGLE):
     """Write a docstring for a function"""
@@ -29,7 +18,7 @@ def write_ds_for_fn(fn: ast.FunctionDef, format: docstring_parser.DocstringStyle
         return None
     
     prompt = ast.unparse(fn) + "\n\n###\n\n" # + "\n\nWrite a docstring for the above function:\n\n"
-    completion = complete(prompt, engine="davinci:ft-personal:docstring-completions-davinci-1-2023-01-03-18-02-05", stop=["END"]).strip() # .replace('"""', '').strip() # Remove leading/trailing newline
+    completion = gpt.complete(prompt, model="davinci:ft-personal:docstring-completions-davinci-1-2023-01-03-18-02-05", stop=["END"]).strip() # .replace('"""', '').strip() # Remove leading/trailing newline
 
     # Convert to Docstring, and render back in the desired format, padding with necessary newlines, quotes, and indentation
     ds = docstring_parser.parse(completion)
@@ -45,7 +34,7 @@ def write_ds_for_class(cls: ast.ClassDef, format: docstring_parser.DocstringStyl
     
     # Generate a summary of the class as a whole
     prompt = ast.unparse(cls) + "\n\n###\n\nWrite a summary of the above class:" # + "\n\nWrite a docstring for the above class:\n\n"
-    summary = complete(prompt, engine="davinci:ft-personal:docstring-completions-davinci-1-2023-01-03-18-02-05", stop=["END"]).strip() # .replace('"""', '').strip() # Remove leading/trailing newline
+    summary = gpt.complete(prompt, model="davinci:ft-personal:docstring-completions-davinci-1-2023-01-03-18-02-05", stop=["END"]).strip() # .replace('"""', '').strip() # Remove leading/trailing newline
 
     # Generate the rest of the docstring, because it is just based on functions and attributes
     methods = list(filter(lambda x: isinstance(x, ast.FunctionDef) or isinstance(x, ast.AsyncFunctionDef), cls.body))

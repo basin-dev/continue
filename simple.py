@@ -1,11 +1,8 @@
 import ast
 import os
-import openai
-import os
-from dotenv import load_dotenv
+from llm import OpenAI
 
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+gpt = OpenAI()
 
 def get_code(file_path: str):
     """Get the code for all functions and class methods in the file."""
@@ -53,15 +50,15 @@ def generate_function_unit_tests(dir_code, out_dir="./generated_tests"):
 
 # Write multiple Python unit tests using the pytest library for the above function, using parameterizations and doing a proper partitioning of the input space:"""
 
-            response = openai.Completion.create(
-                engine="text-davinci-003",
-                prompt=prompt,
+            response = gpt.complete(
+                prompt,
+                model="text-davinci-003",
                 temperature=0.7,
                 max_tokens=512,
                 top_p=1,
                 frequency_penalty=0,
                 presence_penalty=0
-            )['choices'][0]['text']
+            )
 
             with open(f'{out_dir}/test_{file["name"]}', 'a') as output:
                 output.write(response.replace("import pytest\n", "").strip() + "\n\n")
@@ -73,15 +70,15 @@ def generate_function_unit_tests(dir_code, out_dir="./generated_tests"):
 {method}
 
 # Write multiple Python unit tests using the pytest library for the above class and its {method.name} method, using fixtures and parameterizations and doing a proper partitioning of the input space:"""
-                response = openai.Completion.create(
-                    engine="text-davinci-003",
-                    prompt=prompt,
+                response = gpt.complete(
+                    prompt,
+                    model="text-davinci-003",
                     temperature=0.7,
                     max_tokens=512,
                     top_p=1,
                     frequency_penalty=0,
                     presence_penalty=0
-                )['choices'][0]['text']
+                )
 
                 with open(f'{out_dir}/test_{file["name"]}', 'a') as output:
                     output.write(response.replace("import pytest\n", "").strip() + "\n\n")
