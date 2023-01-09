@@ -1,3 +1,8 @@
+# This file contains prompts to use for generating pytests
+# Other ideas:
+# Purposefully clean up anything that was created during the test (this can be done deterministically at least for files)
+# Edit mode on fixtures or however you make a mock class in pytest
+
 import ast
 
 # Helpers

@@ -98,13 +98,13 @@ def validate_test_runs(code: str):
     finally:
         os.remove("__temp__.py")
 
-def validate_tests(tests: List[str], log=False):
-    """Validate a list of tests, displaying passing rates."""
+def validate_tests(tests: List[str], log=False) -> List[str]:
+    """Validate a list of tests, displaying passing rates, and returning the passing tests."""
 
     no_parse = []
     no_run = []
     no_pass = []
-    passed = 0
+    passed = []
     for test in tests:
         if not validate_test_parses(test):
             no_parse.append(test)
@@ -114,12 +114,12 @@ def validate_tests(tests: List[str], log=False):
             if not passes:
                 no_pass.append(test)
             else:
-                passed += 1
+                passed.append(test)
         except:
             no_run.append(test)
     
     print("Total tests:", len(tests))
-    print("Passing Tests:", passed)
+    print("Passing Tests:", len(passed))
     print("Failed to parse:", len(no_parse))
     print("Failed to run:", len(no_run))
     print("Did not pass:", len(no_pass))
@@ -131,7 +131,14 @@ def validate_tests(tests: List[str], log=False):
                 "no_run": no_run,
                 "no_pass": no_pass,
             }, f)
+    
+    return passed
         
+def fuzz_test(code: str, test: str):
+    with open("__temp__.py", "w") as f:
+        f.write(code)
+    write_tests_to_file([test], "__test_temp__.py")
+    
 
 def generate_function_unit_tests(dir_code, out_dir="./generated_tests"):
     """Generate unit tests for all functions in the code directory."""
@@ -149,12 +156,13 @@ def generate_function_unit_tests(dir_code, out_dir="./generated_tests"):
                 cls_prompts.append(prompt)
 
         responses += gpt.parallel_complete(cls_prompts)
-        
-        validate_tests(responses, log=True)
-        write_tests_to_file(responses, f'{out_dir}/test_{file["name"]}')
+
+        # Validate so as to only write parsing, running, and passing tests
+        passed = validate_tests(responses, log=True)
+        write_tests_to_file(passed, f'{out_dir}/test_{file["name"]}')
 
 if __name__ == "__main__":
     """Get the code for all functions and class methods in the code directory."""
     dir = "./dlt_code"
     dir_code = iterate_files(dir)
-    generate_function_unit_tests(dir_code, out_dir="./dlt_code/tests")
+    generate_function_unit_tests(dir_code, out_dir=dir + "/tests")
