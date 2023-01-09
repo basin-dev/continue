@@ -139,15 +139,7 @@ def generate_function_unit_tests(dir_code, out_dir="./generated_tests"):
         
         # Write all function tests
         fn_prompts = [prompts.fn_1(fn_code) for fn_code in file['functions']]
-
-        responses = gpt.parallel_complete(fn_prompts,
-                model="text-davinci-003",
-                temperature=0.7,
-                max_tokens=512,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0)
-
+        responses = gpt.parallel_complete(fn_prompts)
 
         # Write all class tests
         cls_prompts = []
@@ -156,13 +148,7 @@ def generate_function_unit_tests(dir_code, out_dir="./generated_tests"):
                 prompt = prompts.cls_1(cls['name'], cls['init'], method)
                 cls_prompts.append(prompt)
 
-        responses += gpt.parallel_complete(cls_prompts,
-                model="text-davinci-003",
-                temperature=0.7,
-                max_tokens=512,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0)
+        responses += gpt.parallel_complete(cls_prompts)
         
         validate_tests(responses, log=True)
         write_tests_to_file(responses, f'{out_dir}/test_{file["name"]}')
