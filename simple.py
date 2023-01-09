@@ -1,6 +1,10 @@
 import ast
 import os
+from typing import List
 from llm import OpenAI
+import pytest
+import json
+import prompts
 
 gpt = OpenAI()
 
@@ -41,16 +45,100 @@ def iterate_files(dir: str):
     
     return dir_code
 
+def write_tests_to_file(tests: List[str], path: str):
+    """Write the tests to the file."""
+
+    # Preliminary write, test by test
+    with open(path, 'a') as output:
+        for test in tests:
+            output.write(test.strip() + "\n\n")
+        
+    # Capture all imports to deduplicate and move to top
+    with open(path, 'r') as output:
+        new_lines = []
+        imports = set(["import pytest"])
+        for line in output.readlines():
+            if line.startswith("import") or line.startswith("from"):
+                imports.add(line)
+            else:
+                new_lines.append(line)
+
+    # Write everything to file
+    file_name = path.split("/")[-1]
+    with open(path, "w") as output:
+        output.write("# Generated test file for " + file_name)
+        output.writelines(imports)
+        output.write(f"from ..{file_name.split('.')[0]} import *")
+        output.write("\n\n")
+        output.writelines(new_lines)
+
+
+def validate_test_parses(code: str):
+    """Validate that the code is a valid test."""
+    try:
+        ast.parse(code)
+    except SyntaxError:
+        return False
+
+    return True
+
+def validate_test_runs(code: str):
+    """Validate that the code runs, and if so check if it passed."""
+
+    write_tests_to_file([code], "__temp__.py")
+
+    try:
+        res = pytest.main(["__temp__.py"])
+        if res == 0:
+            return True
+        else:
+            return False
+    except Exception:
+        raise Exception("Pytest failed to run")
+    finally:
+        os.remove("__temp__.py")
+
+def validate_tests(tests: List[str], log=False):
+    """Validate a list of tests, displaying passing rates."""
+
+    no_parse = []
+    no_run = []
+    no_pass = []
+    passed = 0
+    for test in tests:
+        if not validate_test_parses(test):
+            no_parse.append(test)
+            continue
+        try:
+            passes = validate_test_runs(test)
+            if not passes:
+                no_pass.append(test)
+            else:
+                passed += 1
+        except:
+            no_run.append(test)
+    
+    print("Total tests:", len(tests))
+    print("Passing Tests:", passed)
+    print("Failed to parse:", len(no_parse))
+    print("Failed to run:", len(no_run))
+    print("Did not pass:", len(no_pass))
+
+    if log:
+        with open("test_log.json", "w") as f:
+            json.dump({
+                "no_parse": no_parse,
+                "no_run": no_run,
+                "no_pass": no_pass,
+            }, f)
+        
+
 def generate_function_unit_tests(dir_code, out_dir="./generated_tests"):
     """Generate unit tests for all functions in the code directory."""
     for file in dir_code:
-        file_name = f'{out_dir}/test_{file["name"]}'
         
         # Write all function tests
-        fn_prompts = [f"""{function}
-
-# Write multiple Python unit tests using the pytest library for the above function, using parameterizations and doing a proper partitioning of the input space:"""
-            for function in file['functions']]
+        fn_prompts = [prompts.fn_1(fn_code) for fn_code in file['functions']]
 
         responses = gpt.parallel_complete(fn_prompts,
                 model="text-davinci-003",
@@ -59,51 +147,25 @@ def generate_function_unit_tests(dir_code, out_dir="./generated_tests"):
                 top_p=1,
                 frequency_penalty=0,
                 presence_penalty=0)
-        
-        with open(file_name, 'a') as output:
-            for response in responses:
-                output.write(response.strip() + "\n\n")
 
 
         # Write all class tests
         cls_prompts = []
         for cls in file['classes']:
             for method in cls['methods']:
-                prompt = f"""class {cls['name']}:
-{cls['init']}
-{method}
-
-# Write multiple Python unit tests using the pytest library for the above class and its {method.split("def ")[1].split("(")[0]} method, using fixtures and parameterizations and doing a proper partitioning of the input space:"""
+                prompt = prompts.cls_1(cls['name'], cls['init'], method)
                 cls_prompts.append(prompt)
 
-        responses = gpt.parallel_complete(cls_prompts,
+        responses += gpt.parallel_complete(cls_prompts,
                 model="text-davinci-003",
                 temperature=0.7,
                 max_tokens=512,
                 top_p=1,
                 frequency_penalty=0,
                 presence_penalty=0)
-
-        with open(file_name, 'a') as output:
-            for response in responses:
-                output.write(response.strip() + "\n\n")
-
-        # Move all imports to the top
-        with open(file_name, 'r') as output:
-            new_lines = []
-            imports = set()
-            for line in output.readlines():
-                if line.startswith("import") or line.startswith("from"):
-                    imports.add(line)
-                else:
-                    new_lines.append(line)
-
-        with open(file_name, "w") as output:
-            output.write("# Generated test file for " + file['name'])
-            output.writelines(imports)
-            output.write(f"from ..{file['name'].split('.')[0]} import *")
-            output.write("\n\n")
-            output.writelines(new_lines)
+        
+        validate_tests(responses, log=True)
+        write_tests_to_file(responses, f'{out_dir}/test_{file["name"]}')
 
 if __name__ == "__main__":
     """Get the code for all functions and class methods in the code directory."""
