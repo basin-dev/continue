@@ -1,18 +1,13 @@
 import ast
 import os
 from typing import Any, Dict, List
-from llm import OpenAI
+from llm import OpenAI, count_tokens
 import pytest
 import json
 import prompts
-import subprocess
-from transformers import GPT2TokenizerFast
+from pytest_parse import get_test_statuses
 
-gpt2_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
 gpt = OpenAI()
-
-def count_tokens(text: str) -> int:
-    return len(gpt2_tokenizer.encode(text))
 
 def get_code(file_path: str):
     """Get the code for all functions and class methods in the file."""
@@ -110,66 +105,6 @@ def validate_test_runs(test: str, file_path: str):
     finally:
         # os.remove(test_file_path)
         pass
-
-def parse_collection_tree(test_file_path: str) -> Any:
-    """Converts the pytest collection tree into a dictionary representing the tree. For example:
-    <Module CWD/pythoncollection.py>
-        <Function test_function>
-        <Class TestClass>
-            <Function test_method>
-            <Function test_anothermethod>
-
-    converts to {"Module CWD/pythoncollection.py": {"Function test_function": {}, "Class TestClass": {"Function test_method": {}, "Function test_anothermethod": {}}}
-    
-    See here: https://docs.pytest.org/en/7.1.x/example/pythoncollection.html#finding-out-what-is-collected
-    """
-    proc = subprocess.run(["pytest", test_file_path, "--collect-only"], capture_output=True)
-    stdout = proc.stdout.decode("utf-8")
-
-    root = {}
-    path = [root]
-    tab_size = 2
-    current_indentation = -2
-    for line in stdout.splitlines():
-        if line.strip().startswith("<"):
-            indentation = len(line.split("<")[0])
-            node_key = line.strip()[1:-1] # Get rid of spaces and <>
-            if indentation == current_indentation + tab_size:
-                # Child of previous
-                path[-1][node_key] = {}
-                path.append(path[-1][node_key])
-            elif indentation == current_indentation:
-                # Same level, add to parent (-2 is parent, set this node as last in path instead of path[-1])
-                path[-2][node_key] = {}
-                path[-1] = path[-2][node_key]
-            elif indentation < current_indentation:
-                levels_up = (current_indentation - indentation) // tab_size
-                for _ in range(levels_up):
-                    path.pop()
-                path[-2][node_key] = {}
-            else:
-                raise IndentationError("Invalid indentation in pytest collection tree")
-            
-            current_indentation = indentation
-    
-    return root
-
-def get_test_fns(tree: str) -> List[str]:
-    """Get all test functions in the file, assuming a single file."""
-    test_fns = []
-    for line in tree.splitlines():
-        if line.strip().startswith("<Function"):
-            test_fns.append(line.strip()[1:-1])
-    return test_fns
-
-def get_test_statuses(test_file_path: str) -> str:
-    """Parse the test status from the pytest output. Assumes only one test is run."""
-    stdout = subprocess.run(["pytest", test_file_path, "--tb=no"], capture_output=True).stdout.decode("utf-8")
-    lines = list(filter(lambda x: x.endswith("%]"), stdout.splitlines()))
-    if len(lines) != 1:
-        raise Exception("Wrong number of tests found")
-    
-    return lines[0].split()[1]
 
 def throw_away_bad_tests(test: str, code_path: str) -> str | None:
     test_file_path = write_tests_to_file([test], code_path, temp=True)
@@ -299,8 +234,11 @@ def generate_function_unit_tests(dir_code, code_dir):
 
         # Validate so as to only write parsing, running, and passing tests
         code_path = os.path.join(code_dir, file['name'])
-        validate_tests(responses, code_path) # Just to print the stats
+        passed = validate_tests(responses, code_path) # Just to print the stats
+        print("All: ", len(responses))
+        print("Passed: ", len(passed))
         pruned_tests = [throw_away_bad_tests(response, code_path) for response in responses] # This actually prunes non-working tests
+        print("Pruned: ", len(pruned_tests))
         write_tests_to_file(pruned_tests, code_path)
 
 if __name__ == "__main__":

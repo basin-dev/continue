@@ -5,10 +5,43 @@ import os
 from dotenv import load_dotenv
 import aiohttp
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import GPT2TokenizerFast
 
 load_dotenv()
 api_key = os.environ.get("OPENAI_API_KEY")
 openai.api_key = api_key
+
+gpt2_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+def count_tokens(text: str) -> int:
+    return len(gpt2_tokenizer.encode(text))
+
+prices = {
+    # All prices are per 1k tokens
+    "fine-tune-train": {
+        "davinci": 0.03,
+        "curie": 0.03,
+        "babbage": 0.0006,
+        "ada": 0.0004,
+    },
+    "completion": {
+        "davinci": 0.02,
+        "curie": 0.002,
+        "babbage": 0.0005,
+        "ada": 0.0004,
+    },
+    "fine-tune-completion": {
+        "davinci": 0.12,
+        "curie": 0.012,
+        "babbage": 0.0024,
+        "ada": 0.0016,
+    },
+    "embedding": {
+        "ada": 0.0004
+    }
+}
+
+def get_price(text: str, model: str="davinci", task: str="completion") -> float:
+    return count_tokens(text) * prices[task][model] / 1000
 
 class LLM:
     def complete(self, prompt: str, **kwargs):
@@ -32,7 +65,11 @@ class HuggingFace(LLM):
         return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
 
 class OpenAI(LLM):
+    completion_count: int = 0
+
     def complete(self, prompt: str, **kwargs):
+        self.completion_count += 1
+        print("Completion count:", self.completion_count)
         args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
         return openai.Completion.create(
             prompt=prompt,
@@ -40,6 +77,8 @@ class OpenAI(LLM):
         ).choices[0].text
 
     def parallel_complete(self, prompts: list[str], suffixes: list[str]| None=None, **kwargs) -> list[str]:
+        self.completion_count += len(prompts)
+        print("Completion count:", self.completion_count)
         args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 } | kwargs
         async def fn():
             async with aiohttp.ClientSession() as session:
