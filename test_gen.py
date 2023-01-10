@@ -92,45 +92,50 @@ def validate_test_parses(test: str, max_tokens=512):
     return True
 
 def validate_test_runs(test: str, file_path: str):
-    """Validate that the code runs, and if so check if it passed."""
+    """Validate that the code runs, and if so check if it passed.
+        True for pass, False for not pass, None for doesn't run."""
     test_file_path = write_tests_to_file([test], file_path, temp=True)
     try:
         res = pytest.main([test_file_path, "-qqq"])
-        if res == 0:
+
+        if res is pytest.ExitCode.OK:
             return True
-        else:
+        elif res is pytest.ExitCode.TESTS_FAILED:
             return False
+        else:
+            # One of: INTERNAL_ERROR, INTERRUPTED, NO_TESTS_COLLECTED, USAGE_ERROR
+            return None
     except Exception as e:
         raise Exception("Pytest failed to run")
     finally:
-        # os.remove(test_file_path)
-        pass
+        os.remove(test_file_path)
 
 def throw_away_bad_tests(test: str, code_path: str) -> str | None:
     test_file_path = write_tests_to_file([test], code_path, temp=True)
-    with open(test_file_path, "r").read() as f:
-        code = f.read()
-    os.remove(test_file_path)
+    with open(test_file_path, "r") as f:
+        test_code = f.read()
 
     statuses = pytest_parse.get_test_statuses(test_file_path)
     keep = [status == "." for status in statuses]
+    # os.remove(test_file_path)
 
-    tree = ast.parse(code)
+    tree = ast.parse(test_code)
     body = []
     i = 0
+    found_keeper = False
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
-            decorator = None
-            for dec in node.decorator_list:
-                if ast.unparse(dec).startswith("pytest.mark.parametrize"):
-                    decorator = dec
-                    break
+            if pytest_parse.find_decorator(node, "pytest.fixture") is not None:
+                # Fixtures aren't tests
+                body.append(node)
+                continue
             
-            if decorator:
+            if decorator := pytest_parse.find_decorator(node, "pytest.mark.parametrize"):
                 # Check parametrizations one-by-one
                 keepers = []
                 for el in decorator.args[1].elts:
                     if keep[i]:
+                        found_keeper = True
                         keepers.append(el)
                     i += 1
                 if len(keepers) == 0:
@@ -145,6 +150,7 @@ def throw_away_bad_tests(test: str, code_path: str) -> str | None:
                 # Keep or throw out the whole function
                 if keep[i]:
                     body.append(node)
+                    found_keeper = True
                     i += 1
 
         elif isinstance(node, ast.ClassDef):
@@ -156,6 +162,7 @@ def throw_away_bad_tests(test: str, code_path: str) -> str | None:
                     if keep[i]:
                         keepers.append(child)
                         kept_test = True
+                        found_keeper = True
 
                     i += 1
                 else:
@@ -168,48 +175,50 @@ def throw_away_bad_tests(test: str, code_path: str) -> str | None:
             else:
                 node.body = keepers
                 body.append(node)
+        
+        else:
+            # Keep everything that isn't a test
+            body.append(node)
     
-    if len(body) == 0:
+    if not found_keeper:
         return None
 
     return "\n\n".join([ast.unparse(node) for node in body])
 
-def validate_tests(tests: List[str], code_path: str, log=False) -> List[str]:
-    """Validate a list of tests, displaying passing rates, and returning the passing tests."""
+def screen_for_parse(tests: List[str]) -> List[str]:
+    """Screen for tests that parse."""
+    return [test for test in tests if validate_test_parses(test)]
 
-    no_parse = []
-    no_run = []
-    no_pass = []
+def screen_for_run_pass(tests: List[str], code_path: str) -> Tuple[List[str], List[str]]:
+    """Screen for tests that run or pass."""
+    ran = []
     passed = []
     for test in tests:
-        if not validate_test_parses(test):
-            no_parse.append(test)
-            continue
-
         try:
             passes = validate_test_runs(test, code_path)
-            if not passes:
-                no_pass.append(test)
-            else:
+            if passes:
                 passed.append(test)
+                ran.append(test)
+            else:
+                ran.append(test)
         except Exception as e:
-            no_run.append(test)
+            # print("Failed to run test: " + e)
+            continue
+
+    return ran, passed
+
+def get_running_tests(tests: List[str], code_path: str) -> List[str]:
+    """Validate a list of tests, displaying passing rates, and returning the running tests."""
+
+    keepers = screen_for_parse(tests)
+    ran, passed = screen_for_run_pass(keepers, code_path)
     
     print("Total tests:", len(tests))
-    print("Passing Tests:", len(passed))
-    print("Failed to parse:", len(no_parse))
-    print("Failed to run:", len(no_run))
-    print("Did not pass:", len(no_pass))
-
-    if log:
-        with open("test_log.json", "w") as f:
-            json.dump({
-                "no_parse": no_parse,
-                "no_run": no_run,
-                "no_pass": no_pass,
-            }, f)
+    print("Parsed: ", len(keepers))
+    print("Ran: ", len(ran))
+    print("Passed: ", len(passed))
     
-    return passed
+    return ran
         
 def fuzz_test(code: str, test: str):
     with open("__temp__.py", "w") as f:
@@ -255,10 +264,8 @@ def generate_function_unit_tests(dir_code, code_dir):
 
         # Validate so as to only write parsing, running, and passing tests
         code_path = os.path.join(code_dir, file['name'])
-        passed = validate_tests(responses, code_path) # Just to print the stats
-        print("All: ", len(responses))
-        print("Passed: ", len(passed))
-        pruned_tests = [throw_away_bad_tests(response, code_path) for response in responses] # This actually prunes non-working tests
+        responses = get_running_tests(responses, code_path)
+        pruned_tests = list(filter(lambda x: x is not None, [throw_away_bad_tests(response, code_path) for response in responses])) # This actually prunes non-working tests
         print("Pruned: ", len(pruned_tests))
         write_tests_to_file(pruned_tests, code_path)
 

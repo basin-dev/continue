@@ -60,9 +60,12 @@ def get_test_statuses(test_file_path: str) -> str:
     stdout = subprocess.run(["pytest", test_file_path, "--tb=no"], capture_output=True).stdout.decode("utf-8")
     lines = list(filter(lambda x: x.endswith("%]"), stdout.splitlines()))
     if len(lines) != 1:
-        raise Exception("Wrong number of tests found")
+        print("stdout was:\n", stdout)
+        raise Exception("Wrong number of tests found. This probably indicates an error when running the test, see stdout above.")
     
-    return lines[0].split()[1]
+    statuses = lines[0].split()[1]
+    print(test_file_path, statuses)
+    return statuses
 
 def run_coverage(test_folder_path: str, module_path: str) -> Tuple[str, str]:
     """Run pytest with coverage and return the stdout and the path to the coverage.xml file"""
@@ -96,3 +99,9 @@ def uncovered_lines_for_ast(code_file_path: str, ast: ast.AST, uncovered_lines: 
         uncovered_lines_with_str.append((line_num, lines[line_num - 1])) # -1 because line numbers are 1-indexed
     
     return uncovered_lines_with_str
+
+def find_decorator(fn: ast.FunctionDef | ast.AsyncFunctionDef, decorator: str) -> ast.AST | None:
+    for dec in fn.decorator_list:
+        if ast.unparse(dec).startswith(decorator):
+            return dec
+    return None
