@@ -64,11 +64,12 @@ def get_test_statuses(test_file_path: str) -> str:
     
     return lines[0].split()[1]
 
-def run_coverage(test_folder_path: str, module_path: str) -> str:
+def run_coverage(test_folder_path: str, module_path: str) -> Tuple[str, str]:
+    """Run pytest with coverage and return the stdout and the path to the coverage.xml file"""
     stdout = pytest.main([test_folder_path, "--cov", module_path, "--cov-report", "xml", "--cov-report", "term-missing"], capture_output=True).stdout
-    return str(stdout)
+    return str(stdout), "coverage.xml"
 
-def parse_cov_xml(path: str) -> Tuple[set, set]:
+def parse_cov_xml(path: str, code_file_name: str) -> Tuple[set, set]:
     """Parse coverage.xml to determine which lines of which functions were covered and which not"""
     tree = ET.parse(path)
     root = tree.getroot()
@@ -76,6 +77,8 @@ def parse_cov_xml(path: str) -> Tuple[set, set]:
     covered_lines = set()
     uncovered_lines = set()
     for class_ in root.iter("class"):
+        if class_.attrib["filename"] != code_file_name:
+            continue
         if lines := class_.find("lines"):
             for line in lines.iter("line"):
                 num = int(line.attrib["number"])

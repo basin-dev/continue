@@ -1,11 +1,11 @@
 import ast
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 from llm import OpenAI, count_tokens
 import pytest
 import json
 import prompts
-from pytest_parse import get_test_statuses
+import pytest_parse
 
 gpt = OpenAI()
 
@@ -112,7 +112,7 @@ def throw_away_bad_tests(test: str, code_path: str) -> str | None:
         code = f.read()
     os.remove(test_file_path)
 
-    statuses = get_test_statuses(test_file_path)
+    statuses = pytest_parse.get_test_statuses(test_file_path)
     keep = [status == "." for status in statuses]
 
     tree = ast.parse(code)
@@ -216,6 +216,27 @@ def fuzz_test(code: str, test: str):
         f.write(code)
     write_tests_to_file([test], "__test_temp__.py")
     raise NotImplementedError # How to best create a safe environment for this... 
+
+def get_lines_to_retry_for_coverage(fn: ast.FunctionDef | ast.AsyncFunctionDef, code_file_path: str, test_file_path: str) -> List[Tuple[int, str]] | None:
+    """Check if the test should be retried for the given element to get more coverage. If so, return the lines that are uncovered and their contents."""
+    LINE_RATIO_REQ = 0.5
+    # BRANCH_RATIO_REQ = 0.0
+
+    code_dir, code_file = os.path.split(code_file_path)
+    test_dir, _ = os.path.split(test_file_path)
+    
+    # Generate and parse coverage.xml report
+    cov_file = pytest_parse.run_coverage(test_dir, code_dir)
+    _, uncovered_lines = pytest_parse.parse_cov_xml(cov_file, code_file)
+    os.remove(cov_file)
+
+    lines = pytest_parse.uncovered_lines_for_ast(code_file_path, fn, uncovered_lines)
+
+    total_lines = fn.end_lineno - fn.lineno + 1
+    if len(lines) / total_lines > LINE_RATIO_REQ:
+        return None
+    else:
+        return lines
 
 def generate_function_unit_tests(dir_code, code_dir):
     """Generate unit tests for all functions in the code directory."""
