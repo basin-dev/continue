@@ -1,4 +1,5 @@
 import asyncio
+from typing import Tuple
 import openai
 import os
 from dotenv import load_dotenv
@@ -32,23 +33,23 @@ class HuggingFace(LLM):
 
 class OpenAI(LLM):
     def complete(self, prompt: str, **kwargs):
-        args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 } | kwargs
+        args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
         return openai.Completion.create(
             prompt=prompt,
             **args,
         ).choices[0].text
 
-    def parallel_complete(self, prompts: list[str], **kwargs) -> list[str]:
+    def parallel_complete(self, prompts: list[str], suffixes: list[str]| None=None, **kwargs) -> list[str]:
         args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 } | kwargs
         async def fn():
             async with aiohttp.ClientSession() as session:
                 tasks = []
 
-                async def get(prompt):
+                async def get(prompt, suffix):
                     async with session.post("https://api.openai.com/v1/completions", headers={
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + api_key
-                    }, json={"model": args["model"], "prompt": prompt, "temperature": args["temperature"], "max_tokens": args["max_tokens"]}) as resp:
+                    }, json={"model": args["model"], "prompt": prompt, "temperature": args["temperature"], "max_tokens": args["max_tokens"], "suffix": suffix}) as resp:
                         json = await resp.json()
                         if "error" in json:
                             print("ERROR IN GPT-3 RESPONSE: ", json)
@@ -57,7 +58,7 @@ class OpenAI(LLM):
                         return json["choices"][0]["text"]
                 
                 for i in range(len(prompts)):
-                    tasks.append(asyncio.ensure_future(get(prompts[i])))
+                    tasks.append(asyncio.ensure_future(get(prompts[i], suffixes[i] if suffixes else None)))
                 
                 return await asyncio.gather(*tasks)
         
