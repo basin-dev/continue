@@ -1,6 +1,8 @@
 from typing import Any, List, Tuple
+import xml.etree.ElementTree as ET
 import subprocess
 import pytest
+import ast
 
 def parse_collection_tree(test_file_path: str) -> Any:
     """Converts the pytest collection tree into a dictionary representing the tree. For example:
@@ -62,7 +64,32 @@ def get_test_statuses(test_file_path: str) -> str:
     
     return lines[0].split()[1]
 
-def get_test_coverage(test_file_path: str, code_file_path: str):
-    res = pytest.main([test_file_path, "--cov", code_file_path])
-    res = pytest.main(["dlt_code/tests/test_small_utils.py", "--cov", "dlt_code/small_utils.py"])
-    proc = subprocess.run(["coverage", "run", f"--source={code_file_path}", "-m", "pytest", "-v", test_file_path, "&&", "coverage", "report", "-m"])
+def run_coverage(test_folder_path: str, module_path: str) -> str:
+    stdout = pytest.main([test_folder_path, "--cov", module_path, "--cov-report", "xml", "--cov-report", "term-missing"], capture_output=True).stdout
+    return str(stdout)
+
+def parse_cov_xml(path: str) -> Tuple[set, set]:
+    """Parse coverage.xml to determine which lines of which functions were covered and which not"""
+    tree = ET.parse(path)
+    root = tree.getroot()
+
+    covered_lines = set()
+    uncovered_lines = set()
+    for class_ in root.iter("class"):
+        if lines := class_.find("lines"):
+            for line in lines.iter("line"):
+                num = int(line.attrib["number"])
+                (covered_lines if line.attrib["hits"] != "0" else uncovered_lines).add(num)
+
+    return covered_lines, uncovered_lines
+
+def uncovered_lines_for_ast(code_file_path: str, ast: ast.AST, uncovered_lines: List[int]) -> List[Tuple[int, str]]:
+    """Given file and ast in question, enrich the uncovered lines within the ast with string representations of the line."""
+    with open(code_file_path, "r") as f:
+        lines = f.readlines()
+    
+    uncovered_lines_with_str = []
+    for line_num in range(ast.lineno, ast.end_lineno + 1):
+        uncovered_lines_with_str.append((line_num, lines[line_num - 1])) # -1 because line numbers are 1-indexed
+    
+    return uncovered_lines_with_str
