@@ -76,16 +76,21 @@ class OpenAI(LLM):
             **args,
         ).choices[0].text
 
-    def edit(self, input: str, instruction: str, **kwargs) -> str:
-        args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
-        return openai.Edit.create(
-            input=input,
-            instruction=instruction,
-            **args
-        ).choices[0].text
+    def edit(self, inp: str, instruction: str) -> str:
+        try:
+            resp = openai.Edit.create(
+                input=inp,
+                instruction=instruction,
+                model='text-davinci-edit-001'
+            ).choices[0].text
+            return resp
+        except Exception as e:
+            print("OpenAI error:", e)
+            raise e
 
     def parallel_edit(self, inputs: list[str], instructions: list[str] | str, **kwargs) -> list[str]:
-        args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
+        args = { "temperature": 0.5, "top_p": 1 } | kwargs
+        args['model'] = 'text-davinci-edit-001'
         async def fn():
             async with aiohttp.ClientSession() as session:
                 tasks = []

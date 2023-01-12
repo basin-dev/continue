@@ -30,22 +30,28 @@ def parse_frame(frame: Dict) -> ast.AST:
     
     return ast.parse(code)
 
-def get_context(frame: Dict) -> ast.AST:
-    """Get the surrounding context of a frame."""
+def is_valid_context(node: ast.AST, lineno: int) -> bool:
+    """Check if the node is a valid context for the line number."""
+    return (isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef)) and node.lineno <= int(lineno) <= node.end_lineno
+
+def edit_context_ast(frame: Dict, replacement: Callable[[str], str]) -> ast.AST | None:
+    """Get the surrounding context of a frame, and edit it, replacing the node in the AST and returning the updated version."""
     tree = parse_frame(frame)
-    lineno = frame['lineno']
+    lineno = int(frame['lineno'])
 
     # Get the most specific function node containing the line
-    best_node = None
-    best_dist = float("inf")
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.lineno <= int(lineno) <= node.end_lineno:
-            if node.end_lineno - node.lineno < best_dist:
-                best_dist = node.end_lineno - node.lineno
-                best_node = node
+    for parent in ast.walk(tree):
+        i = 0
+        for child in ast.iter_child_nodes(parent):
+            if is_valid_context(child, lineno):
+                if len(list(filter(lambda x: is_valid_context(x, lineno), child.body))) > 0:
+                    # More specific context can be found inthe body of this function
+                    continue
 
-    # assert best_node is not None, "No node found that matches lineno"
-    if best_node is None:
-        return tree
+                str_node = ast.unparse(child)
+                new_node = ast.parse(replacement(str_node))
+                parent.body[i] = new_node
+                return tree
+            i += 1
 
-    return best_node
+    return None
