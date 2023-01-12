@@ -23,7 +23,7 @@ def get_code(file_path: str):
             functions.append(ast.unparse(node))
 
         elif isinstance(node, ast.ClassDef):
-            classes.append({'name': node.name, 'methods': []})
+            classes.append({'name': node.name, 'methods': [], "node": node})
             for child in node.body:
                 if isinstance(child, ast.FunctionDef) and child.name == "__init__":
                     classes[-1]['init'] = ast.unparse(child)
@@ -110,12 +110,20 @@ def validate_test_runs(test: str, file_path: str):
     finally:
         os.remove(test_file_path)
 
-def throw_away_bad_tests(test: str, code_path: str) -> str | None:
+def throw_away_bad_tests(test: str | None, code_path: str) -> str | None:
+    if test is None:
+        return None
+
     test_file_path = write_tests_to_file([test], code_path, temp=True)
     with open(test_file_path, "r") as f:
         test_code = f.read()
 
-    statuses = pytest_parse.get_test_statuses(test_file_path)
+    try:
+        statuses = pytest_parse.get_test_statuses(test_file_path)
+    except:
+        # Probably an error in the test, nothing runs
+        return None
+
     keep = [status == "." for status in statuses]
     # os.remove(test_file_path)
 
@@ -187,7 +195,10 @@ def throw_away_bad_tests(test: str, code_path: str) -> str | None:
 
 def screen_for_parse(tests: List[str]) -> List[str]:
     """Screen for tests that parse."""
-    return [test for test in tests if validate_test_parses(test)]
+    return [
+        test if validate_test_parses(test)
+            else None
+        for test in tests]
 
 def screen_for_run_pass(tests: List[str], code_path: str) -> Tuple[List[str], List[str]]:
     """Screen for tests that run or pass."""
@@ -201,11 +212,16 @@ def screen_for_run_pass(tests: List[str], code_path: str) -> Tuple[List[str], Li
                 ran.append(test)
             else:
                 ran.append(test)
+                passed.append(None)
         except Exception as e:
             # print("Failed to run test: " + e)
-            continue
+            ran.append(None)
+            passed.append(None)
 
     return ran, passed
+
+def count_not_none(l: List) -> int:
+        return len([x for x in l if x is not None])
 
 def get_running_tests(tests: List[str], code_path: str) -> List[str]:
     """Validate a list of tests, displaying passing rates, and returning the running tests."""
@@ -213,10 +229,10 @@ def get_running_tests(tests: List[str], code_path: str) -> List[str]:
     keepers = screen_for_parse(tests)
     ran, passed = screen_for_run_pass(keepers, code_path)
     
-    print("Total tests:", len(tests))
-    print("Parsed: ", len(keepers))
-    print("Ran: ", len(ran))
-    print("Passed: ", len(passed))
+    print("Total tests:", count_not_none(tests))
+    print("Parsed: ", count_not_none(keepers))
+    print("Ran: ", count_not_none(ran))
+    print("Passed: ", count_not_none(passed))
     
     return ran
         
@@ -228,7 +244,7 @@ def fuzz_test(code: str, test: str):
 
 def get_lines_to_retry_for_coverage(fn: ast.FunctionDef | ast.AsyncFunctionDef, code_file_path: str, test_file_path: str) -> List[Tuple[int, str]] | None:
     """Check if the test should be retried for the given element to get more coverage. If so, return the lines that are uncovered and their contents."""
-    LINE_RATIO_REQ = 0.5
+    LINE_RATIO_REQ = 1.0
     # BRANCH_RATIO_REQ = 0.0
 
     code_dir, code_file = os.path.split(code_file_path)
@@ -242,7 +258,7 @@ def get_lines_to_retry_for_coverage(fn: ast.FunctionDef | ast.AsyncFunctionDef, 
     lines = pytest_parse.uncovered_lines_for_ast(code_file_path, fn, uncovered_lines)
 
     total_lines = fn.end_lineno - fn.lineno + 1
-    if len(lines) / total_lines > LINE_RATIO_REQ:
+    if len(lines) / total_lines >= LINE_RATIO_REQ:
         return None
     else:
         return lines
@@ -250,24 +266,85 @@ def get_lines_to_retry_for_coverage(fn: ast.FunctionDef | ast.AsyncFunctionDef, 
 def generate_function_unit_tests(dir_code, code_dir):
     """Generate unit tests for all functions in the code directory."""
     for file in dir_code:
+        code_path = os.path.join(code_dir, file['name'])
         
-        # Write all function tests
-        responses = prompts.SimplePrompter(prompts.general_1).parallel_complete(file['functions'])
+        # Specify your prompts
+        fn_prompter = prompts.BasicCommentPrompter("Write tests for the above code using pytest. Consider doing any of the following as needed: writing mocks, creating fixtures, using parameterization, setting up, and tearing down. All tests should pass:")
+        cls_prompter = prompts.SimplePrompter(lambda x: prompts.cls_1(x[0]['name'], x[0]['init'], x[1]))
+        prompter = prompts.MixedPrompter([fn_prompter, cls_prompter], lambda inp: 1 if isinstance(inp, list) and len(inp) == 2 else 0)
 
-        # Write all class tests
+        # Chunk into methods of the class, gather all inputs
         cls_inps = []
         for cls in file['classes']:
             for method in cls['methods']:
-                cls_inps.append([cls['name'], cls['init'], method])
+                cls_inps.append([cls, method])
+
+        all_inputs = file['functions'] + cls_inps
         
-        responses += prompts.SimplePrompter(lambda x: prompts.cls_1(x[0], x[1], x[2])).parallel_complete(cls_inps)
+        # Generate completions
+        tests = prompter.parallel_complete(all_inputs)
+
+        # Throughout this whole flow, we maintain a list of the same length, replacing elements with None instead of removing, in order to maintain order when retrying
 
         # Validate so as to only write parsing, running, and passing tests
-        code_path = os.path.join(code_dir, file['name'])
-        responses = get_running_tests(responses, code_path)
-        pruned_tests = list(filter(lambda x: x is not None, [throw_away_bad_tests(response, code_path) for response in responses])) # This actually prunes non-working tests
-        print("Pruned: ", len(pruned_tests))
-        write_tests_to_file(pruned_tests, code_path)
+        tests = get_running_tests(tests, code_path)
+        tests = [throw_away_bad_tests(test, code_path) for test in tests]
+        print("Pruned: ", count_not_none(tests))
+
+        # First, retry for passing
+        # Keep arrays of (index, test, input) for tests that need to be retried
+        retry_for_pass = []
+        for i, test in enumerate(tests):
+            inp = all_inputs[i]
+            if test is None:
+                retry_for_pass.append((i, test, inp))
+
+        rfp_inps = [el[2] for el in retry_for_pass]
+        rfp_tests = prompter.parallel_complete(rfp_inps)
+        rfp_tests = get_running_tests(rfp_tests, code_path)
+        rfp_tests = [throw_away_bad_tests(test, code_path) for test in rfp_tests]
+        for i, test in enumerate(rfp_tests):
+            if test is not None and tests[i] is None:
+                tests[i] = test
+
+        # Then, retry for coverage
+        retry_for_coverage = []
+        for i, test in enumerate(tests):
+            inp = all_inputs[i]
+            test_file_path = write_tests_to_file([test], code_path, temp=True)
+            lines = get_lines_to_retry_for_coverage(inp, code_path, test_file_path)
+            os.remove(test_file_path) # TODO: Make a testfile class where you can do a with statement for automatic cleanup
+            if lines is not None:
+                retry_for_coverage.append((i, test, inp, lines))
+
+        def cov_prompt_fn(inp: Tuple[Any, List[str]]) -> str:
+            """Prompt for retrying for coverage."""
+            inp, lines = inp
+            code = inp if type(inp) is str else prompts.cls_method_to_str(inp[0]['name'], inp[0]['init'], inp[1])
+            lines = "\n# ".join(lines)
+            return f"""{code}
+        
+# Write a python unit test for the above code using pytest, such that the following lines are covered:
+# {lines} 
+
+"""
+
+        coverage_prompter = prompts.SimplePrompter(cov_prompt_fn)
+        rfc_inps = [(el[2], el[3]) for el in retry_for_coverage]
+        rfc_tests = coverage_prompter.parallel_complete(rfc_inps)
+        rfc_tests = get_running_tests(rfc_tests, code_path)
+        rfc_tests = [throw_away_bad_tests(test, code_path) for test in rfc_tests]
+        for i, test in enumerate(rfc_tests):
+            if test is not None:
+                if tests[i] is None:
+                    # Replace None with the new test
+                    tests[i] = test
+                else:
+                    # Merge tests via concatenation
+                    tests[i] += "\n\n" + test
+
+        # Write all tests to file
+        write_tests_to_file(tests, code_path)
 
 if __name__ == "__main__":
     """Get the code for all functions and class methods in the code directory."""

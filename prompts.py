@@ -103,6 +103,21 @@ class Prompter:
         resps = self.llm.parallel_complete([prompt + prefix for prompt, prefix in zip(prompts, prefixes)], suffixes=suffixes)
         return [prefix + resp + (suffix or "") for prefix, resp, suffix in zip(prefixes, resps, suffixes)]
 
+# Note that this can be used hierarchically : )
+class MixedPrompter(Prompter):
+    def __init__(self, prompters: List[Prompter], router: Callable[[Any], int]):
+        super().__init__()
+        self.prompters = prompters
+        self.router = router
+    
+    def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
+        prompter = self.prompters[self.router(inp)]
+        return prompter._compile_prompt(inp)
+
+    def complete(self, inp: Any) -> str:
+        prompter = self.prompters[self.router(inp)]
+        return prompter.complete(inp)
+
 class SimplePrompter(Prompter):
     def __init__(self, prompt_fn: Callable[[Any], str]):
         super().__init__()
@@ -110,6 +125,12 @@ class SimplePrompter(Prompter):
 
     def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
         return self.prompt_fn(inp), "", None
+
+class BasicCommentPrompter(SimplePrompter):
+    def __init__(self, comment: str):
+        super().__init__(lambda inp: f"""{inp}
+
+# {comment}""")
 
 class InsertPrompter(Prompter):
     def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str, str]]):
@@ -147,7 +168,7 @@ fnInsertPrompter = InsertPrompter(_fn_insert_compiler)
 def general_1(code: str) -> str:
     return f"""{code}
 
-# Write tests for the above code using pytest. Consider doing any of the following as needed: writing mocks, creating fixtures, partitioning the input space, setting up, and tearing down:"""
+# Write tests for the above code using pytest. Consider doing any of the following as needed: writing mocks, creating fixtures, using parameterization, setting up, and tearing down. All tests should pass:"""
 
 def fn_1(fn_code: str) -> str:
     return f"""{fn_code}

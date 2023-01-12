@@ -1,7 +1,7 @@
 # Generated test file for utils.py
 
 import os
-from ..utils import *
+from ...utils import *
 from os import environ
 from unittest.mock import patch
 import base64

@@ -69,7 +69,7 @@ def get_test_statuses(test_file_path: str) -> str:
 
 def run_coverage(test_folder_path: str, module_path: str) -> Tuple[str, str]:
     """Run pytest with coverage and return the stdout and the path to the coverage.xml file"""
-    stdout = pytest.main([test_folder_path, "--cov", module_path, "--cov-report", "xml", "--cov-report", "term-missing"], capture_output=True).stdout
+    stdout = subprocess.run([test_folder_path, "--cov", module_path, "--cov-report", "xml", "--cov-report", "term-missing"], capture_output=True).stdout
     return str(stdout), "coverage.xml"
 
 def parse_cov_xml(path: str, code_file_name: str) -> Tuple[set, set]:
