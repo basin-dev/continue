@@ -132,6 +132,25 @@ class BasicCommentPrompter(SimplePrompter):
 
 # {comment}""")
 
+class EditPrompter(Prompter):
+    def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str]]):
+        super().__init__()
+        self.prompt_fn = prompt_fn
+    
+    def complete(self, inp: str, **kwargs) -> str:
+        inp, instruction = self.prompt_fn(inp)
+        return self.llm.edit(inp, instruction, **kwargs)
+
+    def parallel_complete(self, inps: List[Any]) -> List[str]:
+        prompts = []
+        instructions = []
+        for inp in inps:
+            prompt, instruction = self.prompt_fn(inp)
+            prompts.append(prompt)
+            instructions.append(instruction)
+        
+        return self.llm.parallel_edit(prompts, instructions)
+
 class InsertPrompter(Prompter):
     def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str, str]]):
         super().__init__()

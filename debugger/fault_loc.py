@@ -25,12 +25,12 @@ def fl1(tb: tbutils.ParsedException) -> Dict:
     return relevant[-1]
 
 def parse_frame(frame: Dict) -> ast.AST:
-    with open(frame['filename'], "r") as f:
+    with open(frame['filepath'], "r") as f:
         code = f.read()
     
     return ast.parse(code)
 
-def get_context(frame: Dict) -> str:
+def get_context(frame: Dict) -> ast.AST:
     """Get the surrounding context of a frame."""
     tree = parse_frame(frame)
     lineno = frame['lineno']
@@ -39,14 +39,13 @@ def get_context(frame: Dict) -> str:
     best_node = None
     best_dist = float("inf")
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.lineno <= lineno <= node.end_lineno:
+        if isinstance(node, ast.FunctionDef) and node.lineno <= int(lineno) <= node.end_lineno:
             if node.end_lineno - node.lineno < best_dist:
                 best_dist = node.end_lineno - node.lineno
                 best_node = node
 
-    assert best_node is not None, "No node found that matches lineno"
+    # assert best_node is not None, "No node found that matches lineno"
+    if best_node is None:
+        return tree
 
-    return ast.unparse(best_node)
-
-
-    
+    return best_node

@@ -67,7 +67,7 @@ class HuggingFace(LLM):
 class OpenAI(LLM):
     completion_count: int = 0
 
-    def complete(self, prompt: str, **kwargs):
+    def complete(self, prompt: str, **kwargs) -> str:
         self.completion_count += 1
         print("Completion count:", self.completion_count)
         args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
@@ -75,6 +75,38 @@ class OpenAI(LLM):
             prompt=prompt,
             **args,
         ).choices[0].text
+
+    def edit(self, input: str, instruction: str, **kwargs) -> str:
+        args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
+        return openai.Edit.create(
+            input=input,
+            instruction=instruction,
+            **args
+        ).choices[0].text
+
+    def parallel_edit(self, inputs: list[str], instructions: list[str] | str, **kwargs) -> list[str]:
+        args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
+        async def fn():
+            async with aiohttp.ClientSession() as session:
+                tasks = []
+
+                async def get(input, instruction):
+                    async with session.post("https://api.openai.com/v1/edits", headers={
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + api_key
+                    }, json={"model": args["model"], "input": input, "instruction": instruction, "temperature": args["temperature"], "max_tokens": args["max_tokens"], "suffix": args["suffix"]}) as resp:
+                        json = await resp.json()
+                        if "error" in json:
+                            print("ERROR IN GPT-3 RESPONSE: ", json)
+                            return None
+                        return json["choices"][0]["text"]
+
+                for i in range(len(inputs)):
+                    tasks.append(get(inputs[i], instructions[i] if isinstance(instructions, list) else instructions))
+                
+                return await asyncio.gather(*tasks)
+
+        return asyncio.run(fn())
 
     def parallel_complete(self, prompts: list[str], suffixes: list[str]| None=None, **kwargs) -> list[str]:
         self.completion_count += len(prompts)
@@ -92,7 +124,6 @@ class OpenAI(LLM):
                         json = await resp.json()
                         if "error" in json:
                             print("ERROR IN GPT-3 RESPONSE: ", json)
-                            # GPT-3 rate limit reached, just return no for now
                             return None
                         return json["choices"][0]["text"]
                 
