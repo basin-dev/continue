@@ -1,24 +1,34 @@
 import ast
 import openai
+import os
 
 TEST_PATH = "./dlt_code/tests/test.py"
 CODE_PATH = "./dlt_code/utils.py"
 
 NEXT_ACTION = '''Select next action....
 
-(G [Optional Instructions]) Generate a new test from scatch (with optional instructions)
-(E [Required Instructions]) Edit this generation based on instructions (open subprocess with vim???)
+(G) Generate a new test from scatch
 (N) Go to next function / class method
 (A) Accept this test and add it to the file
 
 Selection: '''
 
+def add_unit_test_to_file(unit_test):
+  
+  if not os.path.exists("./generated_tests"):
+      os.makedirs("./generated_tests")
+
+  file = CODE_PATH.split("/")[-1]
+
+  with open(f'''./generated_tests/test_{file}''', 'a') as output:
+      output.write(unit_test + "\n\n")
+
 def generate_unit_test(func):
-  print("Generated unit test:\n")
 
-  prompt = f"""{function}
+  prompt = f"""{func}
 
-  # Write multiple Python unit tests using the pytest library for the above function, using parameterizations and doing a proper partitioning of the input space:"""
+  # Write one Python unit test using the pytest library for the above function, using parameterizations and doing a proper partitioning of the input space:
+  """
 
   response = openai.Completion.create(
       engine="text-davinci-003",
@@ -30,13 +40,10 @@ def generate_unit_test(func):
       presence_penalty=0
   )
 
-  with open(f'''./generated_tests/test_{file["name"]}''', 'a') as output:
-      output.write(response['choices'][0]['text'] + "\n\n")
-
-  print("!!!! unit test !!!\n")
+  return response.choices[0].text
 
 def print_func(func):
-  print("Function / class method:\n")
+  print("\nCurrent function / class method:\n")
   print(func + "\n")
 
 def grab_funcs():
@@ -75,22 +82,25 @@ def repl():
   intro_prompt()
   funcs = grab_funcs()
   func_idx = 0
+  cur_unit_test = None
   while True:
+    print_func(funcs[func_idx])
     user_input = prompt_user()
     if user_input == "exit":
       break
     elif user_input.startswith("G"):
-      print("\nGenerate\n")
-      print_func(funcs[func_idx])
-      generate_unit_test(funcs[func_idx])
-    elif user_input.startswith("E"):
-      print("\nEdit\n")
+      cur_unit_test = generate_unit_test(funcs[func_idx])
+      print("Generated unit test:")
+      print(cur_unit_test)
     elif user_input == "N":
-      print("\nNext\n")
       func_idx += 1
       func_idx %= len(funcs)
     elif user_input == "A":
-      print("\nAccept\n")
+      if cur_unit_test is None:
+        print("\nNo unit test to add. Please generate one first.\n")
+      else:
+        add_unit_test_to_file(cur_unit_test)
+        print("\nAdded unit test to file.\n")
     else:
       print("\nInvalid input. Please try again!\n")
 
