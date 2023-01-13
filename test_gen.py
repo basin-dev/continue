@@ -251,7 +251,7 @@ def get_lines_to_retry_for_coverage(fn: ast.FunctionDef | ast.AsyncFunctionDef, 
     test_dir, _ = os.path.split(test_file_path)
     
     # Generate and parse coverage.xml report
-    cov_file = pytest_parse.run_coverage(test_dir, code_dir)
+    _, cov_file = pytest_parse.run_coverage(test_dir, code_dir)
     _, uncovered_lines = pytest_parse.parse_cov_xml(cov_file, code_file)
     os.remove(cov_file)
 
@@ -310,6 +310,9 @@ def generate_function_unit_tests(dir_code, code_dir):
         # Then, retry for coverage
         retry_for_coverage = []
         for i, test in enumerate(tests):
+            if test is None:
+                continue
+
             inp = all_inputs[i]
             test_file_path = write_tests_to_file([test], code_path, temp=True)
             lines = get_lines_to_retry_for_coverage(inp, code_path, test_file_path)

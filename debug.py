@@ -90,7 +90,7 @@ def python_run(filepath: str) -> str | None:
     return stderr
 
 @app.command()
-def run(filepath: str):
+def run(filepath: str, make_edit: bool = False):
     stderr = python_run(filepath)
     if stderr == "":
         print("No errors found!")
@@ -98,10 +98,11 @@ def run(filepath: str):
         
     steps = suggest_fix(stderr)
     
-    edited_file = make_edit(stderr, steps)
-    stderr = python_run(edited_file)
-    if stderr == "":
-        print("Successfully fixed error!")
+    if make_edit:
+        edited_file = make_edit(stderr, steps)
+        stderr = python_run(edited_file)
+        if stderr == "":
+            print("Successfully fixed error!")
 
 if __name__ == "__main__":
     app()
