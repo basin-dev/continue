@@ -82,7 +82,7 @@ def make_edit(stderr: str, steps: str):
 
     return edited_file
 
-def capture_stderr(filepath: str) -> str | None:
+def python_run(filepath: str) -> str | None:
     """Run a Python file and capture the stderr output."""
     proc = subprocess.run(["python", filepath], stderr=subprocess.PIPE)
     stderr = proc.stderr.decode("utf-8")
@@ -91,14 +91,15 @@ def capture_stderr(filepath: str) -> str | None:
 
 @app.command()
 def run(filepath: str):
-    stderr = capture_stderr(filepath)
+    stderr = python_run(filepath)
     if stderr == "":
         print("No errors found!")
         return
+        
     steps = suggest_fix(stderr)
     
     edited_file = make_edit(stderr, steps)
-    stderr = capture_stderr(edited_file)
+    stderr = python_run(edited_file)
     if stderr == "":
         print("Successfully fixed error!")
 
