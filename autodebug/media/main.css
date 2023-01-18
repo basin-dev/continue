@@ -14,7 +14,7 @@ input[type="text"] {
 button {
   padding: 14px 20px;
   margin: 8px 0;
-  border: 1px solid black;
+  border: 2px solid orange;
   border-radius: 4px;
   cursor: pointer;
 }

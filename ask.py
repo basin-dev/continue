@@ -9,6 +9,7 @@ import typer
 import ast
 from transformers import GPT2TokenizerFast
 from llm import OpenAI
+import pathspec
 
 gpt2_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
 gpt = OpenAI()
@@ -17,6 +18,8 @@ app = typer.Typer()
 
 embeddings = []
 def load_embeddings(chunks: list[dict[str, str]]):
+    """Loads embeddings for the given chunks."""
+    chunks = list(filter(lambda chunk: chunk["text"] != "", chunks))
     vecs = gpt.embed([chunk["text"] for chunk in chunks])
     for i in range(len(chunks)):
         embeddings.append({
@@ -89,32 +92,51 @@ def compile_prompt(top_k: list[str], question: str, version: QType=QType.QA) -> 
 
 K = 1
 def answer(question: str, version: QType=QType.QA) -> Tuple[str, List[Dict[str, str]]]:
-    target = gpt.embed_single(question)
+    target = gpt.single_embed(question)
     top_k = mips_top_k(target, K)
     texts = list(map(lambda e: e["text"], top_k))
     prompt = compile_prompt(texts, question, version=version)
     return gpt.complete(prompt, max_tokens=1024), top_k
 
-def chunk_file(path: str, chunk_size: int=1024 - 256) -> List: # -256 to give room for question
+def chunk_file(path: str, chunk_size: int=(1024 - 256)) -> List: # -256 to give room for question
     with open(path, "r") as f:
-        code = f.read()
+        try:
+            code = f.read()
+        except UnicodeDecodeError:
+            return []
+
         chunks = []
 
         try:
             nodes = ast.parse(code).body
         except:
             # Unparsable file, just do a dumb chunking
-            for i in range(0, len(code), chunk_size):
-                chunks.append({
-                    "text": code[i:i+chunk_size],
-                    "path": path,
-                    "name": ""
-                })
+            curr_size = 0
+            curr_chunk = ""
+            lineno = 1
+            curr_chunk_lineno = 1
+            for line in code.splitlines():
+                curr_size += len(gpt2_tokenizer.encode(line))
+                if curr_size > chunk_size:
+                    chunks.append({
+                        "text": curr_chunk,
+                        "path": path,
+                        "name": "",
+                        "lineno": curr_chunk_lineno
+                    })
+                    curr_size = 0
+                    curr_chunk = line
+                    curr_chunk_lineno = lineno + 1
+                else:
+                    curr_chunk += "\n" + line
+                
+                lineno += 1
             return chunks
 
         curr_size = 0
         curr_chunk = ""
         curr_chunk_name = ""
+        curr_chunk_lineno = None
         for node in nodes:
             node_code = ast.unparse(node)
             curr_size += len(gpt2_tokenizer.encode(node_code))
@@ -122,25 +144,56 @@ def chunk_file(path: str, chunk_size: int=1024 - 256) -> List: # -256 to give ro
             # A sketchy way of giving a fn or class or variable name as an anchor to link to the pdoc
             if hasattr(node, "name"):
                 curr_chunk_name = node.name
+                
+            # Want the lineno to correspond to top of chunk
+            if curr_chunk_lineno is None:
+                curr_chunk_lineno = node.lineno
 
             if curr_size > chunk_size:
                 chunks.append({
                     "text": curr_chunk,
                     "path": path,
-                    "name": curr_chunk_name
+                    "name": curr_chunk_name,
+                    "lineno": curr_chunk_lineno or 0
                 })
                 curr_size = 0
                 curr_chunk = node_code
+                curr_chunk_lineno = None
             else:
                 curr_chunk += "\n" + node_code
         
         chunks.append({
             "text": curr_chunk,
             "path": path,
-            "name": curr_chunk_name
+            "name": curr_chunk_name,
+            "lineno": curr_chunk_lineno or 0
         })
 
         return chunks
+
+def get_git_ignore_spec(path: str=".gitignore") -> pathspec.PathSpec:
+    default_git_ignore = [
+        "**/.env",
+        "**/env",
+        "**/venv",
+        "**/node_modules",
+        "**/__pycache__",
+        "**/dist",
+        "**/build",
+        "**/.pytest_cache",
+        "**/.mypy_cache",
+        "**/.coverage",
+        "**/.DS_Store",
+        "**/coverage.xml",
+    ]
+    try:
+        with open(path, "r") as f:
+            lines = f.readlines()
+    except BaseException:
+        lines = []
+
+    spec = pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, lines + default_git_ignore)
+    return spec
 
 def load_codebase(path: str):
     try:
@@ -152,8 +205,11 @@ def load_codebase(path: str):
 
         chunks = []
 
+        spec = get_git_ignore_spec()
         for subpath, _, files in os.walk(path):
             for file in files:
+                if spec.match_file(os.path.join(subpath, file)):
+                    continue
                 if file.endswith(".py"):
                     chunks += chunk_file(os.path.join(subpath, file))
 
@@ -186,7 +242,11 @@ def repl(inp: str, output: str, gen_docs: bool=False):
 def ask(inp: str, question: str):
     load_codebase(inp)
     ans, top_k = answer(question, version=QType.QA)
-    print(ans)
+    filename = os.path.abspath(top_k[0]["path"])
+    print("Filename=" + filename)
+    print("Start lineno=" + str(top_k[0]["lineno"]))
+    print("End lineno=", str(top_k[0]["lineno"] + len(top_k[0]["text"].splitlines())))
+    print("Answer=" + ans.strip())
 
 @app.command()
 def loaded(inp: str):

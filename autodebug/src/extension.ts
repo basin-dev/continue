@@ -38,6 +38,45 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
+function showAnswerInTextEditor(
+  filename: string,
+  range: vscode.Range,
+  answer: string
+) {
+  vscode.workspace.openTextDocument(vscode.Uri.file(filename)).then((doc) => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
+    }
+
+    // Open file, reveal range, show decoration
+    vscode.window.showTextDocument(doc);
+    editor.revealRange(
+      new vscode.Range(range.end, range.end),
+      vscode.TextEditorRevealType.InCenter
+    );
+
+    let decorationType = vscode.window.createTextEditorDecorationType({
+      after: {
+        contentText: answer + "\n",
+        color: "rgb(0, 255, 0, 0.8)",
+      },
+      backgroundColor: "rgb(0, 255, 0, 0.2)",
+    });
+    editor.setDecorations(decorationType, [range]);
+
+    // Remove decoration when user moves cursor
+    vscode.window.onDidChangeTextEditorSelection((e) => {
+      if (
+        e.textEditor === editor &&
+        e.selections[0].active.line !== range.end.line
+      ) {
+        editor.setDecorations(decorationType, []);
+      }
+    });
+  });
+}
+
 class DebugViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "autodebug.debugView";
 
@@ -67,18 +106,20 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
           if (!vscode.workspace.workspaceFolders) {
             return;
           }
+
           // Feed the question into the python script
           bridge
             .askQuestion(
               data.question,
               vscode.workspace.workspaceFolders[0].uri.fsPath
             )
-            .then((answer) => {
+            .then((resp) => {
               // Send the answer back to the webview
               webviewView.webview.postMessage({
                 type: "answerQuestion",
-                answer,
+                answer: resp.answer,
               });
+              showAnswerInTextEditor(resp.filename, resp.range, resp.answer);
             })
             .catch((error: any) => {
               webviewView.webview.postMessage({
@@ -86,6 +127,7 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
                 answer: error,
               });
             });
+
           break;
         }
         case "startDebug": {
@@ -94,6 +136,7 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
           if (!editor) {
             break;
           }
+
           const currentFile = editor.document.fileName;
 
           // Run our script to get fix suggestions and a stack trace
@@ -196,9 +239,10 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
 			</head>
 			<body>
 				
-				<h1>Debug</h1>
+				<h2>Debug</h2>
 				<button id="startDebug" class="startDebug">Debug Current File</button>
 				
+				<h2>Ask a Question</h2>
 				<input type="text" id="question" name="question" class="question" placeholder="Ask a question about your codebase" value="Where is binary search?" />
 				<button id="ask" class="ask-button">Ask</button>
 

@@ -133,3 +133,4 @@ dmypy.json
 **/out/*
 **/.vscode/*
 notes.txt
+cached_embeddings.pkl
