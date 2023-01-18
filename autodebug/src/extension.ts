@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as bridge from "./bridge";
 
 export function activate(context: vscode.ExtensionContext) {
   const provider = new DebugViewProvider(context.extensionUri);
@@ -62,6 +63,31 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.onDidReceiveMessage((data) => {
       switch (data.type) {
+        case "askQuestion": {
+          if (!vscode.workspace.workspaceFolders) {
+            return;
+          }
+          // Feed the question into the python script
+          bridge
+            .askQuestion(
+              data.question,
+              vscode.workspace.workspaceFolders[0].uri.fsPath
+            )
+            .then((answer) => {
+              // Send the answer back to the webview
+              webviewView.webview.postMessage({
+                type: "answerQuestion",
+                answer,
+              });
+            })
+            .catch((error: any) => {
+              webviewView.webview.postMessage({
+                type: "answerQuestion",
+                answer: error,
+              });
+            });
+          break;
+        }
         case "startDebug": {
           // Make sure there is an open editor, because we want to debug "current file"
           const editor = vscode.window.activeTextEditor;
@@ -157,21 +183,40 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
       vscode.Uri.joinPath(this._extensionUri, "media", "main.css")
     );
 
+    const nonce = getNonce();
+
     return `<!DOCTYPE html>
 			<html lang="en">
 			<head>
 				<meta charset="UTF-8">
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
-				<script src="${scriptUri}"></script>
 				<link href="${styleMainUri}" rel="stylesheet">
-
+				
 				<title>AutoDebug</title>
 			</head>
 			<body>
+				
 				<h1>Debug</h1>
-				<input type="text" id="bugDescription" name="bugDescription" placeholder="Describe the bug you are facing" />
-				<button id="startDebug">Debug Current File</button>
+				<button id="startDebug" class="startDebug">Debug Current File</button>
+				
+				<input type="text" id="question" name="question" class="question" placeholder="Ask a question about your codebase" value="Where is binary search?" />
+				<button id="ask" class="ask-button">Ask</button>
+
+				<p>Answer:</p>
+				<div id="answer" class="answer"></div>
+				
+				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>
 			</html>`;
   }
+}
+
+function getNonce() {
+  let text = "";
+  const possible =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (let i = 0; i < 32; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
 }
