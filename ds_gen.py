@@ -3,12 +3,15 @@ import ast
 import docstring_parser
 import typer
 from llm import OpenAI
+from prompts import SimplePrompter
 
 app = typer.Typer()
 gpt = OpenAI()
 
 CURIE_FINE_TUNE = "curie:ft-personal-2023-01-03-17-34-19"
 DAVINCI_FINE_TUNE = "davinci:ft-personal:docstring-completions-davinci-1-2023-01-03-18-02-05"
+
+fn_prompter = SimplePrompter(lambda fn: ast.unparse(fn) + "\n\n###\n\n")
 
 def write_ds_for_fn(fn: ast.FunctionDef, format: docstring_parser.DocstringStyle=docstring_parser.DocstringStyle.GOOGLE):
     """Write a docstring for a function"""
@@ -18,7 +21,7 @@ def write_ds_for_fn(fn: ast.FunctionDef, format: docstring_parser.DocstringStyle
         return None
     
     prompt = ast.unparse(fn) + "\n\n###\n\n" # + "\n\nWrite a docstring for the above function:\n\n"
-    completion = gpt.complete(prompt, model="davinci:ft-personal:docstring-completions-davinci-1-2023-01-03-18-02-05", stop=["END"]).strip() # .replace('"""', '').strip() # Remove leading/trailing newline
+    completion = gpt.complete(prompt, model=DAVINCI_FINE_TUNE, stop=["END"]).strip() # .replace('"""', '').strip() # Remove leading/trailing newline
 
     # Convert to Docstring, and render back in the desired format, padding with necessary newlines, quotes, and indentation
     ds = docstring_parser.parse(completion)
@@ -34,7 +37,7 @@ def write_ds_for_class(cls: ast.ClassDef, format: docstring_parser.DocstringStyl
     
     # Generate a summary of the class as a whole
     prompt = ast.unparse(cls) + "\n\n###\n\nWrite a summary of the above class:" # + "\n\nWrite a docstring for the above class:\n\n"
-    summary = gpt.complete(prompt, model="davinci:ft-personal:docstring-completions-davinci-1-2023-01-03-18-02-05", stop=["END"]).strip() # .replace('"""', '').strip() # Remove leading/trailing newline
+    summary = gpt.complete(prompt, model=DAVINCI_FINE_TUNE, stop=["END"]).strip() # .replace('"""', '').strip() # Remove leading/trailing newline
 
     # Generate the rest of the docstring, because it is just based on functions and attributes
     methods = list(filter(lambda x: isinstance(x, ast.FunctionDef) or isinstance(x, ast.AsyncFunctionDef), cls.body))

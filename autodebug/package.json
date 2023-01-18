@@ -14,17 +14,39 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "autodebug.helloWorld",
-        "title": "Hello World"
-      }
-    ],
     "views": {
       "explorer": [
         {
-          "id": "autodebug",
+          "type": "webview",
+          "id": "autodebug.debugView",
           "name": "AutoDebug"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "autodebug.enterBugDescription",
+        "category": "AutoDebug",
+        "title": "Enter Bug Description"
+      },
+      {
+        "command": "autodebug.restartDebugging",
+        "category": "AutoDebug",
+        "title": "Restart Debugging",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "autodebug.createTerminal",
+        "category": "AutoDebug",
+        "title": "Create Terminal"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "autodebug.restartDebugging",
+          "group": "navigation",
+          "when": "view == autodebug.debugView"
         }
       ]
     }
