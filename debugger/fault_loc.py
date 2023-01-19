@@ -71,3 +71,11 @@ def find_most_specific_context(tree: ast.AST, lineno: int) -> ast.AST | None:
             i += 1
 
     return None
+
+def find_code_in_range(filename: str, start: int, end: int) -> str:
+    """Find the code in the given range in the file."""
+    # TODO: This is the dumb version, want to later use AST to make sure we don't cut things off in the middle of a function/class
+    with open(filename, "r") as f:
+        lines = f.readlines()
+    
+    return "\n".join(lines[start - 1:end])

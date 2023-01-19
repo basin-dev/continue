@@ -219,14 +219,23 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
             },
             async (progress, token) => {
               let ctx = await bridge.getSuggestion({
-                // filename: editor.document.fileName, Checkbox=use current file?
-                // lineno: editor.selection.active.line, maybe get active selection if there is something highlighted
+                filename: editor.selection.isEmpty
+                  ? undefined
+                  : editor.document.fileName,
+                range: editor.selection.isEmpty ? undefined : editor.selection,
                 stacktrace: data.stackTrace,
                 explanation: data.explanation,
               });
               vscode.window.showInformationMessage(
                 ctx.suggestion || "No suggestion found"
               );
+
+              if (!editor.selection.isEmpty) {
+                // Replace the selected text with the suggestion
+                editor.edit((editBuilder) => {
+                  editBuilder.replace(editor.selection, ctx.suggestion || "");
+                });
+              }
             }
           );
 

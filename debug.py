@@ -20,6 +20,7 @@ Instructions to fix:
 '''
 fix_suggestion_prompter = SimplePrompter(lambda stderr: prompt.replace("{traceback}", stderr))
 
+
 def parse_stacktrace(stderr: str) -> tbutils.ParsedException:
     # Sometimes paths are not quoted, but they need to be
     if "File \"" not in stderr:
@@ -29,7 +30,6 @@ def parse_stacktrace(stderr: str) -> tbutils.ParsedException:
 def get_steps(stderr: str) -> str:
     exc = parse_stacktrace(stderr)
     if len(exc.frames) == 0:
-        print("-----------------------------", stderr, "--------------------")
         raise Exception("No frames found in stacktrace")
     sus_frame = fault_loc.fl1(exc)
     relevant_frames = fault_loc.filter_relevant(exc.frames)
@@ -118,9 +118,10 @@ def run(filepath: str, make_edit: bool = False):
             print("Successfully fixed error!")
 
 @app.command()
-def fixatposition(filepath: str, lineno: int, stacktrace: str) -> str:
-
-    raise NotImplementedError
+def inline(filepath: str, startline: int, endline: int, stacktrace: str) -> str:
+    code = fault_loc.find_code_in_range(filepath, startline, endline)
+    suggestion = attempt_edit_prompter1.complete((code, stacktrace))
+    print("Suggestion=", suggestion)
 
 @app.command()
 def suggestion(stderr: str) -> str:

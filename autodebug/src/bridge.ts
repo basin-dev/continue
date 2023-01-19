@@ -96,7 +96,7 @@ export async function writeDocstringForFunction(
 // more about the bug
 interface DebugContext {
   filename?: string;
-  lineno?: number;
+  range?: vscode.Range;
   stacktrace?: string;
   explanation?: string;
   unitTest?: string;
@@ -106,30 +106,42 @@ export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
   if (!ctx.stacktrace) {
     throw new Error("No stacktrace provided");
   }
-  const command = build_python_command(
-    `python3 ${path.join(get_python_path(), "debug.py")} suggestion "$(echo "${
-      ctx.stacktrace
-    }")"`
-  );
-  console.log("Waiting for suggestion...");
+
+  let command: string;
+  if (ctx.range && ctx.filename) {
+    // Can utilize the fact that we know right where the bug is
+    command = build_python_command(
+      `python3 ${path.join(get_python_path(), "debug.py")} inline ${
+        ctx.filename
+      } ${ctx.range.start.line} ${ctx.range.end.line} "$(echo "${
+        ctx.stacktrace
+      }")"`
+    );
+  } else {
+    command = build_python_command(
+      `python3 ${path.join(
+        get_python_path(),
+        "debug.py"
+      )} suggestion "$(echo "${ctx.stacktrace}")"`
+    );
+  }
   const { stdout, stderr } = await exec(command);
   if (stderr) {
     throw new Error(stderr);
   }
   const suggestion = parseStdout(stdout, "Suggestion", true);
-  console.log("Suggestion: ", suggestion);
   ctx.suggestion = suggestion;
   return ctx;
 }
 
 async function findSuspiciousCode(ctx: DebugContext): Promise<DebugContext> {
-  if (ctx.filename && ctx.lineno) return ctx;
+  if (ctx.filename && ctx.range) return ctx;
 
   return ctx;
 }
 
 async function fullyEnrichContext(ctx: DebugContext): Promise<DebugContext> {
-  if (!ctx.filename || !ctx.lineno) {
+  if (!ctx.filename || !ctx.range) {
     ctx = await findSuspiciousCode(ctx);
   }
   if (!ctx.unitTest) {
