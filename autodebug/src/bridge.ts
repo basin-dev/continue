@@ -87,3 +87,56 @@ export async function writeDocstringForFunction(
     throw new Error("Error: No docstring found");
   }
 }
+
+// Should be "suggest fix given a line number and a file"
+// and also "find sus line number and file given a problem"
+// basically need to be able to go from any amount of information
+// Even no stack trace, just description of problem -> sus lines of code -> fix
+// Should have a series of functions that "enrich" the context, learning increasingly
+// more about the bug
+interface DebugContext {
+  filename?: string;
+  lineno?: number;
+  stacktrace?: string;
+  explanation?: string;
+  unitTest?: string;
+  suggestion?: string;
+}
+export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
+  if (!ctx.stacktrace) {
+    throw new Error("No stacktrace provided");
+  }
+  const command = build_python_command(
+    `python3 ${path.join(get_python_path(), "debug.py")} suggestion "$(echo "${
+      ctx.stacktrace
+    }")"`
+  );
+  console.log("Waiting for suggestion...");
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+  const suggestion = parseStdout(stdout, "Suggestion", true);
+  console.log("Suggestion: ", suggestion);
+  ctx.suggestion = suggestion;
+  return ctx;
+}
+
+async function findSuspiciousCode(ctx: DebugContext): Promise<DebugContext> {
+  if (ctx.filename && ctx.lineno) return ctx;
+
+  return ctx;
+}
+
+async function fullyEnrichContext(ctx: DebugContext): Promise<DebugContext> {
+  if (!ctx.filename || !ctx.lineno) {
+    ctx = await findSuspiciousCode(ctx);
+  }
+  if (!ctx.unitTest) {
+    // generate unit test
+  }
+  if (!ctx.suggestion) {
+    ctx = await getSuggestion(ctx);
+  }
+  return ctx;
+}

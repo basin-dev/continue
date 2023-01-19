@@ -157,6 +157,7 @@ function showAnswerInTextEditor(
         backgroundColor: "rgb(0, 255, 0, 0.2)",
       });
       new_editor.setDecorations(decorationType, [range]);
+      vscode.window.showInformationMessage("Answer found!");
 
       // Remove decoration when user moves cursor
       vscode.window.onDidChangeTextEditorSelection((e) => {
@@ -194,7 +195,7 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-    webviewView.webview.onDidReceiveMessage((data) => {
+    webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "askQuestion": {
           vscode.commands.executeCommand(
@@ -210,19 +211,37 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
           if (!editor) {
             break;
           }
+          vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: "Starting debugging",
+              cancellable: false,
+            },
+            async (progress, token) => {
+              let ctx = await bridge.getSuggestion({
+                // filename: editor.document.fileName, Checkbox=use current file?
+                // lineno: editor.selection.active.line, maybe get active selection if there is something highlighted
+                stacktrace: data.stackTrace,
+                explanation: data.explanation,
+              });
+              vscode.window.showInformationMessage(
+                ctx.suggestion || "No suggestion found"
+              );
+            }
+          );
 
-          const currentFile = editor.document.fileName;
+          //   const currentFile = editor.document.fileName;
 
           // Run our script to get fix suggestions and a stack trace
-          const terminal = vscode.window.createTerminal({
-            name: `AutoDebug Terminal`,
-            // hideFromUser: true,
-          } as any);
-          terminal.show();
-          terminal.sendText(
-            "bash && cd ../.. && source env/bin/activate && python debug.py " +
-              currentFile
-          );
+          //   const terminal = vscode.window.createTerminal({
+          //     name: `AutoDebug Terminal`,
+          //     // hideFromUser: true,
+          //   } as any);
+          //   terminal.show();
+          //   terminal.sendText(
+          //     "bash && cd ../.. && source env/bin/activate && python debug.py " +
+          //       currentFile
+          //   );
 
           // TODO: No way to read from terminal
           // terminal.onDidWriteData((data) => {
@@ -232,35 +251,35 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
           // Or have the script do all the work
 
           // Add breakpoints
-          let breakpoints: vscode.SourceBreakpoint[] = [
-            new vscode.SourceBreakpoint(
-              new vscode.Location(
-                vscode.Uri.file(currentFile),
-                new vscode.Position(0, 0)
-              )
-            ),
-          ];
-          vscode.debug.addBreakpoints(breakpoints);
+          //   let breakpoints: vscode.SourceBreakpoint[] = [
+          //     new vscode.SourceBreakpoint(
+          //       new vscode.Location(
+          //         vscode.Uri.file(currentFile),
+          //         new vscode.Position(0, 0)
+          //       )
+          //     ),
+          //   ];
+          //   vscode.debug.addBreakpoints(breakpoints);
 
           // Start the debugger
-          vscode.debug.startDebugging(undefined, {
-            type: "node",
-            request: "launch",
-            name: "Launch Program",
-            program: "${file}",
-            console: "integratedTerminal",
-            internalConsoleOptions: "neverOpen",
-            outFiles: ["${workspaceFolder}/dist/**/*.js"],
-            protocol: "inspector",
-            skipFiles: ["<node_internals>/**"],
-          });
+          //   vscode.debug.startDebugging(undefined, {
+          //     type: "node",
+          //     request: "launch",
+          //     name: "Launch Program",
+          //     program: "${file}",
+          //     console: "integratedTerminal",
+          //     internalConsoleOptions: "neverOpen",
+          //     outFiles: ["${workspaceFolder}/dist/**/*.js"],
+          //     protocol: "inspector",
+          //     skipFiles: ["<node_internals>/**"],
+          //   });
 
           // When we reach a breakpoint, have GPT automatically suggest fixes
 
           // When we want to change the text of the current file:
-          const document = editor.document;
-          const selection = editor.selection;
-          const text = document.getText(selection);
+          //   const document = editor.document;
+          //   const selection = editor.selection;
+          //   const text = document.getText(selection);
           //   editor.edit((editBuilder) => {
           //     editBuilder.replace(
           //       selection,
@@ -314,8 +333,11 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
 			<body>
 				
 				<h2>Debug</h2>
+				<textarea id="stackTrace" name="stackTrace" class="stackTrace" placeholder="Enter a stack trace"></textarea>
+				<input type="text" id="explanation" name="explanation" class="explanation" placeholder="Describe the problem"/>
 				<button id="startDebug" class="startDebug">Debug Current File</button>
-				
+
+				<hr></hr>
 				<h2>Ask a Question</h2>
 				<input type="text" id="question" name="question" class="question" placeholder="Ask a question about your codebase" value="Where is binary search?" />
 				<button id="ask" class="ask-button">Ask</button>

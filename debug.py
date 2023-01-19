@@ -20,21 +20,34 @@ Instructions to fix:
 '''
 fix_suggestion_prompter = SimplePrompter(lambda stderr: prompt.replace("{traceback}", stderr))
 
-def suggest_fix(stderr: str) -> str:
-    exc = tbutils.ParsedException.from_string(stderr)
+def parse_stacktrace(stderr: str) -> tbutils.ParsedException:
+    # Sometimes paths are not quoted, but they need to be
+    if "File \"" not in stderr:
+        stderr = stderr.replace("File ", "File \"").replace(", line ", "\", line ")
+    return tbutils.ParsedException.from_string(stderr)
+
+def get_steps(stderr: str) -> str:
+    exc = parse_stacktrace(stderr)
+    if len(exc.frames) == 0:
+        print("-----------------------------", stderr, "--------------------")
+        raise Exception("No frames found in stacktrace")
     sus_frame = fault_loc.fl1(exc)
     relevant_frames = fault_loc.filter_relevant(exc.frames)
     exc.frames = relevant_frames
 
     resp = fix_suggestion_prompter.complete(stderr)
+    return resp
+
+def suggest_fix(stderr: str) -> str:
+    steps = get_steps(stderr)
 
     print("You might be able to fix this problem by following these steps:\n")
 
-    print(resp, end="\n\n")
+    print(steps, end="\n\n")
 
     print("If this did not solve the issue, then try running me again for a different suggestion.")
 
-    return resp
+    return steps
 
 attempt_prompt = '''This was my Python code:
 
@@ -68,7 +81,7 @@ attempt_edit_prompter2 = SimplePrompter(lambda x: attempt_prompt.replace("{code}
 
 def make_edit(stderr: str, steps: str):
     # Compile prompt, get response
-    exc = tbutils.ParsedException.from_string(stderr)
+    exc = parse_stacktrace(stderr)
     sus_frame = fault_loc.fl1(exc)
 
     new_ast = fault_loc.edit_context_ast(sus_frame, lambda code_to_change: 
@@ -103,6 +116,16 @@ def run(filepath: str, make_edit: bool = False):
         stderr = python_run(edited_file)
         if stderr == "":
             print("Successfully fixed error!")
+
+@app.command()
+def fixatposition(filepath: str, lineno: int, stacktrace: str) -> str:
+
+    raise NotImplementedError
+
+@app.command()
+def suggestion(stderr: str) -> str:
+    suggestion = get_steps(stderr)
+    print("Suggestion=", suggestion)
 
 if __name__ == "__main__":
     app()

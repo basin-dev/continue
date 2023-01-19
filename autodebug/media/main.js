@@ -11,8 +11,9 @@
     askQuestion();
   });
 
+  const stackTrace = document.querySelector(".stackTrace");
+  const explanation = document.querySelector(".explanation");
   const answerDiv = document.querySelector(".answer");
-
   const question = document.querySelector(".question");
 
   // Handle messages sent from the extension to the webview
@@ -34,7 +35,11 @@
   });
 
   function startDebug() {
-    vscode.postMessage({ type: "startDebug" });
+    vscode.postMessage({
+      type: "startDebug",
+      explanation: explanation.value,
+      stackTrace: stackTrace.value,
+    });
   }
 
   function askQuestion() {
