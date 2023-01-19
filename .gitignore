@@ -129,8 +129,8 @@ dmypy.json
 .pyre/
 
 
-**/node_modules/*
-**/out/*
-**/.vscode/*
+**/node_modules
+**/out
+**/.vscode
 notes.txt
 cached_embeddings.pkl
