@@ -32,7 +32,8 @@ def parse_frame(frame: Dict) -> ast.AST:
 
 def is_valid_context(node: ast.AST, lineno: int) -> bool:
     """Check if the node is a valid context for the line number."""
-    return (isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef)) and node.lineno <= int(lineno) <= node.end_lineno
+    # node.lineno - 1 because lineno starts at the body of the node, not the def or class line
+    return (isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef)) and node.lineno - 1 <= int(lineno) <= node.end_lineno
 
 def edit_context_ast(frame: Dict, replacement: Callable[[str], str]) -> ast.AST | None:
     """Get the surrounding context of a frame, and edit it, replacing the node in the AST and returning the updated version."""
@@ -52,6 +53,21 @@ def edit_context_ast(frame: Dict, replacement: Callable[[str], str]) -> ast.AST 
                 new_node = ast.parse(replacement(str_node))
                 parent.body[i] = new_node
                 return tree
+            i += 1
+
+    return None
+
+def find_most_specific_context(tree: ast.AST, lineno: int) -> ast.AST | None:
+    # Get the most specific function node containing the line
+    for parent in ast.walk(tree):
+        i = 0
+        for child in ast.iter_child_nodes(parent):
+            if is_valid_context(child, lineno):
+                if len(list(filter(lambda x: is_valid_context(x, lineno), child.body))) > 0:
+                    # More specific context can be found inthe body of this function
+                    continue
+                
+                return child
             i += 1
 
     return None

@@ -25,9 +25,9 @@
     },
     "commands": [
       {
-        "command": "autodebug.enterBugDescription",
+        "command": "autodebug.writeDocstring",
         "category": "AutoDebug",
-        "title": "Enter Bug Description"
+        "title": "Write a docstring for the current function"
       },
       {
         "command": "autodebug.restartDebugging",
@@ -39,6 +39,13 @@
         "command": "autodebug.createTerminal",
         "category": "AutoDebug",
         "title": "Create Terminal"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "autodebug.writeDocstring",
+        "key": "ctrl+alt+l",
+        "mac": "shift+cmd+l"
       }
     ],
     "menus": {

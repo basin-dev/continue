@@ -12,10 +12,67 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("autodebug.enterBugDescription", () => {
-      terminal?.sendText("echo 'Entering bug description'");
-      provider.enterBugDescription();
-    })
+    vscode.commands.registerTextEditorCommand(
+      "autodebug.writeDocstring",
+      async (editor, _) => {
+        vscode.window.showQuickPick(["one", "two", "three"]);
+
+        vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: "AutoDebug",
+            cancellable: false,
+          },
+          async (progress, token) => {
+            progress.report({
+              message: "Writing docstring...",
+            });
+
+            const { lineno, docstring } =
+              await bridge.writeDocstringForFunction(
+                editor.document.fileName,
+                editor.selection.active
+              );
+            // Can't use the edit given above after an async call
+            editor.edit((edit) => {
+              edit.insert(new vscode.Position(lineno, 0), docstring);
+            });
+          }
+        );
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "autodebug.askQuestion",
+      (data: any, webviewView: vscode.WebviewView) => {
+        if (!vscode.workspace.workspaceFolders) {
+          return;
+        }
+
+        // Feed the question into the python script
+        bridge
+          .askQuestion(
+            data.question,
+            vscode.workspace.workspaceFolders[0].uri.fsPath
+          )
+          .then((resp) => {
+            // Send the answer back to the webview
+            webviewView.webview.postMessage({
+              type: "answerQuestion",
+              answer: resp.answer,
+            });
+            showAnswerInTextEditor(resp.filename, resp.range, resp.answer);
+          })
+          .catch((error: any) => {
+            webviewView.webview.postMessage({
+              type: "answerQuestion",
+              answer: error,
+            });
+          });
+      }
+    )
   );
 
   context.subscriptions.push(
@@ -103,31 +160,11 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage((data) => {
       switch (data.type) {
         case "askQuestion": {
-          if (!vscode.workspace.workspaceFolders) {
-            return;
-          }
-
-          // Feed the question into the python script
-          bridge
-            .askQuestion(
-              data.question,
-              vscode.workspace.workspaceFolders[0].uri.fsPath
-            )
-            .then((resp) => {
-              // Send the answer back to the webview
-              webviewView.webview.postMessage({
-                type: "answerQuestion",
-                answer: resp.answer,
-              });
-              showAnswerInTextEditor(resp.filename, resp.range, resp.answer);
-            })
-            .catch((error: any) => {
-              webviewView.webview.postMessage({
-                type: "answerQuestion",
-                answer: error,
-              });
-            });
-
+          vscode.commands.executeCommand(
+            "autodebug.askQuestion",
+            data,
+            webviewView
+          );
           break;
         }
         case "startDebug": {
