@@ -30,10 +30,9 @@
         "title": "Write a docstring for the current function"
       },
       {
-        "command": "autodebug.restartDebugging",
+        "command": "autodebug.openDebugPanel",
         "category": "AutoDebug",
-        "title": "Restart Debugging",
-        "icon": "$(clear-all)"
+        "title": "Open Debug Panel"
       },
       {
         "command": "autodebug.askQuestionFromInput",
@@ -66,7 +65,7 @@
     "menus": {
       "view/title": [
         {
-          "command": "autodebug.restartDebugging",
+          "command": "autodebug.openDebugPanel",
           "group": "navigation",
           "when": "view == autodebug.debugView"
         }

@@ -112,9 +112,16 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("autodebug.restartDebugging", () => {
-      terminal?.sendText("echo 'Restarting debugging'");
-      provider.restartDebugging();
+    vscode.commands.registerCommand("autodebug.openDebugPanel", () => {
+      const panel = vscode.window.createWebviewPanel(
+        "autodebug.debugPanelView",
+        "AutoDebug",
+        vscode.ViewColumn.Beside,
+        {}
+      );
+
+      // And set its HTML content
+      panel.webview.html = getDebugPanelContent();
     })
   );
 
@@ -312,12 +319,6 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  public restartDebugging() {
-    if (this._view) {
-      this._view.webview.postMessage({ type: "restartDebugging" });
-    }
-  }
-
   private _getHtmlForWebview(webview: vscode.Webview) {
     // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
     const scriptUri = webview.asWebviewUri(
@@ -368,4 +369,21 @@ function getNonce() {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
   return text;
+}
+
+function getDebugPanelContent() {
+  return `<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				
+				<title>AutoDebug</title>
+			</head>
+			<body>
+				
+				<h1>Debug Panel!!</h1>
+				
+			</body>
+			</html>`;
 }
