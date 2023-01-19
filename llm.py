@@ -1,11 +1,12 @@
 import asyncio
-from typing import Tuple
+from typing import List, Tuple
 import openai
 import os
 from dotenv import load_dotenv
 import aiohttp
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers import GPT2TokenizerFast
+import numpy as np
 
 load_dotenv()
 api_key = os.environ.get("OPENAI_API_KEY")
@@ -75,6 +76,16 @@ class OpenAI(LLM):
             prompt=prompt,
             **args,
         ).choices[0].text
+
+    def embed(self, input: List[str] | str) -> List[np.ndarray]:
+        resps = openai.Embedding.create(
+            model="text-embedding-ada-002",
+            input=input,
+        )["data"]
+        return [np.array(resp["embedding"]) for resp in resps]
+
+    def single_embed(self, input: str) -> np.ndarray:
+        return self.embed([input])[0]
 
     def edit(self, inp: str, instruction: str) -> str:
         try:
