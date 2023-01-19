@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import * as bridge from "./bridge";
+const pty = require("node-pty");
+const os = require("os");
 
 async function answerQuestion(
   question: string,
@@ -42,6 +44,13 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.registerWebviewViewProvider(
       DebugViewProvider.viewType,
       provider
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      DebugPanelViewProvider.viewType,
+      new DebugPanelViewProvider(context.extensionUri)
     )
   );
 
@@ -119,9 +128,12 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.ViewColumn.Beside,
         {}
       );
+    })
+  );
 
-      // And set its HTML content
-      panel.webview.html = getDebugPanelContent();
+  context.subscriptions.push(
+    vscode.commands.registerCommand("autodebug.openCapturedTerminal", () => {
+      openCapturedTerminal();
     })
   );
 
@@ -447,4 +459,36 @@ class DebugPanelViewProvider implements vscode.WebviewViewProvider {
 			  </body>
 			  </html>`;
   }
+}
+
+function openCapturedTerminal() {
+  var isWindows = os.platform() === "win32";
+  var shell = isWindows ? "powershell.exe" : "zsh";
+
+  var ptyProcess = pty.spawn(shell, [], {
+    name: "xterm-256color",
+    cols: 80,
+    rows: 26,
+    cwd: isWindows ? process.env.USERPROFILE : process.env.HOME,
+    env: Object.assign({ TEST: "Environment vars work" }, process.env),
+    useConpty: true,
+  });
+
+  const writeEmitter = new vscode.EventEmitter<string>();
+
+  ptyProcess.onData((data: any) => writeEmitter.fire(data));
+  process.on("exit", () => ptyProcess.kill());
+
+  const newPty: vscode.Pseudoterminal = {
+    onDidWrite: writeEmitter.event,
+    open: () => {},
+    close: () => {},
+    handleInput: (data) => {
+      ptyProcess.write(data);
+    },
+  };
+  const terminal = vscode.window.createTerminal({
+    name: "AutoDebug",
+    pty: newPty,
+  });
 }
