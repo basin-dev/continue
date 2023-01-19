@@ -58,8 +58,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerTextEditorCommand(
       "autodebug.writeDocstring",
       async (editor, _) => {
-        vscode.window.showQuickPick(["one", "two", "three"]);
-
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
@@ -133,7 +131,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("autodebug.openCapturedTerminal", () => {
-      openCapturedTerminal();
+      // Happens in webviewview resolution function
+      // openCapturedTerminal();
     })
   );
 
@@ -322,6 +321,8 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
         }
       }
     });
+
+    openCapturedTerminal(webviewView.webview);
   }
 
   public enterBugDescription() {
@@ -355,9 +356,10 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
 			<body>
 				
 				<h2>Debug</h2>
-				<textarea id="stackTrace" name="stackTrace" class="stackTrace" placeholder="Enter a stack trace"></textarea>
+				<textarea id="stackTrace" name="stackTrace" class="stackTrace" placeholder="Enter a stack trace" cols="80"></textarea>
 				<input type="text" id="explanation" name="explanation" class="explanation" placeholder="Describe the problem"/>
-				<button id="startDebug" class="startDebug">Debug Current File</button>
+        <p>Highlight text in the editor to suggest a fix in that range. Otherwise, we will guess where the problem is coming from.</p>
+				<button id="startDebug" class="startDebug">Suggest Fix</button>
 
 				<hr></hr>
 				<h2>Ask a Question</h2>
@@ -461,13 +463,16 @@ class DebugPanelViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
-function openCapturedTerminal() {
+function openCapturedTerminal(webview: vscode.Webview) {
+  let workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) return;
+
   var isWindows = os.platform() === "win32";
   var shell = isWindows ? "powershell.exe" : "zsh";
 
   var ptyProcess = pty.spawn(shell, [], {
     name: "xterm-256color",
-    cols: 80,
+    cols: 100, // TODO: Get size of vscode terminal, and change with resize
     rows: 26,
     cwd: isWindows ? process.env.USERPROFILE : process.env.HOME,
     env: Object.assign({ TEST: "Environment vars work" }, process.env),
@@ -476,8 +481,47 @@ function openCapturedTerminal() {
 
   const writeEmitter = new vscode.EventEmitter<string>();
 
-  ptyProcess.onData((data: any) => writeEmitter.fire(data));
+  const tracebackStart = "Traceback (most recent call last):";
+  const tracebackEnd = (buf: string): string | undefined => {
+    let lines = buf.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      if (
+        lines[i].startsWith("  File") &&
+        i + 2 < lines.length &&
+        lines[i + 2][0] != " "
+      ) {
+        return lines.slice(0, i + 3).join("\n");
+      }
+    }
+    return undefined;
+  };
+  let tracebackBuffer = "";
+
+  ptyProcess.onData((data: any) => {
+    // Snoop for traceback
+    let idx = data.indexOf(tracebackStart);
+    if (idx >= 0) {
+      tracebackBuffer = data.substr(idx);
+    } else if (tracebackBuffer.length > 0) {
+      tracebackBuffer += data;
+    }
+    // End of traceback, send to webview
+    if (idx > 0 || tracebackBuffer.length > 0) {
+      let wholeTraceback = tracebackEnd(tracebackBuffer);
+      if (wholeTraceback) {
+        webview.postMessage({ type: "traceback", traceback: wholeTraceback });
+      }
+    }
+    // Pass data through to terminal
+    // if (tracebackBuffer.length > 0) {
+    //   writeEmitter.fire("----------------------------------------\r");
+    // }
+    writeEmitter.fire(data);
+  });
   process.on("exit", () => ptyProcess.kill());
+
+  ptyProcess.write("cd " + workspaceFolders[0].uri.fsPath + "\n\r");
+  ptyProcess.write("clear\n\r");
 
   const newPty: vscode.Pseudoterminal = {
     onDidWrite: writeEmitter.event,

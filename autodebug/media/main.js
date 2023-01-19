@@ -28,7 +28,8 @@
         answerDiv.appendChild(document.createTextNode(message.answer));
         break;
       }
-      case "something else": {
+      case "traceback": {
+        stackTrace.value = message.traceback;
         break;
       }
     }
