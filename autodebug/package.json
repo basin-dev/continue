@@ -36,6 +36,16 @@
         "icon": "$(clear-all)"
       },
       {
+        "command": "autodebug.askQuestionFromInput",
+        "Category": "AutoDebug",
+        "title": "Ask a question from input box"
+      },
+      {
+        "command": "autodebug.askQuestion",
+        "Category": "AutoDebug",
+        "title": "Ask a question from webview"
+      },
+      {
         "command": "autodebug.createTerminal",
         "category": "AutoDebug",
         "title": "Create Terminal"
@@ -46,6 +56,11 @@
         "command": "autodebug.writeDocstring",
         "key": "ctrl+alt+l",
         "mac": "shift+cmd+l"
+      },
+      {
+        "command": "autodebug.askQuestionFromInput",
+        "key": "ctrl+alt+j",
+        "mac": "shift+cmd+j"
       }
     ],
     "menus": {

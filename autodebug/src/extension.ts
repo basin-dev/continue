@@ -1,6 +1,40 @@
 import * as vscode from "vscode";
 import * as bridge from "./bridge";
 
+async function answerQuestion(
+  question: string,
+  workspacePath: string,
+  webviewView: vscode.WebviewView | undefined = undefined
+) {
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Anwering question...",
+      cancellable: false,
+    },
+    async (progress, token) => {
+      try {
+        let resp = await bridge.askQuestion(question, workspacePath);
+        // Send the answer back to the webview
+        if (webviewView) {
+          webviewView.webview.postMessage({
+            type: "answerQuestion",
+            answer: resp.answer,
+          });
+        }
+        showAnswerInTextEditor(resp.filename, resp.range, resp.answer);
+      } catch (error: any) {
+        if (webviewView) {
+          webviewView.webview.postMessage({
+            type: "answerQuestion",
+            answer: error,
+          });
+        }
+      }
+    }
+  );
+}
+
 export function activate(context: vscode.ExtensionContext) {
   const provider = new DebugViewProvider(context.extensionUri);
 
@@ -51,28 +85,30 @@ export function activate(context: vscode.ExtensionContext) {
           return;
         }
 
-        // Feed the question into the python script
-        bridge
-          .askQuestion(
-            data.question,
-            vscode.workspace.workspaceFolders[0].uri.fsPath
-          )
-          .then((resp) => {
-            // Send the answer back to the webview
-            webviewView.webview.postMessage({
-              type: "answerQuestion",
-              answer: resp.answer,
-            });
-            showAnswerInTextEditor(resp.filename, resp.range, resp.answer);
-          })
-          .catch((error: any) => {
-            webviewView.webview.postMessage({
-              type: "answerQuestion",
-              answer: error,
-            });
-          });
+        answerQuestion(
+          data.question,
+          vscode.workspace.workspaceFolders[0].uri.fsPath,
+          webviewView
+        );
       }
     )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("autodebug.askQuestionFromInput", () => {
+      vscode.window
+        .showInputBox({ placeHolder: "Ask away!" })
+        .then((question) => {
+          if (!question || !vscode.workspace.workspaceFolders) {
+            return;
+          }
+
+          answerQuestion(
+            question,
+            vscode.workspace.workspaceFolders[0].uri.fsPath
+          );
+        });
+    })
   );
 
   context.subscriptions.push(
@@ -107,29 +143,30 @@ function showAnswerInTextEditor(
     }
 
     // Open file, reveal range, show decoration
-    vscode.window.showTextDocument(doc);
-    editor.revealRange(
-      new vscode.Range(range.end, range.end),
-      vscode.TextEditorRevealType.InCenter
-    );
+    vscode.window.showTextDocument(doc).then((new_editor) => {
+      new_editor.revealRange(
+        new vscode.Range(range.end, range.end),
+        vscode.TextEditorRevealType.InCenter
+      );
 
-    let decorationType = vscode.window.createTextEditorDecorationType({
-      after: {
-        contentText: answer + "\n",
-        color: "rgb(0, 255, 0, 0.8)",
-      },
-      backgroundColor: "rgb(0, 255, 0, 0.2)",
-    });
-    editor.setDecorations(decorationType, [range]);
+      let decorationType = vscode.window.createTextEditorDecorationType({
+        after: {
+          contentText: answer + "\n",
+          color: "rgb(0, 255, 0, 0.8)",
+        },
+        backgroundColor: "rgb(0, 255, 0, 0.2)",
+      });
+      new_editor.setDecorations(decorationType, [range]);
 
-    // Remove decoration when user moves cursor
-    vscode.window.onDidChangeTextEditorSelection((e) => {
-      if (
-        e.textEditor === editor &&
-        e.selections[0].active.line !== range.end.line
-      ) {
-        editor.setDecorations(decorationType, []);
-      }
+      // Remove decoration when user moves cursor
+      vscode.window.onDidChangeTextEditorSelection((e) => {
+        if (
+          e.textEditor === new_editor &&
+          e.selections[0].active.line !== range.end.line
+        ) {
+          new_editor.setDecorations(decorationType, []);
+        }
+      });
     });
   });
 }
