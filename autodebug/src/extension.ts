@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as bridge from "./bridge";
 const pty = require("node-pty");
 const os = require("os");
+const path = require("path");
 
 async function answerQuestion(
   question: string,
@@ -39,6 +40,40 @@ async function answerQuestion(
 
 export function activate(context: vscode.ExtensionContext) {
   const provider = new DebugViewProvider(context.extensionUri);
+
+  if (vscode.window.activeTextEditor) {
+    showSuggestion(
+      vscode.window.activeTextEditor,
+      new vscode.Range(new vscode.Position(1, 0), new vscode.Position(2, 0)),
+      `    abc = [1, 2, 3]
+    return abc[0]
+`
+    )
+      .then((_) =>
+        showSuggestion(
+          vscode.window.activeTextEditor!,
+          new vscode.Range(
+            new vscode.Position(7, 0),
+            new vscode.Position(8, 0)
+          ),
+          `    abc = [1, 2, 3]
+    return abc[0]
+`
+        )
+      )
+      .then((_) =>
+        showSuggestion(
+          vscode.window.activeTextEditor!,
+          new vscode.Range(
+            new vscode.Position(13, 0),
+            new vscode.Position(14, 0)
+          ),
+          `    abc = [1, 2, 3]
+    return abc[0]
+`
+        )
+      );
+  }
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
@@ -116,6 +151,26 @@ export function activate(context: vscode.ExtensionContext) {
           );
         });
     })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "autodebug.suggestionDown",
+      suggestionDownCommand
+    )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "autodebug.suggestionUp",
+      suggestionUpCommand
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "autodebug.acceptSuggestion",
+      acceptSuggestionCommand
+    )
   );
 
   context.subscriptions.push(
@@ -249,10 +304,18 @@ class DebugViewProvider implements vscode.WebviewViewProvider {
               );
 
               if (!editor.selection.isEmpty) {
-                // Replace the selected text with the suggestion
-                editor.edit((editBuilder) => {
-                  editBuilder.replace(editor.selection, ctx.suggestion || "");
-                });
+                showSuggestion(
+                  editor,
+                  new vscode.Range(
+                    editor.selection.start,
+                    editor.selection.end
+                  ),
+                  ctx.suggestion || ""
+                );
+                // // Replace the selected text with the suggestion
+                // editor.edit((editBuilder) => {
+                //   editBuilder.replace(editor.selection, ctx.suggestion || "");
+                // });
               }
             }
           );
@@ -534,5 +597,219 @@ function openCapturedTerminal(webview: vscode.Webview) {
   const terminal = vscode.window.createTerminal({
     name: "AutoDebug",
     pty: newPty,
+  });
+}
+
+interface SuggestionRanges {
+  oldRange: vscode.Range;
+  newRange: vscode.Range;
+  // oldDecorationType: vscode.TextEditorDecorationType;
+  // newDecorationType: vscode.TextEditorDecorationType;
+  newSelected: boolean;
+}
+
+let newDecorationType = vscode.window.createTextEditorDecorationType({
+  backgroundColor: "rgb(0, 255, 0, 0.2)",
+  isWholeLine: true,
+});
+let oldDecorationType = vscode.window.createTextEditorDecorationType({
+  backgroundColor: "rgb(255, 0, 0, 0.2)",
+  isWholeLine: true,
+  cursor: "pointer",
+});
+let newSelDecorationType = vscode.window.createTextEditorDecorationType({
+  backgroundColor: "rgb(0, 255, 0, 0.5)",
+  isWholeLine: true,
+  after: {
+    contentText: "Press cmd+shift+enter to accept",
+  },
+});
+let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
+  backgroundColor: "rgb(255, 0, 0, 0.5)",
+  isWholeLine: true,
+  after: {
+    contentText: "Press cmd+shift+enter to reject",
+  },
+});
+
+const editorToSuggestions: Map<
+  string, // URI of file
+  SuggestionRanges[]
+> = new Map();
+let currentSuggestion: Map<string, number> = new Map(); // Map from editor URI to index of current SuggestionRanges in editorToSuggestions
+
+function rerenderDecorations(editorUri: string) {
+  let suggestions = editorToSuggestions.get(editorUri);
+  let idx = currentSuggestion.get(editorUri);
+  let editor = vscode.window.visibleTextEditors.find(
+    (editor) => editor.document.uri.toString() === editorUri
+  );
+  if (!suggestions || !editor) return;
+
+  let olds = [],
+    news = [],
+    oldSels = [],
+    newSels = [];
+  for (let i = 0; i < suggestions.length; i++) {
+    let suggestion = suggestions[i];
+    if (typeof idx != "undefined" && idx === i) {
+      if (suggestion.newSelected) {
+        olds.push(suggestion.oldRange);
+        newSels.push(suggestion.newRange);
+      } else {
+        oldSels.push(suggestion.oldRange);
+        news.push(suggestion.newRange);
+      }
+    } else {
+      olds.push(suggestion.oldRange);
+      news.push(suggestion.newRange);
+    }
+  }
+  editor.setDecorations(oldDecorationType, olds);
+  editor.setDecorations(newDecorationType, news);
+  editor.setDecorations(oldSelDecorationType, oldSels);
+  editor.setDecorations(newSelDecorationType, newSels);
+
+  // Reveal the range in the editor
+  if (idx === undefined) return;
+  editor.revealRange(
+    suggestions[idx].newRange,
+    vscode.TextEditorRevealType.Default
+  );
+}
+
+function suggestionDownCommand() {
+  let editor = vscode.window.activeTextEditor;
+  if (!editor) return;
+  let editorUri = editor.document.uri.toString();
+  let suggestions = editorToSuggestions.get(editorUri);
+  let idx = currentSuggestion.get(editorUri);
+  if (!suggestions || idx === undefined) return;
+
+  let suggestion = suggestions[idx];
+  if (!suggestion.newSelected) {
+    suggestion.newSelected = true;
+  } else if (idx + 1 < suggestions.length) {
+    currentSuggestion.set(editorUri, idx + 1);
+  } else return;
+  rerenderDecorations(editorUri);
+}
+
+function suggestionUpCommand() {
+  let editor = vscode.window.activeTextEditor;
+  if (!editor) return;
+  let editorUri = editor.document.uri.toString();
+  let suggestions = editorToSuggestions.get(editorUri);
+  let idx = currentSuggestion.get(editorUri);
+  if (!suggestions || idx === undefined) return;
+
+  let suggestion = suggestions[idx];
+  if (suggestion.newSelected) {
+    suggestion.newSelected = false;
+  } else if (idx > 0) {
+    currentSuggestion.set(editorUri, idx - 1);
+  } else return;
+  rerenderDecorations(editorUri);
+}
+
+function translate(range: vscode.Range, lines: number): vscode.Range {
+  return new vscode.Range(
+    range.start.line + lines,
+    range.start.character,
+    range.end.line + lines,
+    range.end.character
+  );
+}
+
+function acceptSuggestionCommand() {
+  let editor = vscode.window.activeTextEditor;
+  if (!editor) return;
+  let editorUri = editor.document.uri.toString();
+  let suggestions = editorToSuggestions.get(editorUri);
+  let idx = currentSuggestion.get(editorUri);
+
+  if (!suggestions || idx === undefined) return;
+
+  let [suggestion] = suggestions.splice(idx, 1);
+  var rangeToDelete = suggestion.newSelected
+    ? suggestion.oldRange
+    : suggestion.newRange;
+  rangeToDelete = new vscode.Range(
+    rangeToDelete.start,
+    new vscode.Position(rangeToDelete.end.line + 1, 0)
+  );
+  editor.edit((edit) => {
+    edit.delete(rangeToDelete);
+  });
+
+  // Shift the below suggestions up
+  let linesToShift = rangeToDelete.end.line - rangeToDelete.start.line;
+  for (let below of suggestions) {
+    // Assumes there should be no crossover between suggestions. Might want to enforce this.
+    if (
+      below.oldRange.union(below.newRange).start.line >
+      suggestion.oldRange.union(suggestion.newRange).start.line
+    ) {
+      below.oldRange = translate(below.oldRange, -linesToShift);
+      below.newRange = translate(below.newRange, -linesToShift);
+    }
+  }
+
+  if (suggestions.length === 0) {
+    currentSuggestion.delete(editorUri);
+  } else {
+    currentSuggestion.set(editorUri, Math.min(idx, suggestions.length - 1));
+  }
+  rerenderDecorations(editorUri);
+}
+
+function showSuggestion(
+  editor: vscode.TextEditor,
+  range: vscode.Range,
+  suggestion: string
+): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    editor
+      .edit((edit) => {
+        edit.insert(new vscode.Position(range.end.line + 1, 0), suggestion);
+      })
+      .then(
+        (success) => {
+          if (success) {
+            let suggestionRange = new vscode.Range(
+              new vscode.Position(range.end.line + 1, 0),
+              new vscode.Position(
+                range.end.line + suggestion.split("\n").length - 1,
+                0
+              )
+            );
+
+            const filename = editor.document.uri.toString();
+            if (editorToSuggestions.has(filename)) {
+              let suggestions = editorToSuggestions.get(filename)!;
+              suggestions.push({
+                oldRange: range,
+                newRange: suggestionRange,
+                newSelected: true,
+              });
+              editorToSuggestions.set(filename, suggestions);
+              currentSuggestion.set(filename, suggestions.length - 1);
+            } else {
+              editorToSuggestions.set(filename, [
+                {
+                  oldRange: range,
+                  newRange: suggestionRange,
+                  newSelected: true,
+                },
+              ]);
+              currentSuggestion.set(filename, 0);
+            }
+
+            rerenderDecorations(filename);
+          }
+          resolve(success);
+        },
+        (reason) => reject(reason)
+      );
   });
 }

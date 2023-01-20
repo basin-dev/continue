@@ -53,6 +53,21 @@
         "command": "autodebug.createTerminal",
         "category": "AutoDebug",
         "title": "Create Terminal"
+      },
+      {
+        "command": "autodebug.suggestionDown",
+        "category": "AutoDebug",
+        "title": "Suggestion Down"
+      },
+      {
+        "command": "autodebug.suggestionUp",
+        "category": "AutoDebug",
+        "title": "Suggestion Up"
+      },
+      {
+        "command": "autodebug.acceptSuggestion",
+        "category": "AutoDebug",
+        "title": "Accept Suggestion"
       }
     ],
     "keybindings": [
@@ -65,6 +80,21 @@
         "command": "autodebug.askQuestionFromInput",
         "key": "ctrl+alt+j",
         "mac": "shift+cmd+j"
+      },
+      {
+        "command": "autodebug.suggestionDown",
+        "mac": "shift+ctrl+down",
+        "key": "shift+ctrl+down"
+      },
+      {
+        "command": "autodebug.suggestionUp",
+        "mac": "shift+ctrl+up",
+        "key": "shift+ctrl+up"
+      },
+      {
+        "command": "autodebug.acceptSuggestion",
+        "mac": "shift+ctrl+enter",
+        "key": "shift+ctrl+enter"
       }
     ],
     "menus": {
