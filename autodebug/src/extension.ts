@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as bridge from "./bridge";
+import DebugViewProvider from "./DebugViewProvider";
 import {
   showSuggestion,
   suggestionUpCommand,
@@ -7,8 +8,7 @@ import {
   acceptSuggestionCommand,
   showAnswerInTextEditor,
 } from "./textEditorDisplay";
-const pty = require("node-pty");
-const os = require("os");
+
 const path = require("path");
 
 export function activate(context: vscode.ExtensionContext) {
@@ -52,13 +52,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.registerWebviewViewProvider(
       DebugViewProvider.viewType,
       provider
-    )
-  );
-
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(
-      DebugPanelViewProvider.viewType,
-      new DebugPanelViewProvider(context.extensionUri)
     )
   );
 
@@ -209,78 +202,4 @@ async function answerQuestion(
       }
     }
   );
-}
-
-function openCapturedTerminal(webview: vscode.Webview) {
-  let workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders) return;
-
-  var isWindows = os.platform() === "win32";
-  var shell = isWindows ? "powershell.exe" : "zsh";
-
-  var ptyProcess = pty.spawn(shell, [], {
-    name: "xterm-256color",
-    cols: 100, // TODO: Get size of vscode terminal, and change with resize
-    rows: 26,
-    cwd: isWindows ? process.env.USERPROFILE : process.env.HOME,
-    env: Object.assign({ TEST: "Environment vars work" }, process.env),
-    useConpty: true,
-  });
-
-  const writeEmitter = new vscode.EventEmitter<string>();
-
-  const tracebackStart = "Traceback (most recent call last):";
-  const tracebackEnd = (buf: string): string | undefined => {
-    let lines = buf.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      if (
-        lines[i].startsWith("  File") &&
-        i + 2 < lines.length &&
-        lines[i + 2][0] != " "
-      ) {
-        return lines.slice(0, i + 3).join("\n");
-      }
-    }
-    return undefined;
-  };
-  let tracebackBuffer = "";
-
-  ptyProcess.onData((data: any) => {
-    // Snoop for traceback
-    let idx = data.indexOf(tracebackStart);
-    if (idx >= 0) {
-      tracebackBuffer = data.substr(idx);
-    } else if (tracebackBuffer.length > 0) {
-      tracebackBuffer += data;
-    }
-    // End of traceback, send to webview
-    if (idx > 0 || tracebackBuffer.length > 0) {
-      let wholeTraceback = tracebackEnd(tracebackBuffer);
-      if (wholeTraceback) {
-        webview.postMessage({ type: "traceback", traceback: wholeTraceback });
-      }
-    }
-    // Pass data through to terminal
-    // if (tracebackBuffer.length > 0) {
-    //   writeEmitter.fire("----------------------------------------\r");
-    // }
-    writeEmitter.fire(data);
-  });
-  process.on("exit", () => ptyProcess.kill());
-
-  ptyProcess.write("cd " + workspaceFolders[0].uri.fsPath + "\n\r");
-  ptyProcess.write("clear\n\r");
-
-  const newPty: vscode.Pseudoterminal = {
-    onDidWrite: writeEmitter.event,
-    open: () => {},
-    close: () => {},
-    handleInput: (data) => {
-      ptyProcess.write(data);
-    },
-  };
-  const terminal = vscode.window.createTerminal({
-    name: "AutoDebug",
-    pty: newPty,
-  });
 }

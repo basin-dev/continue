@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { getNonce } from "./vscodeUtils";
 
 class DebugPanelViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "autodebug.debugPanelView";
