@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as bridge from "./bridge";
+import { setupDebugPanel } from "./debugPanel";
 import DebugViewProvider from "./DebugViewProvider";
 import {
   showSuggestion,
@@ -96,7 +97,7 @@ export function activate(context: vscode.ExtensionContext) {
         answerQuestion(
           data.question,
           vscode.workspace.workspaceFolders[0].uri.fsPath,
-          webviewView
+          webviewView.webview
         );
       }
     )
@@ -147,6 +148,9 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.ViewColumn.Beside,
         {}
       );
+
+      // And set its HTML content
+      panel.webview.html = setupDebugPanel(panel.webview);
     })
   );
 
@@ -173,7 +177,7 @@ export function activate(context: vscode.ExtensionContext) {
 async function answerQuestion(
   question: string,
   workspacePath: string,
-  webviewView: vscode.WebviewView | undefined = undefined
+  webview: vscode.Webview | undefined = undefined
 ) {
   vscode.window.withProgress(
     {
@@ -185,16 +189,16 @@ async function answerQuestion(
       try {
         let resp = await bridge.askQuestion(question, workspacePath);
         // Send the answer back to the webview
-        if (webviewView) {
-          webviewView.webview.postMessage({
+        if (webview) {
+          webview.postMessage({
             type: "answerQuestion",
             answer: resp.answer,
           });
         }
         showAnswerInTextEditor(resp.filename, resp.range, resp.answer);
       } catch (error: any) {
-        if (webviewView) {
-          webviewView.webview.postMessage({
+        if (webview) {
+          webview.postMessage({
             type: "answerQuestion",
             answer: error,
           });
