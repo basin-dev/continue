@@ -1,71 +1,52 @@
-# autodebug README
+# autodebug VS Code Extension README
 
-This is the README for your extension "autodebug". After writing up a brief description, we recommend including the following sections.
+## How to get started with development
+
+1. Clone the `unit-test-experiments` repo
+
+2. Open the `unit-test-experiments` repo in VS Code
+
+3. Run `cd autodebug` command in the VS Code terminal
+
+4. Change path `get_python_path()` in `src/bridge.ts` to the location of your `unit-test-experiments` repo
+
+5. yarn install???
+
+6. Open `src/extension.ts` file
+
+7. Press `F5` on your keyboard to start `Run and Debug` mode
+
+8. `cmd+p` for extension commands?? (I can't find anything though...)
+
+## Background
+
+- `src/bridge.ts`: connects this VS Code Extension to our Python backend that interacts with GPT-3
+- `src/commands.ts`: empty (can this be removed?)
+- `src/debugPanel.ts`: contains the HTML for the first part of the extension
+- `src/DebugViewProvider.ts`: contains the HTML for the second part of the extension
+- `src/extension.ts`: entry point into the extension, where all of the commands / views are registered
+- `media/main.js`: handles messages sent from the extension to the webview
+- `media/debugPanel.js`: why do we need this file and `main.js`?
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- `List 10 things that might be wrong` button
+- `Write a unit test to reproduce bug` button
+- Highlight a code range + `Find Suspicious Code` button
+- `Suggest Fix` button
+- A fix suggestion shown to you + `Make Edit` button
+- Write a docstring for the current function
+- Ask a question about your codebase
+- Suggestion up / down ??? (no clue what this does)
 
-For example if there is an image subfolder under your extension project workspace:
+## Commands
 
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- "Write a docstring for the current function" command (windows: `ctrl+alt+l`, mac: `shift+cmd+l`)
+- "Open Debug Panel" command 
+- "Ask a question from input box" command (windows: `ctrl+alt+j`, mac: `shift+cmd+j`)
+- "Open Captured Terminal" command
+- "Ask a question from webview" command (what context is it given?)
+- "Create Terminal" command ???
+- "Suggestion Down" command (windows: `shift+ctrl+down`, mac: `shift+ctrl+down`)
+- "Suggestion Up" command (windows: `shift+ctrl+up`, mac: `shift+ctrl+up`)
+- "Accept Suggestion" command (windows: `shift+ctrl+enter`, mac: `shift+ctrl+enter`)
