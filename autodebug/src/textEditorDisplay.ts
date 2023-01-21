@@ -8,23 +8,23 @@ interface SuggestionRanges {
 }
 
 let newDecorationType = vscode.window.createTextEditorDecorationType({
-  backgroundColor: "rgb(0, 255, 0, 0.2)",
+  backgroundColor: "rgb(0, 255, 0, 0.15)",
   isWholeLine: true,
 });
 let oldDecorationType = vscode.window.createTextEditorDecorationType({
-  backgroundColor: "rgb(255, 0, 0, 0.2)",
+  backgroundColor: "rgb(255, 0, 0, 0.15)",
   isWholeLine: true,
   cursor: "pointer",
 });
 let newSelDecorationType = vscode.window.createTextEditorDecorationType({
-  backgroundColor: "rgb(0, 255, 0, 0.5)",
+  backgroundColor: "rgb(0, 255, 0, 0.35)",
   isWholeLine: true,
   after: {
     contentText: "Press cmd+shift+enter to accept",
   },
 });
 let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
-  backgroundColor: "rgb(255, 0, 0, 0.5)",
+  backgroundColor: "rgb(255, 0, 0, 0.35)",
   isWholeLine: true,
   after: {
     contentText: "Press cmd+shift+enter to reject",
