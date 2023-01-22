@@ -10,60 +10,6 @@
 # Check for coverage, generate more tests intelligently if not 100%
 # Add stop token
 
-
-
-
-
-
-# Small tests:
-# fn_1: 4/10
-# fn_2: 5/10
-# fn_3: 5/10
-# general_1: 8/10
-# fn_edit_check_return:
-
-"""
-Tests on full utils.py:
-
-fn_1
-Total tests: 24
-Passing Tests: 9
-Failed to parse: 2
-Failed to run: 0
-Did not pass: 13
-
-fn_2
-Total tests: 24
-Passing Tests: 11
-Failed to parse: 1
-Failed to run: 0
-Did not pass: 12
-
-fn_3
-Total tests: 24
-Passing Tests: 12
-Failed to parse: 1
-Failed to run: 4
-Did not pass: 7
-
-general_1
-Total tests: 24
-Passing Tests: 14
-Failed to parse: 0
-Failed to run: 0
-Did not pass: 10
-
-fn_edit_check_return
-Total tests: 24
-Passing Tests: 5
-Failed to parse: 2
-Failed to run: 0
-Did not pass: 17
-
-
-
-"""
-
 import ast
 from typing import Any, Callable, List, Tuple
 from llm import LLM, OpenAI

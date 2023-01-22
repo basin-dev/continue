@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
-import { translate } from "./vscodeUtils";
+import { getTestFile, translate } from "./vscodeUtils";
+import * as path from "path";
+import { setFlagsFromString } from "v8";
 
 interface SuggestionRanges {
   oldRange: vscode.Range;
@@ -243,4 +245,210 @@ export function showAnswerInTextEditor(
       });
     });
   });
+}
+
+export function showLintingError() {}
+
+// Maybe make an editor class to hold all decorations.
+// It's always the same flow per decoration: create a map, add to map, rerender, pass a deletion function or keep track of some state, reveal editor
+
+type DecorationKey = {
+  editorUri: string;
+  options: vscode.DecorationOptions;
+  decorationType: vscode.TextEditorDecorationType;
+};
+
+function rerenderDecorationType(
+  editor: vscode.TextEditor,
+  type: vscode.TextEditorDecorationType
+) {}
+
+class DecorationManager {
+  private editorToDecorations = new Map<
+    string,
+    Map<vscode.TextEditorDecorationType, vscode.DecorationOptions[]>
+  >();
+
+  constructor() {}
+
+  private rerenderDecorations(
+    editorUri: string,
+    decorationType: vscode.TextEditorDecorationType
+  ) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
+    }
+
+    const decorationTypes = this.editorToDecorations.get(editorUri);
+    if (!decorationTypes) {
+      return;
+    }
+
+    const decorations = decorationTypes.get(decorationType);
+    if (!decorations) {
+      return;
+    }
+
+    editor.setDecorations(decorationType, decorations);
+  }
+
+  addDecoration(key: DecorationKey) {
+    let decorationTypes = this.editorToDecorations.get(key.editorUri);
+    if (!decorationTypes) {
+      decorationTypes = new Map();
+      decorationTypes.set(key.decorationType, [key.options]);
+      this.editorToDecorations.set(key.editorUri, decorationTypes);
+    }
+
+    const decorations = decorationTypes.get(key.decorationType);
+    if (!decorations) {
+      decorationTypes.set(key.decorationType, [key.options]);
+    } else {
+      decorations.push(key.options);
+    }
+    this.rerenderDecorations(key.editorUri, key.decorationType);
+  }
+
+  deleteDecoration(key: DecorationKey) {
+    let decorationTypes = this.editorToDecorations.get(key.editorUri);
+    if (!decorationTypes) {
+      return;
+    }
+
+    let decorations = decorationTypes?.get(key.decorationType);
+    if (!decorations) {
+      return;
+    }
+
+    decorations = decorations.filter((decOpts) => decOpts !== key.options);
+    decorationTypes.set(key.decorationType, decorations);
+    this.rerenderDecorations(key.editorUri, key.decorationType);
+  }
+
+  deleteAllDecorations(editorUri: string) {
+    let decorationTypes = this.editorToDecorations.get(editorUri)?.keys();
+    if (!decorationTypes) {
+      return;
+    }
+    this.editorToDecorations.delete(editorUri);
+    for (let decorationType of decorationTypes) {
+      this.rerenderDecorations(editorUri, decorationType);
+    }
+  }
+}
+
+export const decorationManager = new DecorationManager();
+
+function constructBaseKey(
+  editor: vscode.TextEditor,
+  lineno: number,
+  decorationType?: vscode.TextEditorDecorationType
+): DecorationKey {
+  return {
+    editorUri: editor.document.uri.toString(),
+    options: {
+      range: new vscode.Range(lineno, 0, lineno, 0),
+    },
+    decorationType:
+      decorationType || vscode.window.createTextEditorDecorationType({}),
+  };
+}
+
+const gutterSpinnerDecorationType =
+  vscode.window.createTextEditorDecorationType({
+    gutterIconPath: vscode.Uri.file(
+      path.join(__dirname, "..", "media", "spinner.gif")
+    ),
+    gutterIconSize: "contain",
+  });
+
+export function showGutterSpinner(
+  editor: vscode.TextEditor,
+  lineno: number
+): DecorationKey {
+  const key = constructBaseKey(editor, lineno, gutterSpinnerDecorationType);
+  decorationManager.addDecoration(key);
+  return key;
+}
+
+export function showLintMessage(
+  editor: vscode.TextEditor,
+  lineno: number,
+  msg: string
+): DecorationKey {
+  const key = constructBaseKey(editor, lineno);
+  key.decorationType = vscode.window.createTextEditorDecorationType({
+    after: {
+      contentText: "Linting error",
+      color: "rgb(255, 0, 0, 0.6)",
+    },
+    gutterIconPath: vscode.Uri.file(
+      path.join(__dirname, "..", "media", "error.png")
+    ),
+    gutterIconSize: "contain",
+  });
+  key.options.hoverMessage = msg;
+  decorationManager.addDecoration(key);
+  return key;
+}
+
+function highlightCode(
+  editor: vscode.TextEditor,
+  range: vscode.Range
+): DecorationKey {
+  const decorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: "rgb(255, 255, 0, 0.2)",
+  });
+  const key = {
+    editorUri: editor.document.uri.toString(),
+    options: {
+      range,
+    },
+    decorationType,
+  };
+  decorationManager.addDecoration(key);
+  return key;
+}
+
+export function displayMatchingTest(
+  editor: vscode.TextEditor,
+  pos: vscode.Position
+): Thenable<DecorationKey> {
+  const thenable = new Promise<DecorationKey>((resolve, reject) => {
+    const testRange = new vscode.Range(0, 0, 5, 0); // TODO: pos -> function/class -> test -> range of test
+    let testFilename = getTestFile(editor.document.fileName);
+    vscode.workspace.openTextDocument(testFilename).then((doc) => {
+      vscode.window
+        .showTextDocument(doc, vscode.ViewColumn.Beside)
+        .then((editor) => {
+          resolve(highlightCode(editor, testRange));
+        });
+    });
+  });
+  return thenable;
+}
+
+export function insertSuggestionSnippet(
+  editor: vscode.TextEditor,
+  options: string[],
+  location: vscode.Position | vscode.Range
+) {
+  let opts = options.map((opt: string) => opt.replace(",", "\\,"));
+  editor.insertSnippet(
+    new vscode.SnippetString(`\${1|${opts.join(",")}|}`),
+    location,
+    { undoStopBefore: false, undoStopAfter: false }
+  );
+}
+
+export function selectSurroundingFunction(
+  editor: vscode.TextEditor,
+  pos: vscode.Position
+) {
+  // TODO: I think there should be some way to get language server information, like that which defines code folding
+  editor.selection = new vscode.Selection(
+    new vscode.Position(pos.line - 1, 0),
+    new vscode.Position(pos.line + 1, 0)
+  );
 }

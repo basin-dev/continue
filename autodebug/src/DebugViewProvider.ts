@@ -145,7 +145,7 @@ export default class DebugViewProvider implements vscode.WebviewViewProvider {
       }
     });
 
-    openCapturedTerminal(webviewView.webview);
+    // openCapturedTerminal(webviewView.webview);
   }
 
   public enterBugDescription() {

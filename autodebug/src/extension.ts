@@ -8,7 +8,14 @@ import {
   suggestionDownCommand,
   acceptSuggestionCommand,
   showAnswerInTextEditor,
+  editorToSuggestions,
 } from "./textEditorDisplay";
+import {
+  LanguageClient,
+  LanguageClientOptions,
+  ServerOptions,
+  TransportKind,
+} from "vscode-languageclient/node";
 
 const path = require("path");
 
@@ -16,37 +23,71 @@ export function activate(context: vscode.ExtensionContext) {
   const provider = new DebugViewProvider(context.extensionUri);
 
   if (vscode.window.activeTextEditor) {
-    showSuggestion(
-      vscode.window.activeTextEditor,
-      new vscode.Range(new vscode.Position(1, 0), new vscode.Position(2, 0)),
-      `    abc = [1, 2, 3]
-    return abc[0]
-`
-    )
-      .then((_) =>
-        showSuggestion(
-          vscode.window.activeTextEditor!,
-          new vscode.Range(
-            new vscode.Position(7, 0),
-            new vscode.Position(8, 0)
-          ),
-          `    abc = [1, 2, 3]
-    return abc[0]
-`
-        )
-      )
-      .then((_) =>
-        showSuggestion(
-          vscode.window.activeTextEditor!,
-          new vscode.Range(
-            new vscode.Position(13, 0),
-            new vscode.Position(14, 0)
-          ),
-          `    abc = [1, 2, 3]
-    return abc[0]
-`
-        )
-      );
+    let editor = vscode.window.activeTextEditor;
+
+    const serverOptions: ServerOptions = {
+      run: { module: "echo Hello World!", transport: TransportKind.stdio },
+      debug: {
+        module: "echo Hello World!",
+        transport: TransportKind.ipc,
+      },
+    };
+
+    const clientOptions: LanguageClientOptions = {
+      // Register the server for python documents
+      documentSelector: [{ scheme: "file", language: "python" }],
+    };
+
+    // Create the language client and start the client.
+    const client = new LanguageClient(
+      "languageServerExample",
+      "Language Server Example",
+      serverOptions,
+      clientOptions
+    );
+
+    // Start the client. This will also launch the server
+    client.start();
+    client
+      .sendRequest("textDocument/completion")
+      .then((resp) => {
+        console.log(resp);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+
+    //     showSuggestion(
+    //       vscode.window.activeTextEditor,
+    //       new vscode.Range(new vscode.Position(1, 0), new vscode.Position(2, 0)),
+    //       `    abc = [1, 2, 3]
+    //     return abc[0]
+    // `
+    //     )
+    //       .then((_) =>
+    //         showSuggestion(
+    //           vscode.window.activeTextEditor!,
+    //           new vscode.Range(
+    //             new vscode.Position(7, 0),
+    //             new vscode.Position(8, 0)
+    //           ),
+    //           `    abc = [1, 2, 3]
+    //     return abc[0]
+    // `
+    //         )
+    //       )
+    //       .then((_) =>
+    //         showSuggestion(
+    //           vscode.window.activeTextEditor!,
+    //           new vscode.Range(
+    //             new vscode.Position(13, 0),
+    //             new vscode.Position(14, 0)
+    //           ),
+    //           `    abc = [1, 2, 3]
+    //     return abc[0]
+    // `
+    //         )
+    //       );
   }
 
   context.subscriptions.push(
