@@ -8,25 +8,26 @@
 
 3. Run `cd autodebug` command in the VS Code terminal
 
-4. Change path `get_python_path()` in `src/bridge.ts` to the location of your `unit-test-experiments` repo
+4. Create a `src/.env` file with the variable `PYTHON_PATH` that points to the location of your `unit-test-experiments` file path
 
-5. yarn install???
+5. run `npm install`
 
 6. Open `src/extension.ts` file
 
 7. Press `F5` on your keyboard to start `Run and Debug` mode
 
-8. `cmd+p` for extension commands?? (I can't find anything though...)
+8. `cmd+shift+p` for extension commands?? (I can't find anything though...)
+
+9. Every time you make changes to the code, you need to run `npm run compile`
 
 ## Background
 
 - `src/bridge.ts`: connects this VS Code Extension to our Python backend that interacts with GPT-3
-- `src/commands.ts`: empty (can this be removed?)
-- `src/debugPanel.ts`: contains the HTML for the first part of the extension
-- `src/DebugViewProvider.ts`: contains the HTML for the second part of the extension
-- `src/extension.ts`: entry point into the extension, where all of the commands / views are registered
-- `media/main.js`: handles messages sent from the extension to the webview
-- `media/debugPanel.js`: why do we need this file and `main.js`?
+- `src/debugPanel.ts`: contains the HTML for the full window on the right (used for investigation)
+- `src/DebugViewProvider.ts`: contains the HTML for the bottom left panel
+- `src/extension.ts`: entry point into the extension, where all of the commands / views are registered (activate function is what happens when you start autodebugger)
+- `media/main.js`: handles messages sent from the extension to the webview (bottom left)
+- `media/debugPanel.js`: loaded by right window
 
 ## Features
 
@@ -37,7 +38,7 @@
 - A fix suggestion shown to you + `Make Edit` button
 - Write a docstring for the current function
 - Ask a question about your codebase
-- Suggestion up / down ??? (no clue what this does)
+- Move up / down to the closest suggestion
 
 ## Commands
 

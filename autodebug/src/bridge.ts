@@ -1,10 +1,13 @@
 import * as vscode from "vscode";
 import path = require("path");
+import * as dotenv from 'dotenv';
+
+dotenv.config({ path: __dirname+'/.env' });
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 
 function get_python_path() {
-  return "/Users/natesesti/Desktop/basin/unit-test-experiments";
+  return String(process.env.PYTHON_PATH);
 }
 
 function build_python_command(cmd: string): string {
