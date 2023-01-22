@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as bridge from "./bridge";
 import { setupDebugPanel } from "./debugPanel";
 import DebugViewProvider from "./DebugViewProvider";
+import { MyCodeLensProvider } from "./languageServer";
 import {
   showSuggestion,
   suggestionUpCommand,
@@ -9,85 +10,56 @@ import {
   acceptSuggestionCommand,
   showAnswerInTextEditor,
   editorToSuggestions,
+  showGutterSpinner,
+  decorationManager,
 } from "./textEditorDisplay";
-import {
-  LanguageClient,
-  LanguageClientOptions,
-  ServerOptions,
-  TransportKind,
-} from "vscode-languageclient/node";
 
 const path = require("path");
 
 export function activate(context: vscode.ExtensionContext) {
   const provider = new DebugViewProvider(context.extensionUri);
 
+  context.subscriptions.push(
+    vscode.languages.registerCodeLensProvider(
+      "python",
+      new MyCodeLensProvider()
+    )
+  );
+
   if (vscode.window.activeTextEditor) {
     let editor = vscode.window.activeTextEditor;
 
-    const serverOptions: ServerOptions = {
-      run: { module: "echo Hello World!", transport: TransportKind.stdio },
-      debug: {
-        module: "echo Hello World!",
-        transport: TransportKind.ipc,
-      },
-    };
-
-    const clientOptions: LanguageClientOptions = {
-      // Register the server for python documents
-      documentSelector: [{ scheme: "file", language: "python" }],
-    };
-
-    // Create the language client and start the client.
-    const client = new LanguageClient(
-      "languageServerExample",
-      "Language Server Example",
-      serverOptions,
-      clientOptions
-    );
-
-    // Start the client. This will also launch the server
-    client.start();
-    client
-      .sendRequest("textDocument/completion")
-      .then((resp) => {
-        console.log(resp);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-
-    //     showSuggestion(
-    //       vscode.window.activeTextEditor,
-    //       new vscode.Range(new vscode.Position(1, 0), new vscode.Position(2, 0)),
-    //       `    abc = [1, 2, 3]
-    //     return abc[0]
-    // `
-    //     )
-    //       .then((_) =>
-    //         showSuggestion(
-    //           vscode.window.activeTextEditor!,
-    //           new vscode.Range(
-    //             new vscode.Position(7, 0),
-    //             new vscode.Position(8, 0)
-    //           ),
-    //           `    abc = [1, 2, 3]
-    //     return abc[0]
-    // `
-    //         )
-    //       )
-    //       .then((_) =>
-    //         showSuggestion(
-    //           vscode.window.activeTextEditor!,
-    //           new vscode.Range(
-    //             new vscode.Position(13, 0),
-    //             new vscode.Position(14, 0)
-    //           ),
-    //           `    abc = [1, 2, 3]
-    //     return abc[0]
-    // `
-    //         )
-    //       );
+    showSuggestion(
+      vscode.window.activeTextEditor,
+      new vscode.Range(new vscode.Position(1, 0), new vscode.Position(2, 0)),
+      `    abc = [1, 2, 3]
+        return abc[0]
+    `
+    )
+      .then((_) =>
+        showSuggestion(
+          vscode.window.activeTextEditor!,
+          new vscode.Range(
+            new vscode.Position(7, 0),
+            new vscode.Position(8, 0)
+          ),
+          `    abc = [1, 2, 3]
+        return abc[0]
+    `
+        )
+      )
+      .then((_) =>
+        showSuggestion(
+          vscode.window.activeTextEditor!,
+          new vscode.Range(
+            new vscode.Position(13, 0),
+            new vscode.Position(14, 0)
+          ),
+          `    abc = [1, 2, 3]
+        return abc[0]
+    `
+        )
+      );
   }
 
   context.subscriptions.push(
@@ -101,28 +73,20 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerTextEditorCommand(
       "autodebug.writeDocstring",
       async (editor, _) => {
-        vscode.window.withProgress(
-          {
-            location: vscode.ProgressLocation.Notification,
-            title: "AutoDebug",
-            cancellable: false,
-          },
-          async (progress, token) => {
-            progress.report({
-              message: "Writing docstring...",
-            });
-
-            const { lineno, docstring } =
-              await bridge.writeDocstringForFunction(
-                editor.document.fileName,
-                editor.selection.active
-              );
-            // Can't use the edit given above after an async call
-            editor.edit((edit) => {
-              edit.insert(new vscode.Position(lineno, 0), docstring);
-            });
-          }
+        let gutterSpinnerKey = showGutterSpinner(
+          editor,
+          editor.selection.active.line
         );
+
+        const { lineno, docstring } = await bridge.writeDocstringForFunction(
+          editor.document.fileName,
+          editor.selection.active
+        );
+        // Can't use the edit given above after an async call
+        editor.edit((edit) => {
+          edit.insert(new vscode.Position(lineno, 0), docstring);
+          decorationManager.deleteDecoration(gutterSpinnerKey);
+        });
       }
     )
   );
