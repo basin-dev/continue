@@ -396,10 +396,11 @@ export function showLintMessage(
 
 export function highlightCode(
   editor: vscode.TextEditor,
-  range: vscode.Range
+  range: vscode.Range,
+  removeOnClick: boolean = true
 ): DecorationKey {
   const decorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: "rgb(255, 255, 0, 0.2)",
+    backgroundColor: "rgb(255, 255, 0, 0.1)",
   });
   const key = {
     editorUri: editor.document.uri.toString(),
@@ -409,6 +410,15 @@ export function highlightCode(
     decorationType,
   };
   decorationManager.addDecoration(key);
+
+  if (removeOnClick) {
+    vscode.window.onDidChangeTextEditorSelection((e) => {
+      if (e.textEditor === editor) {
+        decorationManager.deleteDecoration(key);
+      }
+    });
+  }
+
   return key;
 }
 
