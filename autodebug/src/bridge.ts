@@ -94,13 +94,14 @@ export async function writeDocstringForFunction(
 // Even no stack trace, just description of problem -> sus lines of code -> fix
 // Should have a series of functions that "enrich" the context, learning increasingly
 // more about the bug
-interface DebugContext {
+export interface DebugContext {
   filename?: string;
   range?: vscode.Range;
   stacktrace?: string;
   explanation?: string;
   unitTest?: string;
   suggestion?: string;
+  code?: string;
 }
 export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
   if (!ctx.stacktrace) {
@@ -122,7 +123,7 @@ export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
       `python3 ${path.join(
         get_python_path(),
         "debug.py"
-      )} suggestion "$(echo "${ctx.stacktrace}")"`
+      )} suggestion "$(echo "${ctx.stacktrace}")" "$(echo "${ctx.code}")"`
     );
   }
   const { stdout, stderr } = await exec(command);
@@ -134,16 +135,58 @@ export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
   return ctx;
 }
 
-async function findSuspiciousCode(ctx: DebugContext): Promise<DebugContext> {
-  if (ctx.filename && ctx.range) return ctx;
+export async function listTenThings(ctx: DebugContext): Promise<string> {
+  let command = build_python_command(
+    `python3 ${path.join(get_python_path(), "debug.py")} listten "$(echo "${
+      ctx.stacktrace
+    }")" "$(echo "${ctx.code}")" "$(echo "${ctx.explanation}")"`
+  );
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+  const tenThings = parseStdout(stdout, "Ten Things", true);
+  return tenThings;
+}
 
-  return ctx;
+export async function makeEdit(ctx: DebugContext): Promise<string> {
+  let command = build_python_command(
+    `python3 ${path.join(get_python_path(), "debug.py")} edit "$(echo "${
+      ctx.stacktrace
+    }")" "$(echo "${ctx.code}")" "$(echo "${ctx.explanation}")"`
+  );
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+  const editedCode = parseStdout(stdout, "Edited Code", true);
+  return editedCode;
+}
+
+export interface CodeLocation {
+  filename: string;
+  range: vscode.Range;
+  codee?: string;
+}
+
+export async function findSuspiciousCode(
+  ctx: DebugContext
+): Promise<CodeLocation[]> {
+  if (ctx.filename && ctx.range) return [];
+
+  let command = build_python_command(
+    `python3 ${path.join(get_python_path(), "debug.py")} findcode "$(echo "${
+      ctx.stacktrace
+    }")"`
+  );
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+  return [];
 }
 
 async function fullyEnrichContext(ctx: DebugContext): Promise<DebugContext> {
-  if (!ctx.filename || !ctx.range) {
-    ctx = await findSuspiciousCode(ctx);
-  }
   if (!ctx.unitTest) {
     // generate unit test
   }

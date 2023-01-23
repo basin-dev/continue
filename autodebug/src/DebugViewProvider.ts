@@ -65,7 +65,7 @@ export default class DebugViewProvider implements vscode.WebviewViewProvider {
 
               if (!editor.selection.isEmpty) {
                 showSuggestion(
-                  editor,
+                  editor.document.fileName,
                   new vscode.Range(
                     editor.selection.start,
                     editor.selection.end

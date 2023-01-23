@@ -46,7 +46,9 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       "autodebug.debugPanelView",
       "AutoDebug",
       vscode.ViewColumn.Beside,
-      {}
+      {
+        enableScripts: true,
+      }
     );
 
     // And set its HTML content

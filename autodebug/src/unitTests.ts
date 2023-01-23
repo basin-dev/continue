@@ -5,6 +5,7 @@ import { writeUnitTestForFunction } from "./bridge";
 import {
   decorationManager,
   highlightCode,
+  openEditorAndRevealRange,
   showGutterSpinner,
 } from "./textEditorDisplay";
 import { getTestFile } from "./vscodeUtils";

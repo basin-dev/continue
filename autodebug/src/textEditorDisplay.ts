@@ -157,13 +157,15 @@ export function acceptSuggestionCommand() {
   rerenderDecorations(editorUri);
 }
 
-export function showSuggestion(
-  editor: vscode.TextEditor,
+export async function showSuggestion(
+  editorFilename: string,
   range: vscode.Range,
   suggestion: string
 ): Promise<boolean> {
+  let editor = await openEditorAndRevealRange(editorFilename, range);
+  if (!editor) return Promise.resolve(false);
   return new Promise((resolve, reject) => {
-    editor
+    editor!
       .edit((edit) => {
         edit.insert(new vscode.Position(range.end.line + 1, 0), suggestion);
       })
@@ -178,7 +180,7 @@ export function showSuggestion(
               )
             );
 
-            const filename = editor.document.uri.toString();
+            const filename = editor!.document.uri.toString();
             if (editorToSuggestions.has(filename)) {
               let suggestions = editorToSuggestions.get(filename)!;
               suggestions.push({
@@ -444,4 +446,20 @@ export function selectSurroundingFunction(
     new vscode.Position(pos.line - 1, 0),
     new vscode.Position(pos.line + 1, 0)
   );
+}
+
+export function openEditorAndRevealRange(
+  editorFilename: string,
+  range?: vscode.Range
+): Promise<vscode.TextEditor> {
+  return new Promise((resolve, _) => {
+    vscode.workspace.openTextDocument(editorFilename).then((doc) => {
+      vscode.window.showTextDocument(doc).then((editor) => {
+        if (range) {
+          editor.revealRange(range);
+        }
+        resolve(editor);
+      });
+    });
+  });
 }

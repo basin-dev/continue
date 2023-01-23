@@ -118,15 +118,41 @@ def run(filepath: str, make_edit: bool = False):
             print("Successfully fixed error!")
 
 @app.command()
-def inline(filepath: str, startline: int, endline: int, stacktrace: str) -> str:
+def inline(filepath: str, startline: int, endline: int, stacktrace: str):
     code = fault_loc.find_code_in_range(filepath, startline, endline)
     suggestion = attempt_edit_prompter1.complete((code, stacktrace))
     print("Suggestion=", suggestion)
 
 @app.command()
-def suggestion(stderr: str) -> str:
+def suggestion(stderr: str):
     suggestion = get_steps(stderr)
     print("Suggestion=", suggestion)
+
+def ctx_prompt(ctx, final_instruction: str) -> str:
+    prompt = ""
+    if ctx[0] is not None:
+        prompt += f"I ran into this problem with my Python code:\n\n{ctx[0]}\n\n"
+    if ctx[1] is not None:
+        prompt += f"This is the code I am trying to fix:\n\n{ctx[1]}\n\n"
+    if ctx[2] is not None:
+        prompt += f"This is a description of the problem:\n\n{ctx[2]}\n\n"
+    
+    prompt += final_instruction + "\n\n"
+    return prompt
+
+ten_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here are 10 things I could try to fix the problem:"))
+
+@app.command()
+def listten(stacktrace: str, code: str, description: str):
+    ten_things = ten_things_prompter.complete((stacktrace, code, description))
+    print("Ten Things=", ten_things)
+
+edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is my code after I fixed the problem:"))
+
+@app.command()
+def edit(stacktrace: str, code: str, description: str):
+    new_code = edit_prompter.complete((stacktrace, code, description))
+    print("Edited Code=", new_code)
 
 if __name__ == "__main__":
     app()

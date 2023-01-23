@@ -1,6 +1,6 @@
 def grab_second_item():
     abc = [1, 2, 3]
-    return abc[0]
+    return abc[1]
 
 def grab_first_item():
     list = [1, 2, 3]
