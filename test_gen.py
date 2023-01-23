@@ -1,13 +1,15 @@
 import ast
 import os
 from typing import Any, Dict, List, Tuple
+from debugger import fault_loc
 from llm import OpenAI, count_tokens
 import pytest
-import json
+from typer import Typer
 import prompts
 import pytest_parse
 
 gpt = OpenAI()
+app = Typer()
 
 def get_code(file_path: str):
     """Get the code for all functions and class methods in the file."""
@@ -20,7 +22,7 @@ def get_code(file_path: str):
     for node in tree.body: # Only traverses top-level nodes
 
         if isinstance(node, ast.FunctionDef):
-            functions.append(ast.unparse(node))
+            functions.append(node)
 
         elif isinstance(node, ast.ClassDef):
             classes.append({'name': node.name, 'methods': [], "node": node})
@@ -28,7 +30,7 @@ def get_code(file_path: str):
                 if isinstance(child, ast.FunctionDef) and child.name == "__init__":
                     classes[-1]['init'] = ast.unparse(child)
                 else:
-                    classes[-1]['methods'].append(ast.unparse(child))
+                    classes[-1]['methods'].append(child)
 
     return functions, classes
 
@@ -277,9 +279,9 @@ def generate_function_unit_tests(dir_code, code_dir):
         cls_inps = []
         for cls in file['classes']:
             for method in cls['methods']:
-                cls_inps.append([cls, method])
+                cls_inps.append([cls, ast.unparse(method)])
 
-        all_inputs = file['functions'] + cls_inps
+        all_inputs = list(map(lambda f: ast.unparse(f), file['functions'])) + cls_inps
         
         # Generate completions
         tests = prompter.parallel_complete(all_inputs)
@@ -349,8 +351,43 @@ def generate_function_unit_tests(dir_code, code_dir):
         # Write all tests to file
         write_tests_to_file(tests, code_path)
 
+@app.command()
+def something_else():
+    print("Hello")
+
+@app.command()
+def forline(filename: str, lineno: int):
+    """Write unit test for the function encapsulating the given line number."""
+    functions, classes = get_code(filename)
+    ctx = None
+    for function in functions:
+        if function.lineno <= lineno and function.end_lineno >= lineno:
+            ctx = function
+            break
+    if ctx is None:
+        for cls in classes:
+            for method in cls['methods']:
+                if method.lineno <= lineno and method.end_lineno >= lineno:
+                    ctx = (cls, method)
+                    break
+    
+    if ctx is None:
+        print("False")
+        return
+    
+    fn_prompter = prompts.BasicCommentPrompter("Write tests for the above code using pytest. Consider doing any of the following as needed: writing mocks, creating fixtures, using parameterization, setting up, and tearing down. All tests should pass:")
+    cls_prompter = prompts.SimplePrompter(lambda x: prompts.cls_1(x[0]['name'], x[0]['init'], x[1]))
+    prompter = prompts.MixedPrompter([fn_prompter, cls_prompter], lambda inp: 1 if isinstance(inp, list) and len(inp) == 2 else 0)
+
+    test = prompter.complete(ctx)
+
+    print("Test=" + test)
+
+
 if __name__ == "__main__":
     """Get the code for all functions and class methods in the code directory."""
-    code_dir = "./dlt_code"
-    dir_code = iterate_files(code_dir)
-    generate_function_unit_tests(dir_code, code_dir)
+    # code_dir = "./dlt_code"
+    # dir_code = iterate_files(code_dir)
+    # generate_function_unit_tests(dir_code, code_dir)
+
+    app()

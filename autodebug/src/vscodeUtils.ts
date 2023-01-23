@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import * as fs from "fs";
 
 export function translate(range: vscode.Range, lines: number): vscode.Range {
   return new vscode.Range(
@@ -20,7 +21,10 @@ export function getNonce() {
   return text;
 }
 
-export function getTestFile(filename: string): string {
+export function getTestFile(
+  filename: string,
+  createFile: boolean = false
+): string {
   let basename = path.basename(filename).split(".")[0];
   switch (path.extname(filename)) {
     case ".py":
@@ -36,9 +40,16 @@ export function getTestFile(filename: string): string {
       basename += "_test";
   }
 
-  return path.join(
-    path.dirname(filename),
-    "tests",
-    basename + path.extname(filename)
-  );
+  const directory = path.join(path.dirname(filename), "tests");
+  const testFilename = path.join(directory, basename + path.extname(filename));
+
+  // Optionally, create the file if it doesn't exist
+  if (createFile && !fs.existsSync(testFilename)) {
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory);
+    }
+    fs.writeFileSync(testFilename, "");
+  }
+
+  return testFilename;
 }

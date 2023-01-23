@@ -68,6 +68,11 @@
         "command": "autodebug.acceptSuggestion",
         "category": "AutoDebug",
         "title": "Accept Suggestion"
+      },
+      {
+        "command": "autodebug.writeUnitTest",
+        "title": "Write Unit Test",
+        "category": "AutoDebug"
       }
     ],
     "keybindings": [
@@ -75,6 +80,11 @@
         "command": "autodebug.writeDocstring",
         "key": "ctrl+alt+l",
         "mac": "shift+cmd+l"
+      },
+      {
+        "command": "autodebug.writeUnitTest",
+        "key": "ctrl+alt+i",
+        "mac": "shift+cmd+i"
       },
       {
         "command": "autodebug.askQuestionFromInput",

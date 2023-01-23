@@ -8,11 +8,11 @@ export class MyCodeLensProvider implements vscode.CodeLensProvider {
     let range = new vscode.Range(0, 0, 5, 0);
     return [
       new vscode.CodeLens(range, {
-        title: "test",
+        title: "Accept",
         command: "autodebug.acceptSuggestion",
       }),
       new vscode.CodeLens(range, {
-        title: "test2",
+        title: "Reject",
         command: "autodebug.acceptSuggestion",
       }),
     ];

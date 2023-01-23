@@ -152,3 +152,27 @@ async function fullyEnrichContext(ctx: DebugContext): Promise<DebugContext> {
   }
   return ctx;
 }
+
+export async function writeUnitTestForFunction(
+  filename: string,
+  position: vscode.Position
+): Promise<string> {
+  const command = build_python_command(
+    `python3 ${path.join(
+      get_python_path(),
+      "test_gen.py"
+    )} forline ${filename} ${position.line}`
+  );
+
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+
+  const unitTest = parseStdout(stdout, "Test", true);
+  if (unitTest) {
+    return unitTest;
+  } else {
+    throw new Error("Error: No unit test found");
+  }
+}

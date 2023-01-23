@@ -13,6 +13,7 @@ import {
   showGutterSpinner,
   decorationManager,
 } from "./textEditorDisplay";
+import { writeUnitTestCommand } from "./unitTests";
 
 const path = require("path");
 
@@ -23,6 +24,13 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.languages.registerCodeLensProvider(
       "python",
       new MyCodeLensProvider()
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerTextEditorCommand(
+      "autodebug.writeUnitTest",
+      writeUnitTestCommand
     )
   );
 

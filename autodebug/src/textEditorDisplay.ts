@@ -3,6 +3,8 @@ import { getTestFile, translate } from "./vscodeUtils";
 import * as path from "path";
 import { setFlagsFromString } from "v8";
 
+// SUGGESTIONS INTERFACE //
+
 interface SuggestionRanges {
   oldRange: vscode.Range;
   newRange: vscode.Range;
@@ -206,6 +208,8 @@ export function showSuggestion(
   });
 }
 
+// EVERYTHING ELSE //
+
 export function showAnswerInTextEditor(
   filename: string,
   range: vscode.Range,
@@ -248,9 +252,6 @@ export function showAnswerInTextEditor(
 }
 
 export function showLintingError() {}
-
-// Maybe make an editor class to hold all decorations.
-// It's always the same flow per decoration: create a map, add to map, rerender, pass a deletion function or keep track of some state, reveal editor
 
 type DecorationKey = {
   editorUri: string;
@@ -393,7 +394,7 @@ export function showLintMessage(
   return key;
 }
 
-function highlightCode(
+export function highlightCode(
   editor: vscode.TextEditor,
   range: vscode.Range
 ): DecorationKey {
@@ -409,24 +410,6 @@ function highlightCode(
   };
   decorationManager.addDecoration(key);
   return key;
-}
-
-export function displayMatchingTest(
-  editor: vscode.TextEditor,
-  pos: vscode.Position
-): Thenable<DecorationKey> {
-  const thenable = new Promise<DecorationKey>((resolve, reject) => {
-    const testRange = new vscode.Range(0, 0, 5, 0); // TODO: pos -> function/class -> test -> range of test
-    let testFilename = getTestFile(editor.document.fileName);
-    vscode.workspace.openTextDocument(testFilename).then((doc) => {
-      vscode.window
-        .showTextDocument(doc, vscode.ViewColumn.Beside)
-        .then((editor) => {
-          resolve(highlightCode(editor, testRange));
-        });
-    });
-  });
-  return thenable;
 }
 
 export function insertSuggestionSnippet(
