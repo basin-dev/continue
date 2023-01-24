@@ -89,9 +89,11 @@ export function openCapturedTerminal(
   setTimeout(() => {
     ptyProcess.write("cd " + workspaceFolders![0].uri.fsPath + "\r");
     ptyProcess.write("clear\r");
-    writeEmitter.fire(
-      "This terminal will parse stdout to automatically detect stacktraces\r\n"
-    );
+    // setTimeout(() => {
+    //   writeEmitter.fire(
+    //     "This terminal will parse stdout to automatically detect stacktraces\r\n"
+    //   );
+    // }, 200);
   }, 1000);
 
   const newPty: vscode.Pseudoterminal = {

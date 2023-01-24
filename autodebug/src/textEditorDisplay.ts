@@ -12,23 +12,23 @@ interface SuggestionRanges {
 }
 
 let newDecorationType = vscode.window.createTextEditorDecorationType({
-  backgroundColor: "rgb(0, 255, 0, 0.15)",
+  backgroundColor: "rgb(0, 255, 0, 0.1)",
   isWholeLine: true,
 });
 let oldDecorationType = vscode.window.createTextEditorDecorationType({
-  backgroundColor: "rgb(255, 0, 0, 0.15)",
+  backgroundColor: "rgb(255, 0, 0, 0.1)",
   isWholeLine: true,
   cursor: "pointer",
 });
 let newSelDecorationType = vscode.window.createTextEditorDecorationType({
-  backgroundColor: "rgb(0, 255, 0, 0.35)",
+  backgroundColor: "rgb(0, 255, 0, 0.25)",
   isWholeLine: true,
   after: {
     contentText: "Press cmd+shift+enter to accept",
   },
 });
 let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
-  backgroundColor: "rgb(255, 0, 0, 0.35)",
+  backgroundColor: "rgb(255, 0, 0, 0.25)",
   isWholeLine: true,
   after: {
     contentText: "Press cmd+shift+enter to reject",
@@ -156,6 +156,8 @@ export function acceptSuggestionCommand() {
   }
   rerenderDecorations(editorUri);
 }
+
+export async function rejectSuggestionCommand() {}
 
 export async function showSuggestion(
   editorFilename: string,
@@ -453,6 +455,25 @@ export function openEditorAndRevealRange(
   range?: vscode.Range
 ): Promise<vscode.TextEditor> {
   return new Promise((resolve, _) => {
+    // Check if the editor is already open
+    // let open = vscode.window.tabGroups.all.flatMap(({ tabs }) =>
+    //   tabs
+    //     .map((tab) => ((tab as any).input?.uri || { path: "" }).path)
+    //     .filter((uri) => uri !== "")
+    // );
+
+    // for (let file of open) {
+    //   if (file === editorFilename) {
+    //     vscode.window.showTextDocument(file).then((editor) => {
+    //       if (range) {
+    //         editor.revealRange(range);
+    //       }
+    //       resolve(editor);
+    //     });
+    //     return;
+    //   }
+    // }
+
     vscode.workspace.openTextDocument(editorFilename).then((doc) => {
       vscode.window.showTextDocument(doc).then((editor) => {
         if (range) {

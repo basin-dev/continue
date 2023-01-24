@@ -19,7 +19,7 @@ button {
   cursor: pointer;
 }
 
-button:hover {
+button:hover:enabled {
   border: 2px solid orange;
 }
 

@@ -10,6 +10,7 @@
   const listTenThingsButton = document.querySelector(".listTenThingsButton");
   const suggestFixButton = document.querySelector(".suggestFixButton");
   const makeEditButton = document.querySelector(".makeEditButton");
+  const makeEditLoader = document.querySelector(".makeEditLoader");
 
   let debugContext = {};
 
@@ -28,12 +29,14 @@
       }
       case "traceback": {
         stacktrace.value = message.traceback;
+        break;
       }
       case "highlightedCode": {
         debugContext.filename = message.filename;
         debugContext.range = message.range;
         debugContext.code = message.code;
         highlightedCode.innerHTML = `${message.filename}, lines ${message.startLine}-${message.endLine}:\n\n<pre>${message.code}</pre>`;
+        makeEditButton.disabled = false;
         break;
       }
       case "findSuspiciousCode": {
@@ -42,13 +45,16 @@
       }
       case "listTenThings": {
         fixSuggestion.textContent = message.tenThings;
-        makeEditButton.disabled = false;
         break;
       }
       case "suggestFix": {
         fixSuggestion.textContent = message.fixSuggestion;
-        makeEditButton.disabled = false;
         break;
+      }
+      case "makeEdit": {
+        // Edit is done
+        makeEditLoader.hidden = true;
+        makeEditButton.hidden = false;
       }
     }
   });
@@ -80,6 +86,8 @@
   suggestFixButton.addEventListener("click", suggestFix);
 
   makeEditButton.addEventListener("click", () => {
+    makeEditLoader.hidden = false;
+    makeEditButton.hidden = true;
     gatherDebugContext();
     vscode.postMessage({
       type: "makeEdit",

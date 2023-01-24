@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import {
   acceptSuggestionCommand,
+  rejectSuggestionCommand,
   decorationManager,
   showAnswerInTextEditor,
   showGutterSpinner,
@@ -42,6 +43,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   "autodebug.suggestionDown": suggestionDownCommand,
   "autodebug.suggestionUp": suggestionUpCommand,
   "autodebug.acceptSuggestion": acceptSuggestionCommand,
+  "autodebug.rejectSuggestion": rejectSuggestionCommand,
   "autodebug.openDebugPanel": () => {
     const panel = vscode.window.createWebviewPanel(
       "autodebug.debugPanelView",

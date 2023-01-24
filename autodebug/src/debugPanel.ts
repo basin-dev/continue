@@ -91,7 +91,15 @@ export function setupDebugPanel(webview: vscode.Webview): string {
 
         if (!debugContext.filename || !debugContext.range) break;
 
-        showSuggestion(debugContext.filename, debugContext.range, editedCode);
+        showSuggestion(
+          debugContext.filename,
+          debugContext.range,
+          editedCode
+        ).then(() => {
+          webview.postMessage({
+            type: "makeEdit",
+          });
+        });
       }
     }
   });
@@ -130,6 +138,7 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         <pre class="fixSuggestion answer"></pre>
         
         <button disabled class="makeEditButton">Make Edit</button>
+        <div class="loader makeEditLoader" hidden></div>
         
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>

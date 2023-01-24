@@ -70,6 +70,11 @@
         "title": "Accept Suggestion"
       },
       {
+        "command": "autodebug.rejectSuggestion",
+        "category": "AutoDebug",
+        "title": "Reject Suggestion"
+      },
+      {
         "command": "autodebug.writeUnitTest",
         "title": "Write Unit Test",
         "category": "AutoDebug"

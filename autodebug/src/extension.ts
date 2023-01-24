@@ -21,8 +21,15 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Below are things I'm doing for testing
   vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
-    vscode.commands.executeCommand("autodebug.openCapturedTerminal");
+    vscode.commands
+      .executeCommand("autodebug.openCapturedTerminal")
+      .then(() => {});
   });
+  // vscode.commands.executeCommand("workbench.action.findInFiles", {
+  //   query: "abc",
+  //   triggerSearch: true,
+  //   replace: "def",
+  // });
 
   // showSuggestion(
   //   vscode.window.activeTextEditor,
