@@ -128,13 +128,14 @@ def suggestion(stderr: str):
     suggestion = get_steps(stderr)
     print("Suggestion=", suggestion)
 
+ 
 def ctx_prompt(ctx, final_instruction: str) -> str:
-    prompt = ""
-    if ctx[0] is not None:
+    prompt = ''
+    if ctx[0] is not None and ctx[0] != '':
         prompt += f"I ran into this problem with my Python code:\n\n{ctx[0]}\n\n"
-    if ctx[1] is not None:
+    if ctx[1] is not None and ctx[1] != '':
         prompt += f"This is the code I am trying to fix:\n\n{ctx[1]}\n\n"
-    if ctx[2] is not None:
+    if ctx[2] is not None and ctx[2] != '':
         prompt += f"This is a description of the problem:\n\n{ctx[2]}\n\n"
     
     prompt += final_instruction + "\n\n"

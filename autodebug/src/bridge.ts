@@ -104,10 +104,6 @@ export interface DebugContext {
   code?: string;
 }
 export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
-  if (!ctx.stacktrace) {
-    throw new Error("No stacktrace provided");
-  }
-
   let command: string;
   if (ctx.range && ctx.filename) {
     // Can utilize the fact that we know right where the bug is

@@ -23,7 +23,11 @@ function convertDebugContext(debugContext: any): DebugContext {
   };
 }
 
+export let debugPanelWebview: vscode.Webview;
+
 export function setupDebugPanel(webview: vscode.Webview): string {
+  debugPanelWebview = webview;
+
   let extensionUri = vscode.extensions.getExtension(
     "undefined_publisher.autodebug"
   )!.extensionUri;
@@ -43,7 +47,8 @@ export function setupDebugPanel(webview: vscode.Webview): string {
     }
     webview.postMessage({
       type: "highlightedCode",
-      lineno: e.selections[0].start.line,
+      startLine: e.selections[0].start.line,
+      endLine: e.selections[0].end.line,
       code: e.textEditor.document.getText(e.selections[0]),
       filename: e.textEditor.document.fileName,
     });
@@ -106,8 +111,8 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         <p>Description of Bug:</p>
         <textarea id="bugDescription" name="bugDescription" class="bugDescription" rows="4" cols="50" placeholder="Describe your bug..."></textarea>
         
-        <p>Stacktrace:</p>
-        <textarea id="stacktrace" class="stacktrace" name="stacktrace" rows="4" cols="50" placeholder="Paste stacktrace here"></textarea>
+        <p>Stack Trace:</p>
+        <textarea id="stacktrace" class="stacktrace" name="stacktrace" rows="4" cols="50" placeholder="Paste stack trace here"></textarea>
         
         
         <button hidden>Write a unit test to reproduce bug</button>

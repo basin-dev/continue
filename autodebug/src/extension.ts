@@ -10,10 +10,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.languages.registerCodeLensProvider(
       "python",
       new MyCodeLensProvider()
-    )
-  );
-
-  context.subscriptions.push(
+    ),
     vscode.window.registerWebviewViewProvider(
       DebugViewProvider.viewType,
       provider
@@ -22,7 +19,10 @@ export function activate(context: vscode.ExtensionContext) {
 
   registerAllCommands(context);
 
-  vscode.commands.executeCommand("autodebug.openDebugPanel");
+  // Below are things I'm doing for testing
+  vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
+    vscode.commands.executeCommand("autodebug.openCapturedTerminal");
+  });
 
   // showSuggestion(
   //   vscode.window.activeTextEditor,

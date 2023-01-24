@@ -10,6 +10,7 @@ import {
 import { writeUnitTestCommand } from "./unitTests";
 import * as bridge from "./bridge";
 import { setupDebugPanel } from "./debugPanel";
+import { openCapturedTerminal } from "./terminalEmulator";
 
 // COpy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
@@ -56,6 +57,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   },
   "autodebug.openCapturedTerminal": () => {
     // Happens in webview resolution function
+    openCapturedTerminal();
   },
 };
 

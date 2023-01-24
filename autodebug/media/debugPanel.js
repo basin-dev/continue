@@ -26,11 +26,14 @@
         });
         break;
       }
+      case "traceback": {
+        stacktrace.value = message.traceback;
+      }
       case "highlightedCode": {
         debugContext.filename = message.filename;
         debugContext.range = message.range;
         debugContext.code = message.code;
-        highlightedCode.innerHTML = `${message.filename}, line ${message.lineno}:\n\n<pre>${message.code}</pre>`;
+        highlightedCode.innerHTML = `${message.filename}, lines ${message.startLine}-${message.endLine}:\n\n<pre>${message.code}</pre>`;
         break;
       }
       case "findSuspiciousCode": {
