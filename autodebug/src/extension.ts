@@ -4,16 +4,14 @@ import DebugViewProvider from "./DebugViewProvider";
 import { MyCodeLensProvider } from "./languageServer";
 
 export function activate(context: vscode.ExtensionContext) {
-  const provider = new DebugViewProvider(context.extensionUri);
+  const debugViewProvider = new DebugViewProvider(context.extensionUri);
+  const codeLensProvider = new MyCodeLensProvider();
 
   context.subscriptions.push(
-    vscode.languages.registerCodeLensProvider(
-      "python",
-      new MyCodeLensProvider()
-    ),
+    vscode.languages.registerCodeLensProvider("python", codeLensProvider),
     vscode.window.registerWebviewViewProvider(
       DebugViewProvider.viewType,
-      provider
+      debugViewProvider
     )
   );
 

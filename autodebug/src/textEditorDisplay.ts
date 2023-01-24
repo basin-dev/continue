@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { getTestFile, translate } from "./vscodeUtils";
 import * as path from "path";
-import { setFlagsFromString } from "v8";
 
 // SUGGESTIONS INTERFACE //
 
@@ -115,7 +114,8 @@ export function suggestionUpCommand() {
   rerenderDecorations(editorUri);
 }
 
-export function acceptSuggestionCommand() {
+type SuggestionSelectionOption = "old" | "new" | "selected";
+function selectSuggestion(accept: SuggestionSelectionOption) {
   let editor = vscode.window.activeTextEditor;
   if (!editor) return;
   let editorUri = editor.document.uri.toString();
@@ -125,9 +125,21 @@ export function acceptSuggestionCommand() {
   if (!suggestions || idx === undefined) return;
 
   let [suggestion] = suggestions.splice(idx, 1);
-  var rangeToDelete = suggestion.newSelected
-    ? suggestion.oldRange
-    : suggestion.newRange;
+
+  var rangeToDelete: vscode.Range;
+  switch (accept) {
+    case "old":
+      rangeToDelete = suggestion.newRange;
+      break;
+    case "new":
+      rangeToDelete = suggestion.oldRange;
+      break;
+    case "selected":
+      rangeToDelete = suggestion.newSelected
+        ? suggestion.oldRange
+        : suggestion.newRange;
+  }
+
   rangeToDelete = new vscode.Range(
     rangeToDelete.start,
     new vscode.Position(rangeToDelete.end.line + 1, 0)
@@ -157,7 +169,13 @@ export function acceptSuggestionCommand() {
   rerenderDecorations(editorUri);
 }
 
-export async function rejectSuggestionCommand() {}
+export function acceptSuggestionCommand() {
+  selectSuggestion("selected");
+}
+
+export async function rejectSuggestionCommand() {
+  selectSuggestion("old");
+}
 
 export async function showSuggestion(
   editorFilename: string,
