@@ -75,6 +75,11 @@
         "title": "Reject Suggestion"
       },
       {
+        "command": "autodebug.universalCommand",
+        "category": "AutoDebug",
+        "title": "Universal Command"
+      },
+      {
         "command": "autodebug.writeUnitTest",
         "title": "Write Unit Test",
         "category": "AutoDebug"
@@ -92,7 +97,7 @@
         "mac": "shift+cmd+i"
       },
       {
-        "command": "autodebug.askQuestionFromInput",
+        "command": "autodebug.universalCommand",
         "key": "ctrl+alt+j",
         "mac": "shift+cmd+j"
       },

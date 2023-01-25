@@ -40,6 +40,32 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
         );
       });
   },
+  "autodebug.universalCommand": () => {
+    vscode.window
+      .showInputBox({
+        placeHolder:
+          "This is the universal command prompt. It can do anything within VSCode. Ask away!",
+      })
+      .then(async (request) => {
+        if (!request || !vscode.workspace.workspaceFolders) {
+          return;
+        }
+
+        vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: "Processing request...",
+            cancellable: false,
+          },
+          async () => {
+            let { action, params } = await bridge.universalPrompt(request);
+            console.log("Action: ", action);
+            console.log("Params: ", params);
+            vscode.commands.executeCommand(action, params);
+          }
+        );
+      });
+  },
   "autodebug.suggestionDown": suggestionDownCommand,
   "autodebug.suggestionUp": suggestionUpCommand,
   "autodebug.acceptSuggestion": acceptSuggestionCommand,

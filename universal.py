@@ -20,11 +20,13 @@ actions = [
     ("workbench.action.findInFiles", "Find and replace code within a file", prompts.FewShotPrompter(
         instruction="Given the request, specify the parameters for this operation.",
         examples=[
-            ("Find all instances of the word 'test' in the codebase", "search: test"),
-            ("Find all instances of the word 'test' in the codebase and replace it with 'testing'", "search: test, replace: testing"),
+            ("Find all instances of the word 'test' in the codebase", "query: test"),
+            ("Find all instances of the word 'test' in the codebase and replace it with 'testing'", "query: test, replace: testing"),
         ],
+        # TODO: Add an intermediate prompt if a regex is needed.
+        # TODO: Possibly just generate straight into JSON foramt? It's equally simple to this.
         formatter=params_formatter,
-        model="text-curie-001"
+        model="text-davinci-003"
     )),
     ("autodebug.askQuestion", "Answer a question about the codebase"),
     ("autodebug.listTen", "List possible explanations for an error"),
@@ -65,13 +67,18 @@ def get_params(command: str, action: str) -> Dict[str, str]:
             except:
                 return {}
 
+def dict_to_json(d: Dict[str, str]) -> str:
+    return "{" + ", ".join([ f'"{key}": "{value}"' for key, value in d.items() ]) + "}"
+
 @app.command()
 def main(command: str) -> Tuple[str, Dict[str, str]]:
     id_resp = univeral_prompter.complete(command)
     action = determineAction(id_resp)
     params = get_params(command, action)
-    print("Action=", action)
-    print("Params=", params)
+    print("Action=" + action)
+    print("Params=" + dict_to_json(params))
 
 if __name__ == "__main__":
     app()
+
+# TODO: Need to format arguments in an ordered way probably, but this can happen in typescript

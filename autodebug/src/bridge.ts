@@ -1,12 +1,13 @@
 import * as vscode from "vscode";
 import path = require("path");
-import * as dotenv from 'dotenv';
+import * as dotenv from "dotenv";
 
-dotenv.config({ path: __dirname+'/.env' });
+dotenv.config({ path: path.join(__dirname, ".env") });
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 
 function get_python_path() {
+  return "/Users/natesesti/Desktop/basin/unit-test-experiments";
   return String(process.env.PYTHON_PATH);
 }
 
@@ -216,5 +217,28 @@ export async function writeUnitTestForFunction(
     return unitTest;
   } else {
     throw new Error("Error: No unit test found");
+  }
+}
+export async function universalPrompt(
+  request: string
+): Promise<{ action: string; params: any }> {
+  const command = build_python_command(
+    `python3 ${path.join(
+      get_python_path(),
+      "universal.py"
+    )} "$(echo "${request}")"`
+  );
+
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+
+  const action = parseStdout(stdout, "Action", false);
+  const params = parseStdout(stdout, "Params", true);
+  if (action && params) {
+    return { action, params: JSON.parse(params) };
+  } else {
+    throw new Error("Error: No answer found");
   }
 }
