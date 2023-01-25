@@ -134,3 +134,4 @@ dmypy.json
 **/.vscode
 notes.txt
 cached_embeddings.pkl
+.ruff_cache

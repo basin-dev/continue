@@ -22,10 +22,11 @@ def cls_method_to_str(cls_name: str, init: str, method: str) -> str:
 {method}"""
 
 
-# Prompter classes
+# Prompter classes - TODO: Consider baking retry policies into the prompter, or make this a wrapper class. Also deterministic short-circuiters, to avoid even having to use an LLM in like 80% of cases.
 class Prompter:
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.llm = OpenAI()
+        self.kwargs = kwargs
 
     def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
         "Takes input and returns prompt, prefix, suffix"
@@ -33,7 +34,7 @@ class Prompter:
 
     def complete(self, inp: Any) -> str:
         prompt, prefix, suffix = self._compile_prompt(inp)
-        resp = self.llm.complete(prompt + prefix, suffix=suffix)
+        resp = self.llm.complete(prompt + prefix, suffix=suffix, **self.kwargs)
         return prefix + resp + (suffix or "")
 
     def parallel_complete(self, inps: List[Any]) -> List[str]:
@@ -46,13 +47,13 @@ class Prompter:
             prefixes.append(prefix)
             suffixes.append(suffix)
         
-        resps = self.llm.parallel_complete([prompt + prefix for prompt, prefix in zip(prompts, prefixes)], suffixes=suffixes)
+        resps = self.llm.parallel_complete([prompt + prefix for prompt, prefix in zip(prompts, prefixes)], suffixes=suffixes, **self.kwargs)
         return [prefix + resp + (suffix or "") for prefix, resp, suffix in zip(prefixes, resps, suffixes)]
 
 # Note that this can be used hierarchically : )
 class MixedPrompter(Prompter):
-    def __init__(self, prompters: List[Prompter], router: Callable[[Any], int]):
-        super().__init__()
+    def __init__(self, prompters: List[Prompter], router: Callable[[Any], int], **kwargs):
+        super().__init__(**kwargs)
         self.prompters = prompters
         self.router = router
     
@@ -65,22 +66,22 @@ class MixedPrompter(Prompter):
         return prompter.complete(inp)
 
 class SimplePrompter(Prompter):
-    def __init__(self, prompt_fn: Callable[[Any], str]):
-        super().__init__()
+    def __init__(self, prompt_fn: Callable[[Any], str], **kwargs):
+        super().__init__(**kwargs)
         self.prompt_fn = prompt_fn
 
     def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
         return self.prompt_fn(inp), "", None
 
 class BasicCommentPrompter(SimplePrompter):
-    def __init__(self, comment: str):
+    def __init__(self, comment: str, **kwargs):
         super().__init__(lambda inp: f"""{inp}
 
-# {comment}""")
+# {comment}""", **kwargs)
 
 class EditPrompter(Prompter):
-    def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str]]):
-        super().__init__()
+    def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str]], **kwargs):
+        super().__init__(**kwargs)
         self.prompt_fn = prompt_fn
     
     def complete(self, inp: str, **kwargs) -> str:
@@ -95,16 +96,29 @@ class EditPrompter(Prompter):
             prompts.append(prompt)
             instructions.append(instruction)
         
-        return self.llm.parallel_edit(prompts, instructions)
+        return self.llm.parallel_edit(prompts, instructions, **self.kwargs)
 
 class InsertPrompter(Prompter):
-    def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str, str]]):
-        super().__init__()
+    def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str, str]], **kwargs):
+        super().__init__(**kwargs)
         self.prompt_fn = prompt_fn
     
     def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
         return self.prompt_fn(inp)
 
+class FewShotPrompter(Prompter):
+    def __init__(self, instruction: str, examples: List[Tuple[str, str]], formatter: Callable[[Tuple[str, str]], str], separator="\n\n--------\n\n", **kwargs):
+        super().__init__(**kwargs)
+        self.examples = examples
+        self.formatter = formatter
+        self.separator = separator
+        self.instruction = instruction
+    
+    def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
+        return f"""{self.instruction}\n
+{self.separator.join([self.formatter(example) for example in self.examples])}{self.separator}{self.formatter((inp, ""))}""", "", None
+
+### Completion mode for unit test generation ###
 
 # Edit mode
 def _fn_insert_compiler(fn_code: str) -> str:
@@ -128,8 +142,6 @@ def test_{fn.name}({test_args}):
 
 fnInsertPrompter = InsertPrompter(_fn_insert_compiler)
 
-
-# Completion mode
 def general_1(code: str) -> str:
     return f"""{code}
 
