@@ -147,6 +147,7 @@
   },
   "dependencies": {
     "node-pty": "^0.10.1",
-    "vscode-languageclient": "^8.0.2"
+    "vscode-languageclient": "^8.0.2",
+    "octokit": "^2.0.11"
   }
 }
