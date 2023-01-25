@@ -44,6 +44,15 @@ actions = [
     ]),
     Action("autodebug.askQuestion", "Answer a question about the codebase"),
     Action("autodebug.listTen", "List possible explanations for an error"),
+    Action("autodebug.commit", "git commit changes to the codebase"),
+    Action("renameFile", "Rename a file"),
+    Action("actions.find", "Search within the current file"), # TODO: Should pass as context what the file is, other context for other actions
+    # TODO: In order to allow complicated actions, should be able to run arbitrary code, though that is dangerous.
+    Action("workbench.action.files.newUntitledFile", "Create a new file"),
+    Action("workbench.action.files.openFile", "Open a file"),
+    Action("editor.action.insertLineAfter", "Write to a file"),
+    Action("autodebug.searchWeb", "Search the web to answer a question"),
+    Action("autodebug.openDebugPanel", "Open the debug panel to help debug an error"),
 ]
 
 def list_actions(actions: List[Action]) -> str:
