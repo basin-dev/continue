@@ -13,6 +13,19 @@ import * as bridge from "./bridge";
 import { setupDebugPanel } from "./debugPanel";
 import { openCapturedTerminal } from "./terminalEmulator";
 
+// These commands are those just being used for the sake of the universal command prompt
+const unregisteredCommands: {
+  [command: string]: (...args: any) => any;
+} = {
+  "autodebug.inputTerminalCommand": (params: { command: string }) => {
+    // Some simple safeguards
+    if (params.command.includes("rm") || params.command.includes("sudo")) {
+      return;
+    }
+    vscode.window.activeTerminal?.sendText(params.command + " \\");
+  },
+};
+
 // COpy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
   "autodebug.askQuestion": (data: any, webviewView: vscode.WebviewView) => {
@@ -61,7 +74,11 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
             let { action, params } = await bridge.universalPrompt(request);
             console.log("Action: ", action);
             console.log("Params: ", params);
-            vscode.commands.executeCommand(action, params);
+            if (unregisteredCommands.hasOwnProperty(action)) {
+              unregisteredCommands[action](params);
+            } else {
+              vscode.commands.executeCommand(action, params);
+            }
           }
         );
       });
