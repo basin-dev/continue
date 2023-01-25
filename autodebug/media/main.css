@@ -58,7 +58,54 @@ textarea {
 pre {
   border-radius: 4px;
   padding: 4px;
-  border: 1px solid orange;
-  max-height: 400px;
+  max-height: 150px;
   overflow: scroll;
+  background-color: rgb(0, 0, 0, 0.4);
+  margin: 0;
+}
+
+.multiselectOption {
+  border: 1px solid gray;
+  border-radius: 4px;
+  padding-top: 4px;
+  cursor: pointer;
+}
+
+.multiselectOption:hover {
+  border: 2px solid orange;
+}
+
+.multiselectContainer {
+  border: 2px solid white;
+  border-radius: 4px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.multiselectButtonsDiv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  order: 1;
+}
+
+.delSelectedRangeButton {
+  align-self: right;
+  padding: 4px;
+  margin: 0;
+  margin-right: 2px;
+  border: none;
+  border-radius: 4px;
+}
+
+.delSelectedRangeButton:hover:enabled {
+  border: none;
+}
+
+.multiselectOptionTopDiv {
+  display: flex;
+  justify-content: space-between;
+  align-items: left;
 }

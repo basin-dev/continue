@@ -45,10 +45,10 @@ export function setupDebugPanel(webview: vscode.Webview): string {
     }
     webview.postMessage({
       type: "highlightedCode",
-      startLine: e.selections[0].start.line,
-      endLine: e.selections[0].end.line,
       code: e.textEditor.document.getText(e.selections[0]),
       filename: e.textEditor.document.fileName,
+      range: e.selections[0],
+      workspacePath: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
     });
     selectedRange = e.selections[0];
   });
@@ -114,6 +114,9 @@ export function setupDebugPanel(webview: vscode.Webview): string {
       <body>
         <h1>Debug Panel</h1>
         
+        <p>Relevant Code:</p>
+        <div class="multiselectContainer"></div>
+        
         <p>Description of Bug:</p>
         <textarea id="bugDescription" name="bugDescription" class="bugDescription" rows="4" cols="50" placeholder="Describe your bug..."></textarea>
         
@@ -125,22 +128,20 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         
         <select hidden id="relevantVars" class="relevantVars" name="relevantVars"></select>
         
-        <p>Highlight relevant code in the editor:</p>
-        <p class="highlightedCode">None</p>
-        <p>Or click below and we'll generate suggestions for you to choose from:</p>
-        <button>Find Suspicious Code</button>
-        
-        <br></br>
+        <p>Generate Suggestions:</p>
         <button class="listTenThingsButton">List 10 things that might be wrong</button>
         <button class="suggestFixButton">Suggest Fix</button>
-        <pre class="fixSuggestion answer"></pre>
+        <pre class="fixSuggestion answer" hidden></pre>
         
-        <label for="autoMode">Auto Mode: As soon as we see a stacktrace, we'll suggest a fix, no clicking necessary</label>
-        <input type="checkbox" id="autoMode" name="autoMode">
-
+        
         <button disabled class="makeEditButton">Make Edit</button>
         <div class="loader makeEditLoader" hidden></div>
         
+        <br></br>
+        <input type="checkbox" id="autoMode" name="autoMode">
+        <label for="autoMode">Auto Mode: As soon as we see a stacktrace, we'll suggest a fix, no clicking necessary</label>
+        <br></br>
+
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>
     </html>`;
