@@ -53,3 +53,8 @@ export function getTestFile(
 
   return testFilename;
 }
+
+export function getExtensionUri(): vscode.Uri {
+  return vscode.extensions.getExtension("undefined_publisher.autodebug")!
+    .extensionUri;
+}

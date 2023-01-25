@@ -1,13 +1,14 @@
 import * as vscode from "vscode";
 import path = require("path");
-import * as dotenv from 'dotenv';
+import * as dotenv from "dotenv";
+import { getExtensionUri } from "./vscodeUtils";
 
-dotenv.config({ path: __dirname+'/.env' });
+dotenv.config({ path: __dirname + "/.env" });
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 
 function get_python_path() {
-  return String(process.env.PYTHON_PATH);
+  return path.join(getExtensionUri().fsPath, "..");
 }
 
 function build_python_command(cmd: string): string {

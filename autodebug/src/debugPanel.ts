@@ -7,7 +7,7 @@ import {
   makeEdit,
 } from "./bridge";
 import { showSuggestion } from "./textEditorDisplay";
-import { getNonce } from "./vscodeUtils";
+import { getExtensionUri, getNonce } from "./vscodeUtils";
 
 var selectedRange: vscode.Range | undefined;
 
@@ -28,9 +28,7 @@ export let debugPanelWebview: vscode.Webview;
 export function setupDebugPanel(webview: vscode.Webview): string {
   debugPanelWebview = webview;
 
-  let extensionUri = vscode.extensions.getExtension(
-    "undefined_publisher.autodebug"
-  )!.extensionUri;
+  let extensionUri = getExtensionUri();
   const scriptUri = webview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, "media", "debugPanel.js")
   );
