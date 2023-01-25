@@ -137,6 +137,9 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         <button class="suggestFixButton">Suggest Fix</button>
         <pre class="fixSuggestion answer"></pre>
         
+        <label for="autoMode">Auto Mode: As soon as we see a stacktrace, we'll suggest a fix, no clicking necessary</label>
+        <input type="checkbox" id="autoMode" name="autoMode">
+
         <button disabled class="makeEditButton">Make Edit</button>
         <div class="loader makeEditLoader" hidden></div>
         
