@@ -193,6 +193,11 @@ export async function showSuggestion(
 ): Promise<boolean> {
   let editor = await openEditorAndRevealRange(editorFilename, range);
   if (!editor) return Promise.resolve(false);
+
+  // Don't make the suggestion if it is just the same as what exists
+  if (editor.document.getText(range) === suggestion)
+    return Promise.resolve(false);
+
   return new Promise((resolve, reject) => {
     editor!
       .edit((edit) => {
