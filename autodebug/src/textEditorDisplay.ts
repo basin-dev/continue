@@ -57,10 +57,10 @@ export function rerenderDecorations(editorUri: string) {
   );
   if (!suggestions || !editor) return;
 
-  let olds = [],
-    news = [],
-    oldSels = [],
-    newSels = [];
+  let olds: vscode.Range[] = [],
+    news: vscode.Range[] = [],
+    oldSels: vscode.Range[] = [],
+    newSels: vscode.Range[] = [];
   for (let i = 0; i < suggestions.length; i++) {
     let suggestion = suggestions[i];
     if (typeof idx != "undefined" && idx === i) {
@@ -194,8 +194,11 @@ export async function showSuggestion(
   let editor = await openEditorAndRevealRange(editorFilename, range);
   if (!editor) return Promise.resolve(false);
 
-  // Don't make the suggestion if it is just the same as what exists
-  if (editor.document.getText(range) === suggestion)
+  // Don't make the suggestion if it is just the same as what exists - have to recreate range to get rid of anchor/active. getText doesn't like it otherwise
+  if (
+    editor.document.getText(new vscode.Range(range.start, range.end)) ===
+    suggestion
+  )
     return Promise.resolve(false);
 
   return new Promise((resolve, reject) => {
