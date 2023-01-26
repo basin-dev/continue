@@ -1,6 +1,7 @@
 import subprocess
 from typing import Dict, List, Tuple
-import typer
+from fastapi import APIRouter, Body, Query
+from pydantic import BaseModel
 from debugger import fault_loc
 from boltons import tbutils
 from llm import OpenAI
@@ -9,7 +10,7 @@ import ast
 import os
 
 llm = OpenAI()
-app = typer.Typer()
+router = APIRouter(prefix="/debug", tags=["debug"])
 
 prompt = '''I ran into this problem with my Python code:
 
@@ -27,15 +28,15 @@ def parse_stacktrace(stderr: str) -> tbutils.ParsedException:
         stderr = stderr.replace("File ", "File \"").replace(", line ", "\", line ")
     return tbutils.ParsedException.from_string(stderr)
 
-def get_steps(stderr: str) -> str:
-    exc = parse_stacktrace(stderr)
+def get_steps(stacktrace: str) -> str:
+    exc = parse_stacktrace(stacktrace)
     if len(exc.frames) == 0:
         raise Exception("No frames found in stacktrace")
     sus_frame = fault_loc.fl1(exc)
     relevant_frames = fault_loc.filter_relevant(exc.frames)
     exc.frames = relevant_frames
 
-    resp = fix_suggestion_prompter.complete(stderr)
+    resp = fix_suggestion_prompter.complete(stacktrace)
     return resp
 
 def suggest_fix(stderr: str) -> str:
@@ -102,12 +103,12 @@ def python_run(filepath: str) -> str | None:
     print(stderr)
     return stderr
 
-@app.command()
+@router.post("/run") # This isn't really being used
 def run(filepath: str, make_edit: bool = False):
+    """Returns boolean indicating whether error was found, edited, and solved, or not all of these."""
     stderr = python_run(filepath)
     if stderr == "":
-        print("No errors found!")
-        return
+        return False
         
     steps = suggest_fix(stderr)
     
@@ -115,19 +116,24 @@ def run(filepath: str, make_edit: bool = False):
         edited_file = make_edit(stderr, steps)
         stderr = python_run(edited_file)
         if stderr == "":
-            print("Successfully fixed error!")
+            return True
 
-@app.command()
-def inline(filepath: str, startline: int, endline: int, stacktrace: str):
-    code = fault_loc.find_code_in_range(filepath, startline, endline)
-    suggestion = attempt_edit_prompter1.complete((code, stacktrace))
-    print("Suggestion=", suggestion)
+class InlineCode(BaseModel):
+    filecontents: str
+    startline: int
+    endline: int
+    stacktrace: str = ""
 
-@app.command()
-def suggestion(stderr: str):
-    suggestion = get_steps(stderr)
-    print("Suggestion=", suggestion)
+@router.post("/inline")
+def inline(body: InlineCode):
+    code = fault_loc.find_code_in_range(body.filecontents, body.startline, body.endline)
+    suggestion = attempt_edit_prompter1.complete((code, body.stacktrace))
+    return {"completion": suggestion}
 
+@router.get("/suggestion")
+def suggestion(stacktrace: str):
+    suggestion = get_steps(stacktrace)
+    return {"completion": suggestion}
  
 def ctx_prompt(ctx, final_instruction: str) -> str:
     prompt = ''
@@ -148,17 +154,20 @@ def ctx_prompt(ctx, final_instruction: str) -> str:
 
 ten_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here are 10 things I could try to fix the problem:"))
 
-@app.command()
-def listten(stacktrace: str, description: str, code: List[str]):
-    ten_things = ten_things_prompter.complete((stacktrace, code, description))
-    print("Ten Things=", ten_things)
+class DebugContext(BaseModel):
+    stacktrace: str
+    code: List[str]
+    description: str
+
+@router.post("/list")
+def listten(ctx: DebugContext):
+    ten_things = ten_things_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+    return {"completion": ten_things}
 
 edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"))
 
-@app.command()
-def edit(stacktrace: str, description: str, code: List[str]):
-    new_code = edit_prompter.complete((stacktrace, code, description))
-    print("Edited Code=", new_code)
-
-if __name__ == "__main__":
-    app()
+@router.post("/edit")
+def edit(ctx: DebugContext):
+    print(edit_prompter._compile_prompt((ctx.stacktrace, ctx.code, ctx.description)))
+    new_code = edit_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+    return {"completion": new_code}
