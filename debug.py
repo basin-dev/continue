@@ -1,5 +1,5 @@
 import subprocess
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 import typer
 from debugger import fault_loc
 from boltons import tbutils
@@ -133,8 +133,13 @@ def ctx_prompt(ctx, final_instruction: str) -> str:
     prompt = ''
     if ctx[0] is not None and ctx[0] != '':
         prompt += f"I ran into this problem with my Python code:\n\n{ctx[0]}\n\n"
-    if ctx[1] is not None and ctx[1] != '':
-        prompt += f"This is the code I am trying to fix:\n\n{ctx[1]}\n\n"
+    if ctx[1] is not None and len(ctx[1]) > 0:
+        prompt += "This is the code I am trying to fix:\n\n"
+        i = 1
+        for code in ctx[1]:
+            if code.strip() != "":
+                prompt += f"File #{i}\n```\n{code}\n```\n\n"
+                i += 1
     if ctx[2] is not None and ctx[2] != '':
         prompt += f"This is a description of the problem:\n\n{ctx[2]}\n\n"
     
@@ -144,14 +149,14 @@ def ctx_prompt(ctx, final_instruction: str) -> str:
 ten_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here are 10 things I could try to fix the problem:"))
 
 @app.command()
-def listten(stacktrace: str, code: str, description: str):
+def listten(stacktrace: str, description: str, code: List[str]):
     ten_things = ten_things_prompter.complete((stacktrace, code, description))
     print("Ten Things=", ten_things)
 
-edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is my code after I fixed the problem:"))
+edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"))
 
 @app.command()
-def edit(stacktrace: str, code: str, description: str):
+def edit(stacktrace: str, description: str, code: List[str]):
     new_code = edit_prompter.complete((stacktrace, code, description))
     print("Edited Code=", new_code)
 

@@ -76,7 +76,6 @@ pre {
 }
 
 .multiselectContainer {
-  border: 2px solid white;
   border-radius: 4px;
   padding: 4px;
   display: flex;
@@ -93,7 +92,9 @@ pre {
 
 .delSelectedRangeButton {
   align-self: right;
-  padding: 4px;
+  padding: 0px;
+  padding-right: 4px;
+  padding-left: 4px;
   margin: 0;
   margin-right: 2px;
   border: none;

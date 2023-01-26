@@ -1,9 +1,6 @@
 import * as vscode from "vscode";
 import path = require("path");
-import * as dotenv from "dotenv";
 import { getExtensionUri } from "./vscodeUtils";
-
-dotenv.config({ path: __dirname + "/.env" });
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 
@@ -98,32 +95,59 @@ export async function writeDocstringForFunction(
 // Even no stack trace, just description of problem -> sus lines of code -> fix
 // Should have a series of functions that "enrich" the context, learning increasingly
 // more about the bug
-export interface DebugContext {
+
+// Can be undefined because should be fine to just specify (filename, range & filename, code, code & filename, all three)
+// Really don't want just range, that doesn't help (having range without filename is useless)
+export interface CodeSelection {
   filename?: string;
   range?: vscode.Range;
+  code?: string;
+}
+export interface CompleteCodeSelection {
+  filename: string;
+  range: vscode.Range;
+  code: string;
+}
+export interface DebugContext {
   stacktrace?: string;
   explanation?: string;
   unitTest?: string;
   suggestion?: string;
-  code?: string;
+  codeSelections?: CodeSelection[];
 }
+
+function listToCmdLineArg(list: string[]): string {
+  return list.map((el) => `"$(echo "${el}")"`).join(" ");
+}
+
+function completeCodeSelectionTypeguard(
+  codeSelection: CodeSelection
+): codeSelection is CompleteCodeSelection {
+  return (
+    codeSelection.filename !== undefined &&
+    codeSelection.range !== undefined &&
+    codeSelection.code !== undefined
+  );
+}
+
 export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
   let command: string;
-  if (ctx.range && ctx.filename) {
+  let codeSelection = ctx.codeSelections?.at(0);
+  if (codeSelection && completeCodeSelectionTypeguard(codeSelection)) {
     // Can utilize the fact that we know right where the bug is
     command = build_python_command(
       `python3 ${path.join(get_python_path(), "debug.py")} inline ${
-        ctx.filename
-      } ${ctx.range.start.line} ${ctx.range.end.line} "$(echo "${
-        ctx.stacktrace
-      }")"`
+        codeSelection.filename
+      } ${codeSelection.range.start.line} ${
+        codeSelection.range.end.line
+      } "$(echo "${ctx.stacktrace}")"`
     );
   } else {
     command = build_python_command(
       `python3 ${path.join(
         get_python_path(),
         "debug.py"
-      )} suggestion "$(echo "${ctx.stacktrace}")" "$(echo "${ctx.code}")"`
+      )} suggestion "$(echo "${ctx.stacktrace}")"`
     );
   }
   const { stdout, stderr } = await exec(command);
@@ -136,10 +160,14 @@ export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
 }
 
 export async function listTenThings(ctx: DebugContext): Promise<string> {
+  if (!ctx.codeSelections?.filter((cs) => cs.code !== undefined)) return "";
+
   let command = build_python_command(
     `python3 ${path.join(get_python_path(), "debug.py")} listten "$(echo "${
       ctx.stacktrace
-    }")" "$(echo "${ctx.code}")" "$(echo "${ctx.explanation}")"`
+    }")" "$(echo "${ctx.explanation}")" ${listToCmdLineArg(
+      ctx.codeSelections.map((cs) => cs.code!)
+    )}`
   );
   const { stdout, stderr } = await exec(command);
   if (stderr) {
@@ -149,18 +177,47 @@ export async function listTenThings(ctx: DebugContext): Promise<string> {
   return tenThings;
 }
 
-export async function makeEdit(ctx: DebugContext): Promise<string> {
+function parseMultipleFileSuggestion(suggestion: string): string[] {
+  let suggestions = [];
+  let currentFileLines: string[] = [];
+  let lastWasFile = false;
+  let insideFile = false;
+  for (let line of suggestion.split("\n")) {
+    if (line.trimStart().startsWith("File #")) {
+      lastWasFile = true;
+    } else if (lastWasFile && line.startsWith("```")) {
+      lastWasFile = false;
+      insideFile = true;
+    } else if (insideFile) {
+      if (line.startsWith("```")) {
+        insideFile = false;
+        suggestions.push(currentFileLines.join("\n"));
+        currentFileLines = [];
+      } else {
+        currentFileLines.push(line);
+      }
+    }
+  }
+  return suggestions;
+}
+
+export async function makeEdit(ctx: DebugContext): Promise<string[]> {
+  if (!ctx.codeSelections?.filter((cs) => cs.code !== undefined)) return [];
+
   let command = build_python_command(
     `python3 ${path.join(get_python_path(), "debug.py")} edit "$(echo "${
       ctx.stacktrace
-    }")" "$(echo "${ctx.code}")" "$(echo "${ctx.explanation}")"`
+    }")" "$(echo "${ctx.explanation}")" ${listToCmdLineArg(
+      ctx.codeSelections.map((cs) => cs.code!)
+    )}`
   );
   const { stdout, stderr } = await exec(command);
   if (stderr) {
     throw new Error(stderr);
   }
   const editedCode = parseStdout(stdout, "Edited Code", true);
-  return editedCode;
+  const suggestions = parseMultipleFileSuggestion(editedCode);
+  return suggestions;
 }
 
 export interface CodeLocation {
@@ -172,8 +229,6 @@ export interface CodeLocation {
 export async function findSuspiciousCode(
   ctx: DebugContext
 ): Promise<CodeLocation[]> {
-  if (ctx.filename && ctx.range) return [];
-
   let command = build_python_command(
     `python3 ${path.join(get_python_path(), "debug.py")} findcode "$(echo "${
       ctx.stacktrace

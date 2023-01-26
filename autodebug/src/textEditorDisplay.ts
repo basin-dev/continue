@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { getTestFile, translate } from "./vscodeUtils";
+import { getViewColumnOfFile, translate } from "./vscodeUtils";
 import * as path from "path";
 
 // SUGGESTIONS INTERFACE //
@@ -39,6 +39,15 @@ export const editorToSuggestions: Map<
   SuggestionRanges[]
 > = new Map();
 export let currentSuggestion: Map<string, number> = new Map(); // Map from editor URI to index of current SuggestionRanges in editorToSuggestions
+
+// When tab is reopened, rerender the decorations:
+vscode.window.onDidChangeActiveTextEditor((editor) => {
+  if (!editor) return;
+  rerenderDecorations(editor.document.uri.toString());
+});
+vscode.workspace.onDidOpenTextDocument((doc) => {
+  rerenderDecorations(doc.uri.toString());
+});
 
 export function rerenderDecorations(editorUri: string) {
   let suggestions = editorToSuggestions.get(editorUri);
@@ -187,6 +196,9 @@ export async function showSuggestion(
   return new Promise((resolve, reject) => {
     editor!
       .edit((edit) => {
+        if (range.end.line + 1 === editor.document.lineCount) {
+          suggestion = "\n" + suggestion;
+        }
         edit.insert(new vscode.Position(range.end.line + 1, 0), suggestion);
       })
       .then(
@@ -474,26 +486,10 @@ export function openEditorAndRevealRange(
 ): Promise<vscode.TextEditor> {
   return new Promise((resolve, _) => {
     // Check if the editor is already open
-    // let open = vscode.window.tabGroups.all.flatMap(({ tabs }) =>
-    //   tabs
-    //     .map((tab) => ((tab as any).input?.uri || { path: "" }).path)
-    //     .filter((uri) => uri !== "")
-    // );
-
-    // for (let file of open) {
-    //   if (file === editorFilename) {
-    //     vscode.window.showTextDocument(file).then((editor) => {
-    //       if (range) {
-    //         editor.revealRange(range);
-    //       }
-    //       resolve(editor);
-    //     });
-    //     return;
-    //   }
-    // }
+    let viewColumn = getViewColumnOfFile(editorFilename);
 
     vscode.workspace.openTextDocument(editorFilename).then((doc) => {
-      vscode.window.showTextDocument(doc).then((editor) => {
+      vscode.window.showTextDocument(doc, viewColumn).then((editor) => {
         if (range) {
           editor.revealRange(range);
         }

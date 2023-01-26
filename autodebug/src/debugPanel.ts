@@ -9,20 +9,6 @@ import {
 import { showSuggestion } from "./textEditorDisplay";
 import { getExtensionUri, getNonce } from "./vscodeUtils";
 
-var selectedRange: vscode.Range | undefined;
-
-function convertDebugContext(debugContext: any): DebugContext {
-  return {
-    filename: debugContext.filename,
-    range: selectedRange,
-    stacktrace: debugContext.stacktrace,
-    explanation: debugContext.explanation,
-    unitTest: debugContext.unitTest,
-    suggestion: debugContext.suggestion,
-    code: debugContext.code,
-  };
-}
-
 export let debugPanelWebview: vscode.Webview;
 
 export function setupDebugPanel(webview: vscode.Webview): string {
@@ -50,15 +36,12 @@ export function setupDebugPanel(webview: vscode.Webview): string {
       range: e.selections[0],
       workspacePath: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
     });
-    selectedRange = e.selections[0];
   });
 
   webview.onDidReceiveMessage(async (data) => {
     switch (data.type) {
       case "listTenThings": {
-        let tenThings = await listTenThings(
-          convertDebugContext(data.debugContext)
-        );
+        let tenThings = await listTenThings(data.debugContext);
         webview.postMessage({
           type: "listTenThings",
           tenThings,
@@ -66,7 +49,7 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         break;
       }
       case "suggestFix": {
-        let ctx = await getSuggestion(convertDebugContext(data.debugContext));
+        let ctx = await getSuggestion(data.debugContext);
         webview.postMessage({
           type: "suggestFix",
           fixSuggestion: ctx.suggestion,
@@ -74,9 +57,7 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         break;
       }
       case "findSuspiciousCode": {
-        let suspiciousCode = await findSuspiciousCode(
-          convertDebugContext(data.debugContext)
-        );
+        let suspiciousCode = await findSuspiciousCode(data.debugContext);
         webview.postMessage({
           type: "findSuspiciousCode",
           suspiciousCode,
@@ -84,19 +65,24 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         break;
       }
       case "makeEdit": {
-        let debugContext = convertDebugContext(data.debugContext);
-        let editedCode = await makeEdit(debugContext);
+        let debugContext = data.debugContext;
+        let suggestions = await makeEdit(debugContext);
+        // TODO: Here we are just hoping that the files come out in the same number and order. Should be making sure.
 
-        if (!debugContext.filename || !debugContext.range) break;
+        for (let i = 0; i < suggestions.length; i++) {
+          let suggestion = suggestions[i];
+          let codeSelection = debugContext.codeSelections[i];
+          if (!codeSelection.filename || !codeSelection.range) continue;
+          await showSuggestion(
+            codeSelection.filename,
+            codeSelection.range,
+            suggestion
+          );
+        }
 
-        showSuggestion(
-          debugContext.filename,
-          debugContext.range,
-          editedCode
-        ).then(() => {
-          webview.postMessage({
-            type: "makeEdit",
-          });
+        // To tell it to stop displaying the loader
+        webview.postMessage({
+          type: "makeEdit",
         });
       }
     }

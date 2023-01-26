@@ -49,11 +49,14 @@ export default class DebugViewProvider implements vscode.WebviewViewProvider {
               cancellable: false,
             },
             async (progress, token) => {
-              let ctx = await bridge.getSuggestion({
+              const codeSelection: bridge.CodeSelection = {
                 filename: editor.selection.isEmpty
                   ? undefined
                   : editor.document.fileName,
                 range: editor.selection.isEmpty ? undefined : editor.selection,
+              };
+              let ctx = await bridge.getSuggestion({
+                codeSelections: [codeSelection],
                 stacktrace: data.stackTrace,
                 explanation: data.explanation,
               });

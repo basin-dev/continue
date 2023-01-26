@@ -130,3 +130,20 @@ async function answerQuestion(
     }
   );
 }
+
+// async function suggestFixForAllWorkspaceProblems() {
+// Something like this, just figure out the loops for diagnostics vs problems
+// let problems = vscode.languages.getDiagnostics();
+// let codeSuggestions = await Promise.all(problems.map((problem) => {
+//   return bridge.suggestFixForProblem(problem[0].fsPath, problem[1]);
+// }));
+// for (const [uri, diagnostics] of problems) {
+//   for (let i = 0; i < diagnostics.length; i++) {
+//     let diagnostic = diagnostics[i];
+//     let suggestedCode = codeSuggestions[i];
+//     // If you're going to do this for a bunch of files at once, it will show the unsaved icon in the tab
+//     // BUT it would be better to have a single window to review all edits
+//     showSuggestion(uri.fsPath, diagnostic.range, suggestedCode)
+//   }
+// }
+// }

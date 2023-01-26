@@ -183,6 +183,15 @@
     debugContext.explanation = bugDescription.value;
     debugContext.stacktrace = stacktrace.value;
     debugContext.suggestion = fixSuggestion.innerHTML;
+    debugContext.codeSelections = selectedRanges
+      .filter((obj) => obj.selected)
+      .map((obj) => {
+        return {
+          filename: obj.filename,
+          range: obj.range,
+          code: obj.code,
+        };
+      });
   }
 
   function listTenThings() {

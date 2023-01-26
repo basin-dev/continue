@@ -58,3 +58,19 @@ export function getExtensionUri(): vscode.Uri {
   return vscode.extensions.getExtension("undefined_publisher.autodebug")!
     .extensionUri;
 }
+
+export function getViewColumnOfFile(
+  filepath: string
+): vscode.ViewColumn | undefined {
+  for (let tabGroup of vscode.window.tabGroups.all) {
+    for (let tab of tabGroup.tabs) {
+      if (
+        (tab.input as any).uri &&
+        (tab.input as any).uri.fsPath === filepath
+      ) {
+        return tabGroup.viewColumn;
+      }
+    }
+  }
+  return undefined;
+}
