@@ -12,6 +12,9 @@
   const makeEditButton = document.querySelector(".makeEditButton");
   const makeEditLoader = document.querySelector(".makeEditLoader");
   const multiselectContainer = document.querySelector(".multiselectContainer");
+  const generateUnitTestButton = document.querySelector(
+    ".generateUnitTestButton"
+  );
 
   let selectedRanges = []; // Elements are { filename, range, code }
   let canUpdateLast = true;
@@ -65,7 +68,7 @@
     }-${range.end.line}:`;
 
     let delButton = document.createElement("button");
-    delButton.textContent = "X";
+    delButton.textContent = "x";
     delButton.className = "delSelectedRangeButton";
     delButton.addEventListener("click", () => {
       multiselectContainer.removeChild(div);
@@ -155,6 +158,7 @@
       }
       case "highlightedCode": {
         workspacePath = message.workspacePath;
+        generateUnitTestButton.disabled = false;
         addMultiselectOption(message.filename, message.range, message.code);
         break;
       }
@@ -222,6 +226,14 @@
     gatherDebugContext();
     vscode.postMessage({
       type: "makeEdit",
+      debugContext,
+    });
+  });
+
+  generateUnitTestButton.addEventListener("click", () => {
+    gatherDebugContext();
+    vscode.postMessage({
+      type: "generateUnitTest",
       debugContext,
     });
   });

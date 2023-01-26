@@ -85,6 +85,9 @@ export function setupDebugPanel(webview: vscode.Webview): string {
           type: "makeEdit",
         });
       }
+      case "generateUnitTest": {
+        // TODO:
+      }
     }
   });
 
@@ -121,6 +124,7 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         
         
         <button disabled class="makeEditButton">Make Edit</button>
+        <button disabled class="generateUnitTestButton">Generate Unit Test</button>
         <div class="loader makeEditLoader" hidden></div>
         
         <br></br>
