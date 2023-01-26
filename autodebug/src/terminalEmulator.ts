@@ -54,12 +54,28 @@ class PythonTracebackSnooper {
 
 const DEFAULT_SNOOPERS = [new PythonTracebackSnooper()];
 
+// Whenever a user opens a terminal, replace it with ours
+vscode.window.onDidOpenTerminal((terminal) => {
+  if (terminal.name != "AutoDebug") {
+    terminal.dispose();
+    openCapturedTerminal();
+  }
+});
+
 export function openCapturedTerminal(
   snoopers: TerminalSnooper[] = DEFAULT_SNOOPERS
 ) {
   // A lot of basic setup for the terminal emulator
   let workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) return;
+
+  // If there is another existing, non-AutoDebug terminal, delete it
+  let terminals = vscode.window.terminals;
+  for (let i = 0; i < terminals.length; i++) {
+    if (terminals[i].name != "AutoDebug") {
+      terminals[i].dispose();
+    }
+  }
 
   var isWindows = os.platform() === "win32";
   var shell = isWindows ? "powershell.exe" : "zsh";
@@ -108,4 +124,5 @@ export function openCapturedTerminal(
     name: "AutoDebug",
     pty: newPty,
   });
+  terminal.show();
 }
