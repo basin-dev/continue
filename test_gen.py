@@ -1,21 +1,21 @@
 import ast
 import os
 from typing import Any, Dict, List, Tuple
+
+from pydantic import BaseModel
 import fault_loc
 from llm import OpenAI, count_tokens
 import pytest
-from typer import Typer
+from fastapi import APIRouter, HTTPException
 import prompts
 import pytest_parse
 
 gpt = OpenAI()
-app = Typer()
+router = APIRouter(prefix="/unittest", tags=["unittest"])
 
-def get_code(file_path: str):
+def get_code(filecontents: str):
     """Get the code for all functions and class methods in the file."""
-
-    with open(file_path, 'r') as file:
-        tree = ast.parse(file.read())
+    tree = ast.parse(filecontents)
 
     functions = []
     classes = []
@@ -44,7 +44,8 @@ def iterate_files(dir: str):
                 continue
             if file.endswith(".py") and file != "__init__.py" and file != "__temp__.py":
                 dir_code.append({'name': file})
-                dir_code[-1]['functions'], dir_code[-1]['classes'] = get_code(os.path.join(root, file))
+                filecontents = open(os.path.join(root, file), 'r').read()
+                dir_code[-1]['functions'], dir_code[-1]['classes'] = get_code(filecontents)
     
     return dir_code
 
@@ -351,37 +352,82 @@ def generate_function_unit_tests(dir_code, code_dir):
         # Write all tests to file
         write_tests_to_file(tests, code_path)
 
-@app.command()
-def something_else():
-    print("Hello")
+class FilePosition(BaseModel):
+    """A position in a file."""
+    filecontents: str
+    lineno: int
 
-@app.command()
-def forline(filename: str, lineno: int):
+@router.post("/forline")
+def forline(fp: FilePosition):
     """Write unit test for the function encapsulating the given line number."""
-    functions, classes = get_code(filename)
+    functions, classes = get_code(fp.filecontents)
     ctx = None
     for function in functions:
-        if function.lineno <= lineno and function.end_lineno >= lineno:
-            ctx = function
+        if function.lineno <= fp.lineno and function.end_lineno >= fp.lineno:
+            ctx = ast.unparse(function)
             break
     if ctx is None:
         for cls in classes:
             for method in cls['methods']:
-                if method.lineno <= lineno and method.end_lineno >= lineno:
+                if method.lineno <= fp.lineno and method.end_lineno >= fp.lineno:
                     ctx = (cls, method)
                     break
     
     if ctx is None:
-        print("False")
-        return
+        raise HTTPException(status_code=500, detail="No function or class method found at line number")
+
+    print("ctx: ", ctx)
     
     fn_prompter = prompts.BasicCommentPrompter("Write tests for the above code using pytest. Consider doing any of the following as needed: writing mocks, creating fixtures, using parameterization, setting up, and tearing down. All tests should pass:")
     cls_prompter = prompts.SimplePrompter(lambda x: prompts.cls_1(x[0]['name'], x[0]['init'], x[1]))
     prompter = prompts.MixedPrompter([fn_prompter, cls_prompter], lambda inp: 1 if isinstance(inp, list) and len(inp) == 2 else 0)
 
+    print("PROMPT: ", prompter._compile_prompt(ctx)[0])
+
     test = prompter.complete(ctx)
 
-    print("Test=" + test)
+    return {"completion": test.strip()}
+
+def file_position_to_code_str(fp: FilePosition) -> str | None:
+    """Given a line in a file, find the most specific containing function, and return it as a string, including the class header if it's a method."""
+    functions, classes = get_code(fp.filecontents)
+    for function in functions:
+        if function.lineno <= fp.lineno and function.end_lineno >= fp.lineno:
+            return ast.unparse(function)
+
+    for cls in classes:
+        for method in cls['methods']:
+            if method.lineno <= fp.lineno and method.end_lineno >= fp.lineno:
+                return prompts.cls_method_to_str(cls['name'], cls['init'], method)
+
+    return None
+
+failing_test_prompter = prompts.FormatStringPrompter('''The is a description of my bug:
+
+{description}
+
+This is the code:
+
+{code}
+
+This is a failing pytest that will pass when the problem is solved:
+
+''')
+
+class FailingTestBody(BaseModel):
+    """A failing test body."""
+    description: str
+    fp: FilePosition
+
+@router.post("/failingtest")
+def failingtest(body: FailingTestBody):
+    """Write a failing test for the function encapsulating the given line number."""
+    code = file_position_to_code_str(body.fp)
+    if code is None:
+        raise HTTPException(status_code=500, detail="No function or class method found at line number")
+
+    test = failing_test_prompter.complete({"description": body.description, "code": code})
+    return {"completion": test.strip()}
 
 
 if __name__ == "__main__":
@@ -390,4 +436,4 @@ if __name__ == "__main__":
     # dir_code = iterate_files(code_dir)
     # generate_function_unit_tests(dir_code, code_dir)
 
-    app()
+    # app()

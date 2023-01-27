@@ -12,6 +12,7 @@ import { writeUnitTestCommand } from "./unitTests";
 import * as bridge from "./bridge";
 import { setupDebugPanel } from "./debugPanel";
 import { openCapturedTerminal } from "./terminalEmulator";
+import { getRightViewColumn } from "./vscodeUtils";
 
 // COpy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
@@ -45,28 +46,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   "autodebug.acceptSuggestion": acceptSuggestionCommand,
   "autodebug.rejectSuggestion": rejectSuggestionCommand,
   "autodebug.openDebugPanel": () => {
-    // Want to place in the rightmost panel if there is already more than one, otherwise use Beside
-    let column = vscode.ViewColumn.Beside;
-    let columnOrdering = [
-      vscode.ViewColumn.One,
-      vscode.ViewColumn.Beside,
-      vscode.ViewColumn.Two,
-      vscode.ViewColumn.Three,
-      vscode.ViewColumn.Four,
-      vscode.ViewColumn.Five,
-      vscode.ViewColumn.Six,
-      vscode.ViewColumn.Seven,
-      vscode.ViewColumn.Eight,
-      vscode.ViewColumn.Nine,
-    ];
-    for (let tabGroup of vscode.window.tabGroups.all) {
-      if (
-        columnOrdering.indexOf(tabGroup.viewColumn) >
-        columnOrdering.indexOf(column)
-      ) {
-        column = tabGroup.viewColumn;
-      }
-    }
+    let column = getRightViewColumn();
     const panel = vscode.window.createWebviewPanel(
       "autodebug.debugPanelView",
       "AutoDebug",

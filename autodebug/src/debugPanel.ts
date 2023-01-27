@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import {
-  DebugContext,
   listTenThings,
   findSuspiciousCode,
   getSuggestion,
   makeEdit,
+  apiRequest,
 } from "./bridge";
-import { showSuggestion } from "./textEditorDisplay";
+import { showSuggestion, writeAndShowUnitTest } from "./textEditorDisplay";
 import { getExtensionUri, getNonce } from "./vscodeUtils";
 
 export let debugPanelWebview: vscode.Webview;
@@ -86,7 +86,37 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         });
       }
       case "generateUnitTest": {
-        // TODO:
+        let codeSelection = data.debugContext.codeSelections?.at(0);
+        if (codeSelection && codeSelection.filename && codeSelection.range) {
+          vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: "Generating Unit Test...",
+              cancellable: false,
+            },
+            async () => {
+              let resp = await apiRequest("/unittest/failingtest", {
+                method: "POST",
+                body: {
+                  fp: {
+                    filecontents: (
+                      await vscode.workspace.fs.readFile(
+                        vscode.Uri.file(codeSelection.filename)
+                      )
+                    ).toString(),
+                    lineno: codeSelection.range.end.line,
+                  },
+                  description: data.debugContext.explanation,
+                },
+              });
+
+              let decorationKey = await writeAndShowUnitTest(
+                codeSelection.filename,
+                resp.completion
+              );
+            }
+          );
+        }
       }
     }
   });

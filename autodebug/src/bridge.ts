@@ -70,7 +70,7 @@ export async function askQuestion(
   }
 }
 
-async function apiRequest(
+export async function apiRequest(
   endpoint: string,
   options: {
     method?: string;
@@ -84,6 +84,7 @@ async function apiRequest(
     body: {},
   };
   options = Object.assign(defaults, options); // Second takes over first
+  if (endpoint.startsWith("/")) endpoint = endpoint.substring(1);
 
   let resp = await axios({
     method: options.method,
@@ -262,36 +263,24 @@ export async function findSuspiciousCode(
   return [];
 }
 
-async function fullyEnrichContext(ctx: DebugContext): Promise<DebugContext> {
-  if (!ctx.unitTest) {
-    // generate unit test
-  }
-  if (!ctx.suggestion) {
-    ctx = await getSuggestion(ctx);
-  }
-  return ctx;
-}
-
 export async function writeUnitTestForFunction(
   filename: string,
   position: vscode.Position
 ): Promise<string> {
-  const command = build_python_command(
-    `python3 ${path.join(
-      get_python_path(),
-      "test_gen.py"
-    )} forline ${filename} ${position.line}`
-  );
+  let resp = await apiRequest("unittest/forline", {
+    method: "POST",
+    body: {
+      filecontents: (
+        await vscode.workspace.fs.readFile(vscode.Uri.file(filename))
+      ).toString(),
+      lineno: position.line,
+    },
+  });
 
-  const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
-  }
-
-  const unitTest = parseStdout(stdout, "Test", true);
-  if (unitTest) {
-    return unitTest;
-  } else {
-    throw new Error("Error: No unit test found");
-  }
+  return resp.completion;
 }
+
+// TODO: This whole file shouldn't really exist, nor its functions. Should just be api calls made throughout the codebase
+// UNLESS: You always pass the entire DebugContext object into all these functions so they have the same interface from the VSCode extensions,
+// but then you strip out unecessary information here when you upgrade your backend capabilities. Then only have to edit that in a single spot,
+// and a lot easier to keep track of.
