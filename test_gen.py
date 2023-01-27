@@ -1,7 +1,7 @@
 import ast
 import os
 from typing import Any, Dict, List, Tuple
-from debugger import fault_loc
+import fault_loc
 from llm import OpenAI, count_tokens
 import pytest
 from typer import Typer

@@ -1,13 +1,13 @@
 import os
 import ast
 import docstring_parser
-import typer
+from fastapi import APIRouter, HTTPException
 from llm import OpenAI
 from prompts import SimplePrompter
-import debugger.fault_loc as fault_loc
+import fault_loc
 
-app = typer.Typer()
 gpt = OpenAI()
+router = APIRouter(prefix="/docstring", tags=["docstring"])
 
 CURIE_FINE_TUNE = "curie:ft-personal-2023-01-03-17-34-19"
 DAVINCI_FINE_TUNE = "davinci:ft-personal:docstring-completions-davinci-1-2023-01-03-18-02-05"
@@ -127,7 +127,6 @@ def write_ds_for_folder(input: str, output: str, double: bool=False, format: str
                 write_ds_for_file(input + "/" + file, output + "/" + file, double=double, format=format)
 
 
-@app.command()
 def write_ds(input: str, output: str, double: bool=False, format: str="google", recursive: bool=True):
     """Write docstrings for all functions in a file or folder"""
 
@@ -137,28 +136,21 @@ def write_ds(input: str, output: str, double: bool=False, format: str="google", 
     else:
         write_ds_for_file(input, output, double=double, format=format)
 
-@app.command()
-def forline(filename: str, lineno: int, format: str="google"):
+@router.get("/forline")
+def forline(filecontents: str, lineno: int, format: str="google"):
     """Write a docstring for a function at a line number"""
-    with open(filename, "r") as f:
-        code = f.read()
-    
-    tree = ast.parse(code)
+    tree = ast.parse(filecontents)
     most_specific_context = fault_loc.find_most_specific_context(tree, lineno)
     
     if most_specific_context is None:
-        print("False")
-        return
+        raise HTTPException(status_code=500, detail="Could not find function or class")
     
-    print("True")
-    print("Line number=" + str(most_specific_context.lineno))
+    docstring = ""
     if isinstance(most_specific_context, ast.FunctionDef) or isinstance(most_specific_context, ast.AsyncFunctionDef):
-        print("Docstring=" + write_ds_for_fn(most_specific_context, format=docstring_formats[format]))
+        docstring = write_ds_for_fn(most_specific_context, format=docstring_formats[format])
     elif isinstance(most_specific_context, ast.ClassDef):
-        print("Docstring=" + write_ds_for_class(most_specific_context, format=docstring_formats[format])[0])
+        docstring = write_ds_for_class(most_specific_context, format=docstring_formats[format])[0]
     else:
-        raise Exception("Line number is not inside a function or class")
-
-
-if __name__ == "__main__":
-    app()
+        raise HTTPException(status_code=400, detail="Line number is not inside a function or class")
+    
+    return {"completion": docstring, "lineno": most_specific_context.lineno}
