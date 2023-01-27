@@ -19,7 +19,7 @@ def get_issues(owner, repo, token):
 
     if response.status_code == 200:
         issues = response.json()
-        with open('issues.json', 'w') as f:
+        with open('data/issues.json', 'w') as f:
             json.dump(issues, f, indent=4)
     else:
         print('Failed to retrieve issues')
