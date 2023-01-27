@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
-import path = require("path");
+import * as path from "path";
+const axios = require("axios").default;
 import { getExtensionUri } from "./vscodeUtils";
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
@@ -7,6 +8,11 @@ const exec = util.promisify(require("child_process").exec);
 function get_python_path() {
   return path.join(getExtensionUri().fsPath, "..");
 }
+
+function get_api_url() {
+  return "http://localhost:8000";
+}
+const API_URL = get_api_url();
 
 function build_python_command(cmd: string): string {
   return `cd ${get_python_path()} && source env/bin/activate && ${cmd}`;
@@ -64,28 +70,51 @@ export async function askQuestion(
   }
 }
 
+async function apiRequest(
+  endpoint: string,
+  options: {
+    method?: string;
+    query?: { [key: string]: any };
+    body?: { [key: string]: any };
+  }
+): Promise<any> {
+  let defaults = {
+    method: "GET",
+    query: {},
+    body: {},
+  };
+  options = Object.assign(defaults, options); // Second takes over first
+
+  let resp = await axios({
+    method: options.method,
+    url: `${API_URL}/${endpoint}`,
+    data: options.body,
+    params: options.query,
+  });
+
+  return resp.data;
+}
+
 // Write a docstring for the most specific function or class at the current line in the given file
 export async function writeDocstringForFunction(
   filename: string,
   position: vscode.Position
 ): Promise<{ lineno: number; docstring: string }> {
-  const command = build_python_command(
-    `python3 ${path.join(get_python_path(), "ds_gen.py")} forline ${filename} ${
-      position.line
-    }`
-  );
+  let resp = await apiRequest("docstring/forline", {
+    query: {
+      filecontents: (
+        await vscode.workspace.fs.readFile(vscode.Uri.file(filename))
+      ).toString(),
+      lineno: position.line.toString(),
+    },
+  });
 
-  const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
-  }
-
-  const lineno = parseInt(parseStdout(stdout, "Line number"));
-  const docstring = parseStdout(stdout, "Docstring", true);
+  const lineno = resp.lineno;
+  const docstring = resp.completion;
   if (lineno && docstring) {
     return { lineno, docstring };
   } else {
-    throw new Error("Error: No docstring found");
+    throw new Error("Error: No docstring returned");
   }
 }
 
@@ -131,54 +160,52 @@ function completeCodeSelectionTypeguard(
 }
 
 export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
-  let command: string;
   let codeSelection = ctx.codeSelections?.at(0);
+  let resp: any;
   if (codeSelection && completeCodeSelectionTypeguard(codeSelection)) {
     // Can utilize the fact that we know right where the bug is
-    command = build_python_command(
-      `python3 ${path.join(get_python_path(), "debug.py")} inline ${
-        codeSelection.filename
-      } ${codeSelection.range.start.line} ${
-        codeSelection.range.end.line
-      } "$(echo "${ctx.stacktrace}")"`
-    );
+    resp = await apiRequest("debug/inline", {
+      body: {
+        filecontents: (
+          await vscode.workspace.fs.readFile(
+            vscode.Uri.file(codeSelection.filename)
+          )
+        ).toString(),
+        startline: codeSelection.range.start.line,
+        endline: codeSelection.range.end.line,
+        stacktrace: ctx.stacktrace,
+      },
+      method: "POST",
+    });
   } else {
-    command = build_python_command(
-      `python3 ${path.join(
-        get_python_path(),
-        "debug.py"
-      )} suggestion "$(echo "${ctx.stacktrace}")"`
-    );
+    resp = await apiRequest("debug/suggestion", {
+      query: {
+        stacktrace: ctx.stacktrace,
+      },
+    });
   }
-  const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
-  }
-  const suggestion = parseStdout(stdout, "Suggestion", true);
-  ctx.suggestion = suggestion;
+
+  ctx.suggestion = resp.completion;
   return ctx;
 }
 
 export async function listTenThings(ctx: DebugContext): Promise<string> {
   if (!ctx.codeSelections?.filter((cs) => cs.code !== undefined)) return "";
 
-  let command = build_python_command(
-    `python3 ${path.join(get_python_path(), "debug.py")} listten "$(echo "${
-      ctx.stacktrace
-    }")" "$(echo "${ctx.explanation}")" ${listToCmdLineArg(
-      ctx.codeSelections.map((cs) => cs.code!)
-    )}`
-  );
-  const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
-  }
-  const tenThings = parseStdout(stdout, "Ten Things", true);
-  return tenThings;
+  let resp = await apiRequest("debug/list", {
+    body: {
+      stacktrace: ctx.stacktrace,
+      description: ctx.explanation,
+      code: ctx.codeSelections.map((cs) => cs.code!),
+    },
+    method: "POST",
+  });
+
+  return resp.completion;
 }
 
 function parseMultipleFileSuggestion(suggestion: string): string[] {
-  let suggestions = [];
+  let suggestions: string[] = [];
   let currentFileLines: string[] = [];
   let lastWasFile = false;
   let insideFile = false;
@@ -204,19 +231,16 @@ function parseMultipleFileSuggestion(suggestion: string): string[] {
 export async function makeEdit(ctx: DebugContext): Promise<string[]> {
   if (!ctx.codeSelections?.filter((cs) => cs.code !== undefined)) return [];
 
-  let command = build_python_command(
-    `python3 ${path.join(get_python_path(), "debug.py")} edit "$(echo "${
-      ctx.stacktrace
-    }")" "$(echo "${ctx.explanation}")" ${listToCmdLineArg(
-      ctx.codeSelections.map((cs) => cs.code!)
-    )}`
-  );
-  const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
-  }
-  const editedCode = parseStdout(stdout, "Edited Code", true);
-  const suggestions = parseMultipleFileSuggestion(editedCode);
+  let resp = await apiRequest("debug/edit", {
+    body: {
+      stacktrace: ctx.stacktrace,
+      description: ctx.explanation,
+      code: ctx.codeSelections.map((cs) => cs.code!),
+    },
+    method: "POST",
+  });
+
+  const suggestions = parseMultipleFileSuggestion(resp.completion);
   return suggestions;
 }
 
@@ -229,15 +253,12 @@ export interface CodeLocation {
 export async function findSuspiciousCode(
   ctx: DebugContext
 ): Promise<CodeLocation[]> {
-  let command = build_python_command(
-    `python3 ${path.join(get_python_path(), "debug.py")} findcode "$(echo "${
-      ctx.stacktrace
-    }")"`
-  );
-  const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
-  }
+  let resp = await apiRequest("debug/find", {
+    query: {
+      stacktrace: ctx.stacktrace,
+      description: ctx.explanation,
+    },
+  });
   return [];
 }
 
