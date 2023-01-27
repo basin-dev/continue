@@ -20,6 +20,8 @@
 
 9. Every time you make changes to the code, you need to run `npm run compile`
 
+10. Toggle Developer tools if you run into errors
+
 ## Background
 
 - `src/bridge.ts`: connects this VS Code Extension to our Python backend that interacts with GPT-3
@@ -46,8 +48,8 @@
 - "Open Debug Panel" command 
 - "Ask a question from input box" command (windows: `ctrl+alt+j`, mac: `shift+cmd+j`)
 - "Open Captured Terminal" command
-- "Ask a question from webview" command (what context is it given?)
-- "Create Terminal" command ???
+- "Ask a question from webview" command
+- "Create Terminal" command
 - "Suggestion Down" command (windows: `shift+ctrl+down`, mac: `shift+ctrl+down`)
 - "Suggestion Up" command (windows: `shift+ctrl+up`, mac: `shift+ctrl+up`)
 - "Accept Suggestion" command (windows: `shift+ctrl+enter`, mac: `shift+ctrl+enter`)
