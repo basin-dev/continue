@@ -57,11 +57,10 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         break;
       }
       case "findSuspiciousCode": {
-        let suspiciousCode = await findSuspiciousCode(data.debugContext);
-        webview.postMessage({
-          type: "findSuspiciousCode",
-          suspiciousCode,
-        });
+        vscode.commands.executeCommand(
+          "autodebug.findSuspiciousCode",
+          data.debugContext
+        );
         break;
       }
       case "makeEdit": {

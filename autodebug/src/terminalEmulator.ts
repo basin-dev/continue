@@ -43,6 +43,7 @@ class PythonTracebackSnooper {
         this.tracebackBuffer
       );
       if (wholeTraceback) {
+        this.tracebackBuffer = "";
         debugPanelWebview.postMessage({
           type: "traceback",
           traceback: wholeTraceback,

@@ -1,6 +1,10 @@
 from typing import Callable, Dict, List, Tuple
 from boltons import tbutils
 import ast
+from llm import OpenAI
+import numpy as np
+
+gpt = OpenAI()
 
 ignore = ["bin/"] # Ideally just write in .gitignore-style format, and this can be customizable
 def is_my_code(path: str) -> bool:
@@ -57,8 +61,9 @@ def edit_context_ast(frame: Dict, replacement: Callable[[str], str]) -> ast.AST 
 
     return None
 
-def find_most_specific_context(tree: ast.AST, lineno: int) -> ast.AST | None:
+def find_most_specific_context(filecontents: str, lineno: int) -> ast.AST:
     # Get the most specific function node containing the line
+    tree = ast.parse(filecontents)
     for parent in ast.walk(tree):
         i = 0
         for child in ast.iter_child_nodes(parent):
@@ -69,8 +74,11 @@ def find_most_specific_context(tree: ast.AST, lineno: int) -> ast.AST | None:
                 
                 return child
             i += 1
-
-    return None
+    # If we're here, it means that the code was top-level
+    startline = lineno - 5
+    endline = lineno + 5
+    tree.body = list(filter(lambda node: startline <= node.lineno <= endline, tree.body))
+    return tree
 
 def find_code_in_range(filecontents: str, start: int, end: int) -> str:
     """Find the code in the given range in the file."""
@@ -78,3 +86,51 @@ def find_code_in_range(filecontents: str, start: int, end: int) -> str:
     lines = filecontents.splitlines()
     
     return "\n".join(lines[start - 1:end])
+
+def indices_of_top_k(arr: List[float], k: int) -> List[int]:
+    """Return the indices of the top k elements in the array."""
+    return sorted(range(len(arr)), key=lambda i: arr[i])[-k:]
+
+def fl2(tb: tbutils.ParsedException, query: str, n: int = 2) -> List[Dict]:
+    """Return the most relevant frames in the stacktrace."""
+    # First, filter out code that isn't mine
+    my_code = filter_relevant(tb.frames)
+
+    # Then, find the most specific context for each frame, getting the code snippets
+    snippets = []
+    for frame in my_code:
+        snippets.append(frame_to_code_location(frame)['code'])
+
+    if len(snippets) <= n:
+        # If there are <= n snippets, then just return all of them
+        return my_code
+
+    # Then, similarity search by the query to return top n frames
+    print("Query:", snippets + [query])
+    embeddings = gpt.embed(snippets + [query])
+    similarities = [np.dot(embeddings[-1], x) for x in embeddings[:-1]]
+    top_n = indices_of_top_k(similarities, n)
+
+    return [my_code[i] for i in top_n]
+
+def get_start_end_lines(tree: ast.AST) -> Tuple[int, int]:
+    """Get the start and end line numbers of the AST node."""
+    if isinstance(tree, ast.Module):
+        return tree.body[0].lineno, tree.body[-1].end_lineno
+    return tree.lineno, tree.end_lineno
+
+def frame_to_code_location(frame: Dict) -> Dict:
+    """Response is in the form {filename: str, code: str, start: int, end: int}"""
+    with open(frame['filepath'], "r") as f:
+        codelines = f.readlines()
+        code = "".join(codelines)
+
+    ctx = find_most_specific_context(code, int(frame['lineno']))
+    startline, endline = get_start_end_lines(ctx)
+
+    return {
+        "filename": frame['filepath'],
+        "code": "".join(codelines[startline - 1:endline]),
+        "startline": startline,
+        "endline": endline
+    }

@@ -171,3 +171,16 @@ def edit(ctx: DebugContext):
     print(edit_prompter._compile_prompt((ctx.stacktrace, ctx.code, ctx.description)))
     new_code = edit_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
     return {"completion": new_code}
+
+@router.get("/find")
+def find_sus_code(stacktrace: str, description: str=None):
+    parsed = parse_stacktrace(stacktrace)
+    if description is None or description == "":
+        description = parsed.exc_type + ": " + parsed.exc_msg
+
+    most_sus_frames = fault_loc.fl2(parsed, description)
+
+    return {"response": [
+        fault_loc.frame_to_code_location(frame)
+        for frame in most_sus_frames
+    ]}

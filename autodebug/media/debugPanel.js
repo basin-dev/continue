@@ -161,8 +161,6 @@
     if (!oldState) {
       return;
     }
-    console.log("OLD STATE");
-    console.log(oldState);
     if (oldState.debugContext) {
       debugContext = oldState.debugContext;
     }
@@ -186,7 +184,6 @@
 
   function saveState() {
     let ctx = gatherDebugContext();
-    console.log("SAVING: ", ctx);
     vscode.setState({
       debugContext: ctx,
       workspacePath,
@@ -211,6 +208,9 @@
       }
       case "traceback": {
         stacktrace.value = message.traceback;
+        if (selectedRanges.length === 0) {
+          findSuspiciousCode();
+        }
         break;
       }
       case "highlightedCode": {
@@ -219,8 +219,22 @@
         break;
       }
       case "findSuspiciousCode": {
-        fixSuggestion.hidden = false;
-        fixSuggestion.textContent = message.suspiciousCode;
+        clearMultiselectOptions();
+        for (let codeLocation of message.codeLocations) {
+          // It's serialized to be an array [startPos, endPos]
+          let range = {
+            start: {
+              line: codeLocation.range[0].line,
+              character: codeLocation.range[0].character,
+            },
+            end: {
+              line: codeLocation.range[1].line,
+              character: codeLocation.range[1].character,
+            },
+          };
+
+          addMultiselectOption(codeLocation.filename, range, codeLocation.code);
+        }
         break;
       }
       case "listTenThings": {

@@ -139,8 +139,7 @@ def write_ds(input: str, output: str, double: bool=False, format: str="google", 
 @router.get("/forline")
 def forline(filecontents: str, lineno: int, format: str="google"):
     """Write a docstring for a function at a line number"""
-    tree = ast.parse(filecontents)
-    most_specific_context = fault_loc.find_most_specific_context(tree, lineno)
+    most_specific_context = fault_loc.find_most_specific_context(filecontents, lineno)
     
     if most_specific_context is None:
         raise HTTPException(status_code=500, detail="Could not find function or class")

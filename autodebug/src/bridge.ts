@@ -260,7 +260,17 @@ export async function findSuspiciousCode(
       description: ctx.explanation,
     },
   });
-  return [];
+
+  return resp.response.map((loc: any) => {
+    return {
+      filename: loc.filename,
+      range: new vscode.Range(
+        new vscode.Position(loc.startline, 0),
+        new vscode.Position(loc.endline, 0)
+      ),
+      code: loc.code,
+    };
+  });
 }
 
 export async function writeUnitTestForFunction(
