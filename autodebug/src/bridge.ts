@@ -254,11 +254,17 @@ export interface CodeLocation {
 export async function findSuspiciousCode(
   ctx: DebugContext
 ): Promise<CodeLocation[]> {
+  if (!ctx.stacktrace) return [];
+  let files = await getFileContents(
+    getFilenamesFromPythonStacktrace(ctx.stacktrace)
+  );
   let resp = await apiRequest("debug/find", {
-    query: {
+    body: {
       stacktrace: ctx.stacktrace,
       description: ctx.explanation,
+      files,
     },
+    method: "POST",
   });
 
   return resp.response.map((loc: any) => {
@@ -294,3 +300,31 @@ export async function writeUnitTestForFunction(
 // UNLESS: You always pass the entire DebugContext object into all these functions so they have the same interface from the VSCode extensions,
 // but then you strip out unecessary information here when you upgrade your backend capabilities. Then only have to edit that in a single spot,
 // and a lot easier to keep track of.
+
+async function getFileContents(
+  files: string[]
+): Promise<{ [key: string]: string }> {
+  let contents = await Promise.all(
+    files.map(async (file: string) => {
+      return (
+        await vscode.workspace.fs.readFile(vscode.Uri.file(file))
+      ).toString();
+    })
+  );
+  let fileContents: { [key: string]: string } = {};
+  for (let i = 0; i < files.length; i++) {
+    fileContents[files[i]] = contents[i];
+  }
+  return fileContents;
+}
+
+function getFilenamesFromPythonStacktrace(stacktrace: string): string[] {
+  let filenames: string[] = [];
+  for (let line of stacktrace.split("\n")) {
+    let match = line.match(/File "(.*)", line/);
+    if (match) {
+      filenames.push(match[1]);
+    }
+  }
+  return filenames;
+}

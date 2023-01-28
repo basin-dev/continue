@@ -91,7 +91,7 @@ def indices_of_top_k(arr: List[float], k: int) -> List[int]:
     """Return the indices of the top k elements in the array."""
     return sorted(range(len(arr)), key=lambda i: arr[i])[-k:]
 
-def fl2(tb: tbutils.ParsedException, query: str, n: int = 2) -> List[Dict]:
+def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: int = 2) -> List[Dict]:
     """Return the most relevant frames in the stacktrace."""
     # First, filter out code that isn't mine
     my_code = filter_relevant(tb.frames)
@@ -99,7 +99,7 @@ def fl2(tb: tbutils.ParsedException, query: str, n: int = 2) -> List[Dict]:
     # Then, find the most specific context for each frame, getting the code snippets
     snippets = []
     for frame in my_code:
-        snippets.append(frame_to_code_location(frame)['code'])
+        snippets.append(frame_to_code_location(frame, files=files)['code'])
 
     if len(snippets) <= n:
         # If there are <= n snippets, then just return all of them
@@ -119,11 +119,17 @@ def get_start_end_lines(tree: ast.AST) -> Tuple[int, int]:
         return tree.body[0].lineno, tree.body[-1].end_lineno
     return tree.lineno, tree.end_lineno
 
-def frame_to_code_location(frame: Dict) -> Dict:
+def frame_to_code_location(frame: Dict, files: Dict[str, str]=None) -> Dict:
     """Response is in the form {filename: str, code: str, start: int, end: int}"""
-    with open(frame['filepath'], "r") as f:
-        codelines = f.readlines()
-        code = "".join(codelines)
+    if files is not None and frame['filepath'] in files:
+        code = files[frame['filepath']]
+        codelines = code.splitlines()
+        for i in range(len(codelines) - 1):
+            codelines[i] += "\n"
+    else:
+        with open(frame['filepath'], "r") as f:
+            codelines = f.readlines()
+            code = "".join(codelines)
 
     ctx = find_most_specific_context(code, int(frame['lineno']))
     startline, endline = get_start_end_lines(ctx)
