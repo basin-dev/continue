@@ -72,6 +72,11 @@ class SimplePrompter(Prompter):
     def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
         return self.prompt_fn(inp), "", None
 
+class FormatStringPrompter(SimplePrompter):
+    """Pass a formatted string, and the input should be a dict with the keys to format"""
+    def __init__(self, prompt: str):
+        super().__init__(lambda inp: prompt.format(**inp))
+
 class BasicCommentPrompter(SimplePrompter):
     def __init__(self, comment: str):
         super().__init__(lambda inp: f"""{inp}

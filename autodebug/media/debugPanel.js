@@ -1,6 +1,5 @@
 (function () {
   const vscode = acquireVsCodeApi();
-  const oldState = vscode.getState();
 
   const relevantVarsSelect = document.querySelector(".relevantVars");
   const highlightedCode = document.querySelector(".highlightedCode");
@@ -12,6 +11,9 @@
   const makeEditButton = document.querySelector(".makeEditButton");
   const makeEditLoader = document.querySelector(".makeEditLoader");
   const multiselectContainer = document.querySelector(".multiselectContainer");
+  const generateUnitTestButton = document.querySelector(
+    ".generateUnitTestButton"
+  );
 
   let selectedRanges = []; // Elements are { filename, range, code }
   let canUpdateLast = true;
@@ -65,7 +67,7 @@
     }-${range.end.line}:`;
 
     let delButton = document.createElement("button");
-    delButton.textContent = "X";
+    delButton.textContent = "x";
     delButton.className = "delSelectedRangeButton";
     delButton.addEventListener("click", () => {
       multiselectContainer.removeChild(div);
@@ -97,6 +99,7 @@
       document.querySelector(".addAnotherButton").disabled = false;
       makeEditButton.disabled = false;
     }
+    generateUnitTestButton.disabled = false;
   }
 
   function clearMultiselectOptions() {
@@ -134,7 +137,61 @@
 
   clearMultiselectOptions();
 
+  // SAVE AND LOAD STATE
   let debugContext = {};
+
+  function gatherDebugContext() {
+    debugContext.explanation = bugDescription.value;
+    debugContext.stacktrace = stacktrace.value;
+    debugContext.suggestion = fixSuggestion.innerHTML;
+    debugContext.codeSelections = selectedRanges
+      .filter((obj) => obj.selected)
+      .map((obj) => {
+        return {
+          filename: obj.filename,
+          range: obj.range,
+          code: obj.code,
+        };
+      });
+    return debugContext;
+  }
+
+  function loadState() {
+    const oldState = vscode.getState();
+    if (!oldState) {
+      return;
+    }
+    if (oldState.debugContext) {
+      debugContext = oldState.debugContext;
+    }
+    workspacePath = debugContext.workspacePath;
+
+    if (debugContext.explanation) {
+      bugDescription.value = debugContext.explanation;
+      stacktrace.value = debugContext.stacktrace;
+      fixSuggestion.innerHTML = debugContext.suggestion;
+      selectedRanges = debugContext.codeSelections.map((obj) => {
+        addMultiselectOption(obj.filename, obj.range, obj.code);
+        return {
+          filename: obj.filename,
+          range: obj.range,
+          code: obj.code,
+          selected: true,
+        };
+      });
+    }
+  }
+
+  function saveState() {
+    let ctx = gatherDebugContext();
+    vscode.setState({
+      debugContext: ctx,
+      workspacePath,
+    });
+  }
+  loadState();
+  setInterval(saveState, 1000);
+  // SAVE AND LOAD STATE
 
   // Handle messages sent from the extension to the webview
   window.addEventListener("message", (event) => {
@@ -151,6 +208,9 @@
       }
       case "traceback": {
         stacktrace.value = message.traceback;
+        if (selectedRanges.length === 0) {
+          findSuspiciousCode();
+        }
         break;
       }
       case "highlightedCode": {
@@ -159,8 +219,22 @@
         break;
       }
       case "findSuspiciousCode": {
-        fixSuggestion.hidden = false;
-        fixSuggestion.textContent = message.suspiciousCode;
+        clearMultiselectOptions();
+        for (let codeLocation of message.codeLocations) {
+          // It's serialized to be an array [startPos, endPos]
+          let range = {
+            start: {
+              line: codeLocation.range[0].line,
+              character: codeLocation.range[0].character,
+            },
+            end: {
+              line: codeLocation.range[1].line,
+              character: codeLocation.range[1].character,
+            },
+          };
+
+          addMultiselectOption(codeLocation.filename, range, codeLocation.code);
+        }
         break;
       }
       case "listTenThings": {
@@ -177,22 +251,8 @@
         makeEditButton.hidden = false;
       }
     }
+    saveState();
   });
-
-  function gatherDebugContext() {
-    debugContext.explanation = bugDescription.value;
-    debugContext.stacktrace = stacktrace.value;
-    debugContext.suggestion = fixSuggestion.innerHTML;
-    debugContext.codeSelections = selectedRanges
-      .filter((obj) => obj.selected)
-      .map((obj) => {
-        return {
-          filename: obj.filename,
-          range: obj.range,
-          code: obj.code,
-        };
-      });
-  }
 
   function listTenThings() {
     gatherDebugContext();
@@ -222,6 +282,14 @@
     gatherDebugContext();
     vscode.postMessage({
       type: "makeEdit",
+      debugContext,
+    });
+  });
+
+  generateUnitTestButton.addEventListener("click", () => {
+    gatherDebugContext();
+    vscode.postMessage({
+      type: "generateUnitTest",
       debugContext,
     });
   });

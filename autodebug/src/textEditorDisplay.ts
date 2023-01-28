@@ -1,5 +1,10 @@
 import * as vscode from "vscode";
-import { getViewColumnOfFile, translate } from "./vscodeUtils";
+import {
+  getRightViewColumn,
+  getTestFile,
+  getViewColumnOfFile,
+  translate,
+} from "./vscodeUtils";
 import * as path from "path";
 
 // SUGGESTIONS INTERFACE //
@@ -502,6 +507,39 @@ export function openEditorAndRevealRange(
           editor.revealRange(range);
         }
         resolve(editor);
+      });
+    });
+  });
+}
+
+// Show unit test
+export async function writeAndShowUnitTest(
+  filename: string,
+  test: string
+): Promise<DecorationKey> {
+  return new Promise((resolve, reject) => {
+    let testFilename = getTestFile(filename, true);
+    vscode.workspace.openTextDocument(testFilename).then((doc) => {
+      let column = getRightViewColumn();
+      vscode.window.showTextDocument(doc, column).then((editor) => {
+        let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        let testRange = new vscode.Range(
+          lastLine.range.end,
+          new vscode.Position(
+            test.split("\n").length + lastLine.range.end.line,
+            0
+          )
+        );
+        editor
+          .edit((edit) => {
+            edit.insert(lastLine.range.end, "\n\n" + test);
+            return true;
+          })
+          .then((success) => {
+            if (!success) reject("Failed to insert test");
+            let key = highlightCode(editor, testRange);
+            resolve(key);
+          });
       });
     });
   });

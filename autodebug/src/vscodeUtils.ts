@@ -74,3 +74,29 @@ export function getViewColumnOfFile(
   }
   return undefined;
 }
+
+export function getRightViewColumn(): vscode.ViewColumn {
+  // When you want to place in the rightmost panel if there is already more than one, otherwise use Beside
+  let column = vscode.ViewColumn.Beside;
+  let columnOrdering = [
+    vscode.ViewColumn.One,
+    vscode.ViewColumn.Beside,
+    vscode.ViewColumn.Two,
+    vscode.ViewColumn.Three,
+    vscode.ViewColumn.Four,
+    vscode.ViewColumn.Five,
+    vscode.ViewColumn.Six,
+    vscode.ViewColumn.Seven,
+    vscode.ViewColumn.Eight,
+    vscode.ViewColumn.Nine,
+  ];
+  for (let tabGroup of vscode.window.tabGroups.all) {
+    if (
+      columnOrdering.indexOf(tabGroup.viewColumn) >
+      columnOrdering.indexOf(column)
+    ) {
+      column = tabGroup.viewColumn;
+    }
+  }
+  return column;
+}

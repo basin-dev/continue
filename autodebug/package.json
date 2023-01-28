@@ -78,6 +78,11 @@
         "command": "autodebug.writeUnitTest",
         "title": "Write Unit Test",
         "category": "AutoDebug"
+      },
+      {
+        "command": "autodebug.findSuspiciousCode",
+        "title": "Find Suspicious Code",
+        "category": "AutoDebug"
       }
     ],
     "keybindings": [
