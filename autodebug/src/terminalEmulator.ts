@@ -103,8 +103,7 @@ export function openCapturedTerminal(
   process.on("exit", () => ptyProcess.kill());
 
   setTimeout(() => {
-    ptyProcess.write("cd " + workspaceFolders![0].uri.fsPath + "\r");
-    ptyProcess.write("clear\r");
+    ptyProcess.write("cd " + workspaceFolders![0].uri.fsPath + " && clear\r");
     // setTimeout(() => {
     //   writeEmitter.fire(
     //     "This terminal will parse stdout to automatically detect stacktraces\r\n"

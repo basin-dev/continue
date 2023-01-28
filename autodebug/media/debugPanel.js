@@ -1,6 +1,5 @@
 (function () {
   const vscode = acquireVsCodeApi();
-  const oldState = vscode.getState();
 
   const relevantVarsSelect = document.querySelector(".relevantVars");
   const highlightedCode = document.querySelector(".highlightedCode");
@@ -100,6 +99,7 @@
       document.querySelector(".addAnotherButton").disabled = false;
       makeEditButton.disabled = false;
     }
+    generateUnitTestButton.disabled = false;
   }
 
   function clearMultiselectOptions() {
@@ -137,7 +137,64 @@
 
   clearMultiselectOptions();
 
+  // SAVE AND LOAD STATE
   let debugContext = {};
+
+  function gatherDebugContext() {
+    debugContext.explanation = bugDescription.value;
+    debugContext.stacktrace = stacktrace.value;
+    debugContext.suggestion = fixSuggestion.innerHTML;
+    debugContext.codeSelections = selectedRanges
+      .filter((obj) => obj.selected)
+      .map((obj) => {
+        return {
+          filename: obj.filename,
+          range: obj.range,
+          code: obj.code,
+        };
+      });
+    return debugContext;
+  }
+
+  function loadState() {
+    const oldState = vscode.getState();
+    if (!oldState) {
+      return;
+    }
+    console.log("OLD STATE");
+    console.log(oldState);
+    if (oldState.debugContext) {
+      debugContext = oldState.debugContext;
+    }
+    workspacePath = debugContext.workspacePath;
+
+    if (debugContext.explanation) {
+      bugDescription.value = debugContext.explanation;
+      stacktrace.value = debugContext.stacktrace;
+      fixSuggestion.innerHTML = debugContext.suggestion;
+      selectedRanges = debugContext.codeSelections.map((obj) => {
+        addMultiselectOption(obj.filename, obj.range, obj.code);
+        return {
+          filename: obj.filename,
+          range: obj.range,
+          code: obj.code,
+          selected: true,
+        };
+      });
+    }
+  }
+
+  function saveState() {
+    let ctx = gatherDebugContext();
+    console.log("SAVING: ", ctx);
+    vscode.setState({
+      debugContext: ctx,
+      workspacePath,
+    });
+  }
+  loadState();
+  setInterval(saveState, 1000);
+  // SAVE AND LOAD STATE
 
   // Handle messages sent from the extension to the webview
   window.addEventListener("message", (event) => {
@@ -158,7 +215,6 @@
       }
       case "highlightedCode": {
         workspacePath = message.workspacePath;
-        generateUnitTestButton.disabled = false;
         addMultiselectOption(message.filename, message.range, message.code);
         break;
       }
@@ -181,22 +237,8 @@
         makeEditButton.hidden = false;
       }
     }
+    saveState();
   });
-
-  function gatherDebugContext() {
-    debugContext.explanation = bugDescription.value;
-    debugContext.stacktrace = stacktrace.value;
-    debugContext.suggestion = fixSuggestion.innerHTML;
-    debugContext.codeSelections = selectedRanges
-      .filter((obj) => obj.selected)
-      .map((obj) => {
-        return {
-          filename: obj.filename,
-          range: obj.range,
-          code: obj.code,
-        };
-      });
-  }
 
   function listTenThings() {
     gatherDebugContext();

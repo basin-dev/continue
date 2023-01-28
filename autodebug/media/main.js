@@ -3,10 +3,6 @@
 
   const oldState = vscode.getState();
 
-  document.querySelector(".startDebug").addEventListener("click", () => {
-    startDebug();
-  });
-
   document.querySelector(".ask-button").addEventListener("click", () => {
     askQuestion();
   });
