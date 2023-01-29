@@ -27,6 +27,8 @@ export enum TelemetryEvent {
   SuggestionRejected = "SuggestionRejected",
   // Queried universal prompt
   UniversalPromptQuery = "UniversalPromptQuery",
+  // Extension uninstalled
+  ExtensionUninstalled = "ExtensionUninstalled",
 }
 
 export function sendTelemetryEvent(
