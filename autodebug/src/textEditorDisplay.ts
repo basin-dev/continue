@@ -6,6 +6,7 @@ import {
   translate,
 } from "./vscodeUtils";
 import * as path from "path";
+import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 
 // SUGGESTIONS INTERFACE //
 
@@ -184,10 +185,12 @@ function selectSuggestion(accept: SuggestionSelectionOption) {
 }
 
 export function acceptSuggestionCommand() {
+  sendTelemetryEvent(TelemetryEvent.SuggestionAccepted);
   selectSuggestion("selected");
 }
 
 export async function rejectSuggestionCommand() {
+  sendTelemetryEvent(TelemetryEvent.SuggestionRejected);
   selectSuggestion("old");
 }
 

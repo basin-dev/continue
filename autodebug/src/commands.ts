@@ -14,6 +14,7 @@ import { debugPanelWebview, setupDebugPanel } from "./debugPanel";
 import { openCapturedTerminal } from "./terminalEmulator";
 import { getRightViewColumn } from "./vscodeUtils";
 import { findSuspiciousCode } from "./bridge";
+import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 
 // COpy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
@@ -35,6 +36,10 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
         if (!question || !vscode.workspace.workspaceFolders) {
           return;
         }
+
+        sendTelemetryEvent(TelemetryEvent.UniversalPromptQuery, {
+          query: question,
+        });
 
         answerQuestion(
           question,

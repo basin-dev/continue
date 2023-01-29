@@ -167,6 +167,7 @@
     "vsce": "^2.15.0"
   },
   "dependencies": {
+    "@segment/analytics-node": "^0.0.1-beta.16",
     "axios": "^1.2.5",
     "node-pty": "^0.10.1",
     "octokit": "^2.0.11",
