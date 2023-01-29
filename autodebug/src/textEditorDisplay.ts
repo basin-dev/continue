@@ -209,7 +209,7 @@ export async function showSuggestion(
   return new Promise((resolve, reject) => {
     editor!
       .edit((edit) => {
-        if (range.end.line + 1 === editor.document.lineCount) {
+        if (range.end.line + 1 >= editor.document.lineCount) {
           suggestion = "\n" + suggestion;
         }
         edit.insert(new vscode.Position(range.end.line + 1, 0), suggestion);

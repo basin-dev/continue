@@ -271,8 +271,8 @@ export async function findSuspiciousCode(
     return {
       filename: loc.filename,
       range: new vscode.Range(
-        new vscode.Position(loc.startline, 0),
-        new vscode.Position(loc.endline, 0)
+        new vscode.Position(loc.startline - 1, 0),
+        new vscode.Position(loc.endline - 1, loc.code.split("\n").at(-1).length) // - 1 because VSCode Ranges are 0-indexed. Last thing gets last char of line
       ),
       code: loc.code,
     };

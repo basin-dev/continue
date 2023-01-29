@@ -3,6 +3,7 @@
   "displayName": "AutoDebug",
   "description": "Reduce debugging time by 10x",
   "version": "0.0.1",
+  "publisher": "Basin",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -134,7 +135,11 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "package": "mkdir -p ./build && vsce package --out ./build",
+    "install": "code --install-extension ./build/autodebug-0.0.1.vsix",
+    "uninstall": "code --uninstall-extension Basin.autodebug",
+    "reinstall": "rm -rf ./build && npm run package && npm run install"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.2.10",
@@ -148,7 +153,8 @@
     "eslint": "^8.28.0",
     "glob": "^8.0.3",
     "mocha": "^10.1.0",
-    "typescript": "^4.9.3"
+    "typescript": "^4.9.3",
+    "vsce": "^2.15.0"
   },
   "dependencies": {
     "axios": "^1.2.5",

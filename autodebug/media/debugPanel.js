@@ -14,6 +14,7 @@
   const generateUnitTestButton = document.querySelector(
     ".generateUnitTestButton"
   );
+  const autoModeCheckbox = document.querySelector(".autoMode");
 
   let selectedRanges = []; // Elements are { filename, range, code }
   let canUpdateLast = true;
@@ -28,6 +29,13 @@
     }
   }
 
+  function formatFileRange(filename, range) {
+    return `${formatPathRelativeToWorkspace(filename)}, lines ${
+      range.start.line + 1
+    }-${range.end.line + 1}:`;
+    // +1 because VSCode Ranges are 0-indexed
+  }
+
   function addMultiselectOption(filename, range, code) {
     // First, we check if this is just an update to the last range
     if (
@@ -39,11 +47,10 @@
       selectedRanges[selectedRanges.length - 1].range = range;
       selectedRanges[selectedRanges.length - 1].code = code;
       let element = selectedRanges[selectedRanges.length - 1].element;
-      element.getElementsByTagName(
-        "p"
-      )[0].textContent = `${formatPathRelativeToWorkspace(filename)}, lines ${
-        range.start.line
-      }-${range.end.line}:`;
+      element.getElementsByTagName("p")[0].textContent = formatFileRange(
+        filename,
+        range
+      );
       element.getElementsByTagName("pre")[0].textContent = code;
       console.log("Updated", element.getElementsByTagName("pre").length);
       return;
@@ -62,9 +69,7 @@
 
     let p = document.createElement("p");
     p.style.margin = "4px";
-    p.textContent = `${formatPathRelativeToWorkspace(filename)}, lines ${
-      range.start.line
-    }-${range.end.line}:`;
+    p.textContent = formatFileRange(filename, range);
 
     let delButton = document.createElement("button");
     delButton.textContent = "x";
@@ -235,6 +240,9 @@
 
           addMultiselectOption(codeLocation.filename, range, codeLocation.code);
         }
+        if (autoModeCheckbox.checked === true) {
+          makeEdit();
+        }
         break;
       }
       case "listTenThings": {
@@ -276,7 +284,7 @@
   }
   suggestFixButton.addEventListener("click", suggestFix);
 
-  makeEditButton.addEventListener("click", () => {
+  function makeEdit() {
     makeEditLoader.hidden = false;
     makeEditButton.hidden = true;
     gatherDebugContext();
@@ -284,6 +292,9 @@
       type: "makeEdit",
       debugContext,
     });
+  }
+  makeEditButton.addEventListener("click", () => {
+    makeEdit();
   });
 
   generateUnitTestButton.addEventListener("click", () => {

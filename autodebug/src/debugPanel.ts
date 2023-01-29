@@ -157,7 +157,7 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         <div class="loader makeEditLoader" hidden></div>
         
         <br></br>
-        <input type="checkbox" id="autoMode" name="autoMode">
+        <input type="checkbox" id="autoMode" class="autoMode" name="autoMode" checked>
         <label for="autoMode">Auto Mode: As soon as we see a stacktrace, we'll suggest a fix, no clicking necessary</label>
         <br></br>
 
