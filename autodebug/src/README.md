@@ -20,6 +20,18 @@
 
 9. Every time you make changes to the code, you need to run `npm run compile`
 
+## Alternative: Install a packaged version
+
+You should always have a packaged version installed in VSCode, because when autodebug is broken you'll want a stable version to help you debug. There are four key commands in the `package.json`:
+
+1. `npm run package` will create a .vsix file in the `build/` folder that can then be installed. It is this same file that you can share with others who want to try the extension.
+
+2. `npm run install` will install the extension to VSCode. You should then see it in your installed extensions in the VSCode sidebar.
+
+3. `npm run uninstall` will uninstall the extension. You don't always have to do this thanks to the reinstall command, but can be useful when you want to do so manually.
+
+4. `npm run reinstall` will go through the entire process of uninstalling the existing installed extension, rebuilding, and then installing the new version. You shouldn't be doing this every time you make a change to the extension, but rather when there is some significant update that you would like to make available to yourself (or if you happen to be debugging something which is specific to the packaged extension).
+
 ## Background
 
 - `src/bridge.ts`: connects this VS Code Extension to our Python backend that interacts with GPT-3
@@ -43,7 +55,7 @@
 ## Commands
 
 - "Write a docstring for the current function" command (windows: `ctrl+alt+l`, mac: `shift+cmd+l`)
-- "Open Debug Panel" command 
+- "Open Debug Panel" command
 - "Ask a question from input box" command (windows: `ctrl+alt+j`, mac: `shift+cmd+j`)
 - "Open Captured Terminal" command
 - "Ask a question from webview" command (what context is it given?)
