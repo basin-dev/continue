@@ -44,10 +44,25 @@ class PythonTracebackSnooper {
       );
       if (wholeTraceback) {
         this.tracebackBuffer = "";
-        debugPanelWebview.postMessage({
-          type: "traceback",
-          traceback: wholeTraceback,
-        });
+
+        if (debugPanelWebview) {
+          debugPanelWebview.postMessage({
+            type: "traceback",
+            traceback: wholeTraceback,
+          });
+        } else if (
+          vscode.workspace.getConfiguration("AutoDebug").get("automode") ===
+          true
+        ) {
+          vscode.commands
+            .executeCommand("autodebug.openDebugPanel")
+            .then(() => {
+              debugPanelWebview?.postMessage({
+                type: "traceback",
+                traceback: wholeTraceback,
+              });
+            });
+        }
       }
     }
   }
@@ -83,7 +98,7 @@ export function openCapturedTerminal(
 
   var ptyProcess = pty.spawn(shell, [], {
     name: "xterm-256color",
-    cols: 100, // TODO: Get size of vscode terminal, and change with resize
+    cols: 160, // TODO: Get size of vscode terminal, and change with resize
     rows: 26,
     cwd: isWindows ? process.env.USERPROFILE : process.env.HOME,
     env: Object.assign({ TEST: "Environment vars work" }, process.env),

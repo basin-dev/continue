@@ -9,17 +9,20 @@ import {
 import { showSuggestion, writeAndShowUnitTest } from "./textEditorDisplay";
 import { getExtensionUri, getNonce } from "./vscodeUtils";
 
-export let debugPanelWebview: vscode.Webview;
+export let debugPanelWebview: vscode.Webview | undefined = undefined;
 
-export function setupDebugPanel(webview: vscode.Webview): string {
-  debugPanelWebview = webview;
+export function setupDebugPanel(panel: vscode.WebviewPanel): string {
+  debugPanelWebview = panel.webview;
+  panel.onDidDispose(() => {
+    debugPanelWebview = undefined;
+  });
 
   let extensionUri = getExtensionUri();
-  const scriptUri = webview.asWebviewUri(
+  const scriptUri = debugPanelWebview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, "media", "debugPanel.js")
   );
 
-  const styleMainUri = webview.asWebviewUri(
+  const styleMainUri = debugPanelWebview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, "media", "main.css")
   );
 
@@ -29,7 +32,7 @@ export function setupDebugPanel(webview: vscode.Webview): string {
     if (e.selections[0].isEmpty) {
       return;
     }
-    webview.postMessage({
+    panel.webview.postMessage({
       type: "highlightedCode",
       code: e.textEditor.document.getText(e.selections[0]),
       filename: e.textEditor.document.fileName,
@@ -38,11 +41,11 @@ export function setupDebugPanel(webview: vscode.Webview): string {
     });
   });
 
-  webview.onDidReceiveMessage(async (data) => {
+  panel.webview.onDidReceiveMessage(async (data) => {
     switch (data.type) {
       case "listTenThings": {
         let tenThings = await listTenThings(data.debugContext);
-        webview.postMessage({
+        panel.webview.postMessage({
           type: "listTenThings",
           tenThings,
         });
@@ -50,7 +53,7 @@ export function setupDebugPanel(webview: vscode.Webview): string {
       }
       case "suggestFix": {
         let ctx = await getSuggestion(data.debugContext);
-        webview.postMessage({
+        panel.webview.postMessage({
           type: "suggestFix",
           fixSuggestion: ctx.suggestion,
         });
@@ -80,7 +83,7 @@ export function setupDebugPanel(webview: vscode.Webview): string {
         }
 
         // To tell it to stop displaying the loader
-        webview.postMessage({
+        panel.webview.postMessage({
           type: "makeEdit",
         });
       }

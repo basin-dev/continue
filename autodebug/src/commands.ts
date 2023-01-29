@@ -58,7 +58,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
     );
 
     // And set its HTML content
-    panel.webview.html = setupDebugPanel(panel.webview);
+    panel.webview.html = setupDebugPanel(panel);
   },
   "autodebug.openCapturedTerminal": () => {
     // Happens in webview resolution function
@@ -73,7 +73,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       },
       async (progress, token) => {
         let suspiciousCode = await findSuspiciousCode(debugContext);
-        debugPanelWebview.postMessage({
+        debugPanelWebview?.postMessage({
           type: "findSuspiciousCode",
           codeLocations: suspiciousCode,
         });
