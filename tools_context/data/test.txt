@@ -1,0 +1,1 @@
+This test.txt file is used to test the loading of context from notes I write down about my task in a txt file
