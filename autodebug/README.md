@@ -4,9 +4,7 @@
 
 1. Clone the `unit-test-experiments` repo
 
-2. Open the `unit-test-experiments` repo in VS Code
-
-3. Run `cd autodebug` command in the VS Code terminal
+2. Open the `autodebug` directory from `unit-test-experiments` repo in VS Code
 
 4. Create a `src/.env` file with the variable `PYTHON_PATH` that points to the location of your `unit-test-experiments` file path
 
