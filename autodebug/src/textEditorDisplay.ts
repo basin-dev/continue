@@ -40,6 +40,7 @@ let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
   },
 });
 
+/* Keyed by editor.document.uri.toString() */
 export const editorToSuggestions: Map<
   string, // URI of file
   SuggestionRanges[]
@@ -130,14 +131,35 @@ export function suggestionUpCommand() {
 }
 
 type SuggestionSelectionOption = "old" | "new" | "selected";
-function selectSuggestion(accept: SuggestionSelectionOption) {
+function selectSuggestion(
+  accept: SuggestionSelectionOption,
+  key: SuggestionRanges | null = null
+) {
   let editor = vscode.window.activeTextEditor;
   if (!editor) return;
   let editorUri = editor.document.uri.toString();
   let suggestions = editorToSuggestions.get(editorUri);
-  let idx = currentSuggestion.get(editorUri);
 
-  if (!suggestions || idx === undefined) return;
+  if (!suggestions) return;
+
+  let idx: number | undefined;
+  if (key) {
+    // Use the key to find a specific suggestion
+    for (let i = 0; i < suggestions.length; i++) {
+      if (
+        suggestions[i].newRange === key.newRange &&
+        suggestions[i].oldRange === key.oldRange
+      ) {
+        // Don't include newSelected in the comparison, because it can change
+        idx = i;
+        break;
+      }
+    }
+  } else {
+    // Otherwise, use the current suggestion
+    idx = currentSuggestion.get(editorUri);
+  }
+  if (idx === undefined) return;
 
   let [suggestion] = suggestions.splice(idx, 1);
 
@@ -184,14 +206,16 @@ function selectSuggestion(accept: SuggestionSelectionOption) {
   rerenderDecorations(editorUri);
 }
 
-export function acceptSuggestionCommand() {
+export function acceptSuggestionCommand(key: SuggestionRanges | null = null) {
   sendTelemetryEvent(TelemetryEvent.SuggestionAccepted);
-  selectSuggestion("selected");
+  selectSuggestion("selected", key);
 }
 
-export async function rejectSuggestionCommand() {
+export async function rejectSuggestionCommand(
+  key: SuggestionRanges | null = null
+) {
   sendTelemetryEvent(TelemetryEvent.SuggestionRejected);
-  selectSuggestion("old");
+  selectSuggestion("old", key);
 }
 
 export async function showSuggestion(

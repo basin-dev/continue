@@ -99,7 +99,12 @@ def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: 
     # Then, find the most specific context for each frame, getting the code snippets
     snippets = []
     for frame in my_code:
-        snippets.append(frame_to_code_location(frame, files=files)['code'])
+        code = frame_to_code_location(frame, files=files)['code']
+        if len(code.splitlines()) == 1:
+            # If code is just a single line, probably isn't important
+            continue
+        
+        snippets.append(code)
 
     if len(snippets) <= n:
         # If there are <= n snippets, then just return all of them

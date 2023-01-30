@@ -86,6 +86,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         panel.webview.postMessage({
           type: "makeEdit",
         });
+        break;
       }
       case "generateUnitTest": {
         let codeSelection = data.debugContext.codeSelections?.at(0);
@@ -119,6 +120,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
             }
           );
         }
+        break;
       }
     }
   });

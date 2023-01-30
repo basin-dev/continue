@@ -64,7 +64,7 @@ export function getViewColumnOfFile(
   for (let tabGroup of vscode.window.tabGroups.all) {
     for (let tab of tabGroup.tabs) {
       if (
-        (tab?.input as any).uri &&
+        (tab?.input as any)?.uri &&
         (tab.input as any).uri.fsPath === filepath
       ) {
         return tabGroup.viewColumn;

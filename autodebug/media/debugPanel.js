@@ -257,6 +257,7 @@
         // Edit is done
         makeEditLoader.hidden = true;
         makeEditButton.hidden = false;
+        break;
       }
     }
     saveState();
