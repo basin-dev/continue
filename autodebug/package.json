@@ -146,7 +146,7 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "package": "mkdir -p ./build && vsce package --out ./build",
+    "package": "npm run compile && mkdir -p ./build && vsce package --out ./build",
     "install": "code --install-extension ./build/autodebug-0.0.1.vsix",
     "uninstall": "code --uninstall-extension Basin.autodebug",
     "reinstall": "rm -rf ./build && npm run package && npm run install"

@@ -18,6 +18,49 @@ function build_python_command(cmd: string): string {
   return `cd ${get_python_path()} && source env/bin/activate && ${cmd}`;
 }
 
+function listToCmdLineArgs(list: string[]): string {
+  return list.map((el) => `"$(echo "${el}")"`).join(" ");
+}
+
+export async function setupPythonEnv() {
+  let command = `cd ${path.join(
+    getExtensionUri().fsPath,
+    "scripts"
+  )} && python3 -m venv env && source env/bin/activate && pip3 install -r requirements.txt`;
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+  console.log(
+    "Successfully set up python env at ",
+    getExtensionUri().fsPath + "/scripts/env"
+  );
+}
+
+export async function runPythonScript(
+  scriptName: string,
+  args: string[]
+): Promise<any> {
+  const command = `cd ${path.join(
+    getExtensionUri().fsPath,
+    "scripts"
+  )} && source env/bin/activate && python3 ${scriptName} ${listToCmdLineArgs(
+    args
+  )}`;
+
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+
+  let jsonString = stdout.substring(
+    stdout.indexOf("{"),
+    stdout.lastIndexOf("}") + 1
+  );
+  jsonString = jsonString.replace(/'/g, '"').replace(/"/g, "'"); // This is problematic if you have any escaped quotes
+  return JSON.parse(jsonString);
+}
+
 function parseStdout(
   stdout: string,
   key: string,
@@ -144,10 +187,6 @@ export interface DebugContext {
   unitTest?: string;
   suggestion?: string;
   codeSelections?: CodeSelection[];
-}
-
-function listToCmdLineArg(list: string[]): string {
-  return list.map((el) => `"$(echo "${el}")"`).join(" ");
 }
 
 function completeCodeSelectionTypeguard(
