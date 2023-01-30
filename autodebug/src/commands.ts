@@ -10,8 +10,11 @@ import {
 } from "./textEditorDisplay";
 import { writeUnitTestCommand } from "./unitTests";
 import * as bridge from "./bridge";
-import { setupDebugPanel } from "./debugPanel";
+import { debugPanelWebview, setupDebugPanel } from "./debugPanel";
 import { openCapturedTerminal } from "./terminalEmulator";
+import { getRightViewColumn } from "./vscodeUtils";
+import { findSuspiciousCode } from "./bridge";
+import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 
 // COpy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
@@ -34,6 +37,10 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
           return;
         }
 
+        sendTelemetryEvent(TelemetryEvent.UniversalPromptQuery, {
+          query: question,
+        });
+
         answerQuestion(
           question,
           vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -45,21 +52,38 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   "autodebug.acceptSuggestion": acceptSuggestionCommand,
   "autodebug.rejectSuggestion": rejectSuggestionCommand,
   "autodebug.openDebugPanel": () => {
+    let column = getRightViewColumn();
     const panel = vscode.window.createWebviewPanel(
       "autodebug.debugPanelView",
       "AutoDebug",
-      vscode.ViewColumn.Beside,
+      column,
       {
         enableScripts: true,
       }
     );
 
     // And set its HTML content
-    panel.webview.html = setupDebugPanel(panel.webview);
+    panel.webview.html = setupDebugPanel(panel);
   },
   "autodebug.openCapturedTerminal": () => {
     // Happens in webview resolution function
     openCapturedTerminal();
+  },
+  "autodebug.findSuspiciousCode": async (debugContext: bridge.DebugContext) => {
+    vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: "Finding suspicious code",
+        cancellable: false,
+      },
+      async (progress, token) => {
+        let suspiciousCode = await findSuspiciousCode(debugContext);
+        debugPanelWebview?.postMessage({
+          type: "findSuspiciousCode",
+          codeLocations: suspiciousCode,
+        });
+      }
+    );
   },
 };
 

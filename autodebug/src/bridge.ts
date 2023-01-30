@@ -70,7 +70,7 @@ export async function askQuestion(
   }
 }
 
-async function apiRequest(
+export async function apiRequest(
   endpoint: string,
   options: {
     method?: string;
@@ -84,6 +84,7 @@ async function apiRequest(
     body: {},
   };
   options = Object.assign(defaults, options); // Second takes over first
+  if (endpoint.startsWith("/")) endpoint = endpoint.substring(1);
 
   let resp = await axios({
     method: options.method,
@@ -253,45 +254,77 @@ export interface CodeLocation {
 export async function findSuspiciousCode(
   ctx: DebugContext
 ): Promise<CodeLocation[]> {
+  if (!ctx.stacktrace) return [];
+  let files = await getFileContents(
+    getFilenamesFromPythonStacktrace(ctx.stacktrace)
+  );
   let resp = await apiRequest("debug/find", {
-    query: {
+    body: {
       stacktrace: ctx.stacktrace,
       description: ctx.explanation,
+      files,
     },
+    method: "POST",
   });
-  return [];
-}
 
-async function fullyEnrichContext(ctx: DebugContext): Promise<DebugContext> {
-  if (!ctx.unitTest) {
-    // generate unit test
-  }
-  if (!ctx.suggestion) {
-    ctx = await getSuggestion(ctx);
-  }
-  return ctx;
+  return resp.response.map((loc: any) => {
+    return {
+      filename: loc.filename,
+      range: new vscode.Range(
+        new vscode.Position(loc.startline - 1, 0),
+        new vscode.Position(loc.endline - 1, loc.code.split("\n").at(-1).length) // - 1 because VSCode Ranges are 0-indexed. Last thing gets last char of line
+      ),
+      code: loc.code,
+    };
+  });
 }
 
 export async function writeUnitTestForFunction(
   filename: string,
   position: vscode.Position
 ): Promise<string> {
-  const command = build_python_command(
-    `python3 ${path.join(
-      get_python_path(),
-      "test_gen.py"
-    )} forline ${filename} ${position.line}`
+  let resp = await apiRequest("unittest/forline", {
+    method: "POST",
+    body: {
+      filecontents: (
+        await vscode.workspace.fs.readFile(vscode.Uri.file(filename))
+      ).toString(),
+      lineno: position.line,
+    },
+  });
+
+  return resp.completion;
+}
+
+// TODO: This whole file shouldn't really exist, nor its functions. Should just be api calls made throughout the codebase
+// UNLESS: You always pass the entire DebugContext object into all these functions so they have the same interface from the VSCode extensions,
+// but then you strip out unecessary information here when you upgrade your backend capabilities. Then only have to edit that in a single spot,
+// and a lot easier to keep track of.
+
+async function getFileContents(
+  files: string[]
+): Promise<{ [key: string]: string }> {
+  let contents = await Promise.all(
+    files.map(async (file: string) => {
+      return (
+        await vscode.workspace.fs.readFile(vscode.Uri.file(file))
+      ).toString();
+    })
   );
-
-  const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
+  let fileContents: { [key: string]: string } = {};
+  for (let i = 0; i < files.length; i++) {
+    fileContents[files[i]] = contents[i];
   }
+  return fileContents;
+}
 
-  const unitTest = parseStdout(stdout, "Test", true);
-  if (unitTest) {
-    return unitTest;
-  } else {
-    throw new Error("Error: No unit test found");
+function getFilenamesFromPythonStacktrace(stacktrace: string): string[] {
+  let filenames: string[] = [];
+  for (let line of stacktrace.split("\n")) {
+    let match = line.match(/File "(.*)", line/);
+    if (match) {
+      filenames.push(match[1]);
+    }
   }
+  return filenames;
 }

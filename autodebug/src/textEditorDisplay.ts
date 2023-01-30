@@ -1,6 +1,12 @@
 import * as vscode from "vscode";
-import { getViewColumnOfFile, translate } from "./vscodeUtils";
+import {
+  getRightViewColumn,
+  getTestFile,
+  getViewColumnOfFile,
+  translate,
+} from "./vscodeUtils";
 import * as path from "path";
+import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 
 // SUGGESTIONS INTERFACE //
 
@@ -24,6 +30,7 @@ let newSelDecorationType = vscode.window.createTextEditorDecorationType({
   isWholeLine: true,
   after: {
     contentText: "Press cmd+shift+enter to accept",
+    margin: "0 0 0 1em",
   },
 });
 let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
@@ -31,9 +38,11 @@ let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
   isWholeLine: true,
   after: {
     contentText: "Press cmd+shift+enter to reject",
+    margin: "0 0 0 1em",
   },
 });
 
+/* Keyed by editor.document.uri.toString() */
 export const editorToSuggestions: Map<
   string, // URI of file
   SuggestionRanges[]
@@ -124,14 +133,35 @@ export function suggestionUpCommand() {
 }
 
 type SuggestionSelectionOption = "old" | "new" | "selected";
-function selectSuggestion(accept: SuggestionSelectionOption) {
+function selectSuggestion(
+  accept: SuggestionSelectionOption,
+  key: SuggestionRanges | null = null
+) {
   let editor = vscode.window.activeTextEditor;
   if (!editor) return;
   let editorUri = editor.document.uri.toString();
   let suggestions = editorToSuggestions.get(editorUri);
-  let idx = currentSuggestion.get(editorUri);
 
-  if (!suggestions || idx === undefined) return;
+  if (!suggestions) return;
+
+  let idx: number | undefined;
+  if (key) {
+    // Use the key to find a specific suggestion
+    for (let i = 0; i < suggestions.length; i++) {
+      if (
+        suggestions[i].newRange === key.newRange &&
+        suggestions[i].oldRange === key.oldRange
+      ) {
+        // Don't include newSelected in the comparison, because it can change
+        idx = i;
+        break;
+      }
+    }
+  } else {
+    // Otherwise, use the current suggestion
+    idx = currentSuggestion.get(editorUri);
+  }
+  if (idx === undefined) return;
 
   let [suggestion] = suggestions.splice(idx, 1);
 
@@ -178,12 +208,16 @@ function selectSuggestion(accept: SuggestionSelectionOption) {
   rerenderDecorations(editorUri);
 }
 
-export function acceptSuggestionCommand() {
-  selectSuggestion("selected");
+export function acceptSuggestionCommand(key: SuggestionRanges | null = null) {
+  sendTelemetryEvent(TelemetryEvent.SuggestionAccepted);
+  selectSuggestion("selected", key);
 }
 
-export async function rejectSuggestionCommand() {
-  selectSuggestion("old");
+export async function rejectSuggestionCommand(
+  key: SuggestionRanges | null = null
+) {
+  sendTelemetryEvent(TelemetryEvent.SuggestionRejected);
+  selectSuggestion("old", key);
 }
 
 export async function showSuggestion(
@@ -194,17 +228,46 @@ export async function showSuggestion(
   let editor = await openEditorAndRevealRange(editorFilename, range);
   if (!editor) return Promise.resolve(false);
 
-  // Don't make the suggestion if it is just the same as what exists - have to recreate range to get rid of anchor/active. getText doesn't like it otherwise
-  if (
-    editor.document.getText(new vscode.Range(range.start, range.end)) ===
-    suggestion
-  )
-    return Promise.resolve(false);
+  let existingCode = editor.document.getText(
+    new vscode.Range(range.start, range.end)
+  );
+
+  // If any of the outside lines are the same, don't repeat them in the suggestion
+  let slines = suggestion.split("\n");
+  let elines = existingCode.split("\n");
+  let linesRemovedBefore = 0;
+  let linesRemovedAfter = 0;
+  while (slines.length > 0 && elines.length > 0 && slines[0] === elines[0]) {
+    slines.shift();
+    elines.shift();
+    linesRemovedBefore++;
+  }
+
+  while (
+    slines.length > 0 &&
+    elines.length > 0 &&
+    slines[slines.length - 1] === elines[elines.length - 1]
+  ) {
+    slines.pop();
+    elines.pop();
+    linesRemovedAfter++;
+  }
+
+  suggestion = slines.join("\n");
+  if (suggestion === "") return Promise.resolve(false); // Don't even make a suggestion if they are exactly the same
+
+  range = new vscode.Range(
+    new vscode.Position(range.start.line + linesRemovedBefore, 0),
+    new vscode.Position(
+      range.end.line - linesRemovedAfter,
+      elines.at(-1)?.length || 0
+    )
+  );
 
   return new Promise((resolve, reject) => {
     editor!
       .edit((edit) => {
-        if (range.end.line + 1 === editor.document.lineCount) {
+        if (range.end.line + 1 >= editor.document.lineCount) {
           suggestion = "\n" + suggestion;
         }
         edit.insert(new vscode.Position(range.end.line + 1, 0), suggestion);
@@ -215,7 +278,7 @@ export async function showSuggestion(
             let suggestionRange = new vscode.Range(
               new vscode.Position(range.end.line + 1, 0),
               new vscode.Position(
-                range.end.line + suggestion.split("\n").length - 1,
+                range.end.line + suggestion.split("\n").length,
                 0
               )
             );
@@ -502,6 +565,39 @@ export function openEditorAndRevealRange(
           editor.revealRange(range);
         }
         resolve(editor);
+      });
+    });
+  });
+}
+
+// Show unit test
+export async function writeAndShowUnitTest(
+  filename: string,
+  test: string
+): Promise<DecorationKey> {
+  return new Promise((resolve, reject) => {
+    let testFilename = getTestFile(filename, true);
+    vscode.workspace.openTextDocument(testFilename).then((doc) => {
+      let column = getRightViewColumn();
+      vscode.window.showTextDocument(doc, column).then((editor) => {
+        let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        let testRange = new vscode.Range(
+          lastLine.range.end,
+          new vscode.Position(
+            test.split("\n").length + lastLine.range.end.line,
+            0
+          )
+        );
+        editor
+          .edit((edit) => {
+            edit.insert(lastLine.range.end, "\n\n" + test);
+            return true;
+          })
+          .then((success) => {
+            if (!success) reject("Failed to insert test");
+            let key = highlightCode(editor, testRange);
+            resolve(key);
+          });
       });
     });
   });

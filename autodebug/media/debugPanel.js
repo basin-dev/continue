@@ -1,6 +1,5 @@
 (function () {
   const vscode = acquireVsCodeApi();
-  const oldState = vscode.getState();
 
   const relevantVarsSelect = document.querySelector(".relevantVars");
   const highlightedCode = document.querySelector(".highlightedCode");
@@ -12,6 +11,10 @@
   const makeEditButton = document.querySelector(".makeEditButton");
   const makeEditLoader = document.querySelector(".makeEditLoader");
   const multiselectContainer = document.querySelector(".multiselectContainer");
+  const generateUnitTestButton = document.querySelector(
+    ".generateUnitTestButton"
+  );
+  const autoModeCheckbox = document.querySelector(".autoMode");
 
   let selectedRanges = []; // Elements are { filename, range, code }
   let canUpdateLast = true;
@@ -26,6 +29,13 @@
     }
   }
 
+  function formatFileRange(filename, range) {
+    return `${formatPathRelativeToWorkspace(filename)}, lines ${
+      range.start.line + 1
+    }-${range.end.line + 1}:`;
+    // +1 because VSCode Ranges are 0-indexed
+  }
+
   function addMultiselectOption(filename, range, code) {
     // First, we check if this is just an update to the last range
     if (
@@ -37,11 +47,10 @@
       selectedRanges[selectedRanges.length - 1].range = range;
       selectedRanges[selectedRanges.length - 1].code = code;
       let element = selectedRanges[selectedRanges.length - 1].element;
-      element.getElementsByTagName(
-        "p"
-      )[0].textContent = `${formatPathRelativeToWorkspace(filename)}, lines ${
-        range.start.line
-      }-${range.end.line}:`;
+      element.getElementsByTagName("p")[0].textContent = formatFileRange(
+        filename,
+        range
+      );
       element.getElementsByTagName("pre")[0].textContent = code;
       console.log("Updated", element.getElementsByTagName("pre").length);
       return;
@@ -60,12 +69,10 @@
 
     let p = document.createElement("p");
     p.style.margin = "4px";
-    p.textContent = `${formatPathRelativeToWorkspace(filename)}, lines ${
-      range.start.line
-    }-${range.end.line}:`;
+    p.textContent = formatFileRange(filename, range);
 
     let delButton = document.createElement("button");
-    delButton.textContent = "X";
+    delButton.textContent = "x";
     delButton.className = "delSelectedRangeButton";
     delButton.addEventListener("click", () => {
       multiselectContainer.removeChild(div);
@@ -97,6 +104,7 @@
       document.querySelector(".addAnotherButton").disabled = false;
       makeEditButton.disabled = false;
     }
+    generateUnitTestButton.disabled = false;
   }
 
   function clearMultiselectOptions() {
@@ -134,7 +142,61 @@
 
   clearMultiselectOptions();
 
+  // SAVE AND LOAD STATE
   let debugContext = {};
+
+  function gatherDebugContext() {
+    debugContext.explanation = bugDescription.value;
+    debugContext.stacktrace = stacktrace.value;
+    debugContext.suggestion = fixSuggestion.innerHTML;
+    debugContext.codeSelections = selectedRanges
+      .filter((obj) => obj.selected)
+      .map((obj) => {
+        return {
+          filename: obj.filename,
+          range: obj.range,
+          code: obj.code,
+        };
+      });
+    return debugContext;
+  }
+
+  function loadState() {
+    const oldState = vscode.getState();
+    if (!oldState) {
+      return;
+    }
+    if (oldState.debugContext) {
+      debugContext = oldState.debugContext;
+    }
+    workspacePath = debugContext.workspacePath;
+
+    if (debugContext.explanation) {
+      bugDescription.value = debugContext.explanation;
+      stacktrace.value = debugContext.stacktrace;
+      fixSuggestion.innerHTML = debugContext.suggestion;
+      selectedRanges = debugContext.codeSelections.map((obj) => {
+        addMultiselectOption(obj.filename, obj.range, obj.code);
+        return {
+          filename: obj.filename,
+          range: obj.range,
+          code: obj.code,
+          selected: true,
+        };
+      });
+    }
+  }
+
+  function saveState() {
+    let ctx = gatherDebugContext();
+    vscode.setState({
+      debugContext: ctx,
+      workspacePath,
+    });
+  }
+  loadState();
+  setInterval(saveState, 1000);
+  // SAVE AND LOAD STATE
 
   // Handle messages sent from the extension to the webview
   window.addEventListener("message", (event) => {
@@ -151,6 +213,9 @@
       }
       case "traceback": {
         stacktrace.value = message.traceback;
+        if (selectedRanges.length === 0) {
+          findSuspiciousCode();
+        }
         break;
       }
       case "highlightedCode": {
@@ -159,8 +224,25 @@
         break;
       }
       case "findSuspiciousCode": {
-        fixSuggestion.hidden = false;
-        fixSuggestion.textContent = message.suspiciousCode;
+        clearMultiselectOptions();
+        for (let codeLocation of message.codeLocations) {
+          // It's serialized to be an array [startPos, endPos]
+          let range = {
+            start: {
+              line: codeLocation.range[0].line,
+              character: codeLocation.range[0].character,
+            },
+            end: {
+              line: codeLocation.range[1].line,
+              character: codeLocation.range[1].character,
+            },
+          };
+
+          addMultiselectOption(codeLocation.filename, range, codeLocation.code);
+        }
+        if (autoModeCheckbox.checked === true) {
+          makeEdit();
+        }
         break;
       }
       case "listTenThings": {
@@ -175,24 +257,11 @@
         // Edit is done
         makeEditLoader.hidden = true;
         makeEditButton.hidden = false;
+        break;
       }
     }
+    saveState();
   });
-
-  function gatherDebugContext() {
-    debugContext.explanation = bugDescription.value;
-    debugContext.stacktrace = stacktrace.value;
-    debugContext.suggestion = fixSuggestion.innerHTML;
-    debugContext.codeSelections = selectedRanges
-      .filter((obj) => obj.selected)
-      .map((obj) => {
-        return {
-          filename: obj.filename,
-          range: obj.range,
-          code: obj.code,
-        };
-      });
-  }
 
   function listTenThings() {
     gatherDebugContext();
@@ -216,12 +285,23 @@
   }
   suggestFixButton.addEventListener("click", suggestFix);
 
-  makeEditButton.addEventListener("click", () => {
+  function makeEdit() {
     makeEditLoader.hidden = false;
     makeEditButton.hidden = true;
     gatherDebugContext();
     vscode.postMessage({
       type: "makeEdit",
+      debugContext,
+    });
+  }
+  makeEditButton.addEventListener("click", () => {
+    makeEdit();
+  });
+
+  generateUnitTestButton.addEventListener("click", () => {
+    gatherDebugContext();
+    vscode.postMessage({
+      type: "generateUnitTest",
       debugContext,
     });
   });

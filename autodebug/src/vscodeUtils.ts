@@ -55,8 +55,7 @@ export function getTestFile(
 }
 
 export function getExtensionUri(): vscode.Uri {
-  return vscode.extensions.getExtension("undefined_publisher.autodebug")!
-    .extensionUri;
+  return vscode.extensions.getExtension("Basin.autodebug")!.extensionUri;
 }
 
 export function getViewColumnOfFile(
@@ -65,7 +64,7 @@ export function getViewColumnOfFile(
   for (let tabGroup of vscode.window.tabGroups.all) {
     for (let tab of tabGroup.tabs) {
       if (
-        (tab.input as any).uri &&
+        (tab?.input as any)?.uri &&
         (tab.input as any).uri.fsPath === filepath
       ) {
         return tabGroup.viewColumn;
@@ -73,4 +72,30 @@ export function getViewColumnOfFile(
     }
   }
   return undefined;
+}
+
+export function getRightViewColumn(): vscode.ViewColumn {
+  // When you want to place in the rightmost panel if there is already more than one, otherwise use Beside
+  let column = vscode.ViewColumn.Beside;
+  let columnOrdering = [
+    vscode.ViewColumn.One,
+    vscode.ViewColumn.Beside,
+    vscode.ViewColumn.Two,
+    vscode.ViewColumn.Three,
+    vscode.ViewColumn.Four,
+    vscode.ViewColumn.Five,
+    vscode.ViewColumn.Six,
+    vscode.ViewColumn.Seven,
+    vscode.ViewColumn.Eight,
+    vscode.ViewColumn.Nine,
+  ];
+  for (let tabGroup of vscode.window.tabGroups.all) {
+    if (
+      columnOrdering.indexOf(tabGroup.viewColumn) >
+      columnOrdering.indexOf(column)
+    ) {
+      column = tabGroup.viewColumn;
+    }
+  }
+  return column;
 }
