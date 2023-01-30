@@ -30,6 +30,7 @@ let newSelDecorationType = vscode.window.createTextEditorDecorationType({
   isWholeLine: true,
   after: {
     contentText: "Press cmd+shift+enter to accept",
+    margin: "0 0 0 1em",
   },
 });
 let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
@@ -37,6 +38,7 @@ let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
   isWholeLine: true,
   after: {
     contentText: "Press cmd+shift+enter to reject",
+    margin: "0 0 0 1em",
   },
 });
 
@@ -226,12 +228,41 @@ export async function showSuggestion(
   let editor = await openEditorAndRevealRange(editorFilename, range);
   if (!editor) return Promise.resolve(false);
 
-  // Don't make the suggestion if it is just the same as what exists - have to recreate range to get rid of anchor/active. getText doesn't like it otherwise
-  if (
-    editor.document.getText(new vscode.Range(range.start, range.end)) ===
-    suggestion
-  )
-    return Promise.resolve(false);
+  let existingCode = editor.document.getText(
+    new vscode.Range(range.start, range.end)
+  );
+
+  // If any of the outside lines are the same, don't repeat them in the suggestion
+  let slines = suggestion.split("\n");
+  let elines = existingCode.split("\n");
+  let linesRemovedBefore = 0;
+  let linesRemovedAfter = 0;
+  while (slines.length > 0 && elines.length > 0 && slines[0] === elines[0]) {
+    slines.shift();
+    elines.shift();
+    linesRemovedBefore++;
+  }
+
+  while (
+    slines.length > 0 &&
+    elines.length > 0 &&
+    slines[slines.length - 1] === elines[elines.length - 1]
+  ) {
+    slines.pop();
+    elines.pop();
+    linesRemovedAfter++;
+  }
+
+  suggestion = slines.join("\n");
+  if (suggestion === "") return Promise.resolve(false); // Don't even make a suggestion if they are exactly the same
+
+  range = new vscode.Range(
+    new vscode.Position(range.start.line + linesRemovedBefore, 0),
+    new vscode.Position(
+      range.end.line - linesRemovedAfter,
+      elines.at(-1)?.length || 0
+    )
+  );
 
   return new Promise((resolve, reject) => {
     editor!
@@ -247,7 +278,7 @@ export async function showSuggestion(
             let suggestionRange = new vscode.Range(
               new vscode.Position(range.end.line + 1, 0),
               new vscode.Position(
-                range.end.line + suggestion.split("\n").length - 1,
+                range.end.line + suggestion.split("\n").length,
                 0
               )
             );
