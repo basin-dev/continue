@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { setupPythonEnv } from "./bridge";
 import { registerAllCommands } from "./commands";
 import DebugViewProvider from "./DebugViewProvider";
 import { MyCodeLensProvider } from "./languageServer";
@@ -6,6 +7,8 @@ import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 
 export function activate(context: vscode.ExtensionContext) {
   sendTelemetryEvent(TelemetryEvent.ExtensionActivated);
+
+  setupPythonEnv();
 
   const debugViewProvider = new DebugViewProvider(context.extensionUri);
   const codeLensProvider = new MyCodeLensProvider();
