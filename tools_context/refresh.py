@@ -31,7 +31,7 @@ def create_branch_index(repo: git.Repo, branch: str):
     dir = REPO_PATH + f'/autodebug/data/{branch}'
     if not os.path.exists(dir):
         os.makedirs(dir)
-    documents = SimpleDirectoryReader(REPO_PATH).load_data()
+    documents = SimpleDirectoryReader(REPO_PATH, recursive=True, exclude_hidden=True).load_data()
     index = GPTSimpleVectorIndex(documents)
     index.save_to_disk(dir + '/index.json')
     save_metadata(repo, branch)
