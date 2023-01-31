@@ -1,5 +1,39 @@
+/* Set variables */
+
+:root {
+  --secondary-dark: #252526;
+  --vsc-background: rgb(30, 30, 30, 1);
+  --button-color: #711c3b;
+  --button-color-hover: #711c3baa;
+  --def-border-radius: 5px;
+}
+
 body {
-  background-color: transparent;
+  background-color: var(--vsc-background);
+  padding: 0;
+}
+
+.gradient {
+  background: linear-gradient(
+    101.79deg,
+    #12887a 0%,
+    #87245c 37.64%,
+    #e12637 65.98%,
+    #ffb215 110.45%
+  );
+  padding: 10px;
+  margin: 0;
+  height: 100%;
+}
+
+.container {
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 10px;
+  height: 100%;
+  border-radius: var(--def-border-radius);
+
+  background-color: var(--vsc-background);
 }
 
 input[type="text"] {
@@ -7,20 +41,35 @@ input[type="text"] {
   padding: 12px 20px;
   margin: 8px 0;
   box-sizing: border-box;
-  border-radius: 4px;
+  border-radius: var(--def-border-radius);
   border: 2px solid gray;
 }
 
 button {
-  padding: 14px 20px;
+  padding: 10px 12px;
   margin: 8px 0;
-  border: 2px solid gray;
-  border-radius: 4px;
+  border-radius: var(--def-border-radius);
   cursor: pointer;
+
+  border: none;
+  color: white;
+  background-color: var(--button-color);
+}
+
+button:disabled {
+  color: gray;
 }
 
 button:hover:enabled {
-  border: 2px solid orange;
+  background-color: var(--button-color-hover);
+}
+
+h1,
+h3 {
+  border-radius: var(--def-border-radius);
+  background-color: var(--secondary-dark);
+  padding: 4px 8px;
+  width: fit-content;
 }
 
 .loader {
@@ -43,62 +92,69 @@ button:hover:enabled {
   }
 }
 
-.answer {
-  border: 1px solid orange;
-  border-radius: 4px;
-  padding: 4px;
-}
-
 textarea {
   width: 100%;
-  border-radius: 4px;
-  border: 2px solid gray;
+  border-radius: var(--def-border-radius);
+  border: none;
+  background-color: var(--secondary-dark);
+  resize: vertical;
+
+  padding: 4px;
+  caret-color: white;
+  color: white;
+}
+
+textarea:focus {
+  outline: 1px solid var(--button-color);
+}
+
+.answer {
+  width: 100%;
+  border-radius: var(--def-border-radius);
+  border: none;
+  background-color: var(--secondary-dark);
+
+  padding: 8px;
 }
 
 pre {
-  border-radius: 4px;
+  border-radius: var(--def-border-radius);
   padding: 4px;
   max-height: 150px;
   overflow: scroll;
-  background-color: rgb(0, 0, 0, 0.4);
   margin: 0;
+  background-color: var(--secondary-dark);
 }
 
 .multiselectOption {
   border: 1px solid gray;
-  border-radius: 4px;
+  border-radius: var(--def-border-radius);
   padding-top: 4px;
   cursor: pointer;
+  background-color: var(--secondary-dark);
 }
 
-.multiselectOption:hover {
-  border: 2px solid orange;
+.multiselectOptionSelected {
+  border: 1px solid var(--button-color);
 }
 
 .multiselectContainer {
-  border-radius: 4px;
+  border-radius: var(--def-border-radius);
   padding: 4px;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.multiselectButtonsDiv {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  order: 1;
-}
-
 .delSelectedRangeButton {
   align-self: right;
   padding: 0px;
-  padding-right: 4px;
-  padding-left: 4px;
-  margin: 0;
+  margin-top: 0;
   margin-right: 2px;
   border: none;
-  border-radius: 4px;
+  aspect-ratio: 1/1;
+  width: 20px;
+  border-radius: var(--def-border-radius);
 }
 
 .delSelectedRangeButton:hover:enabled {
@@ -109,4 +165,23 @@ pre {
   display: flex;
   justify-content: space-between;
   align-items: left;
+}
+
+.addAnotherButton {
+  margin-left: 20px;
+  order: 1;
+  width: fit-content;
+}
+
+.buttonDiv {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  margin: 4px;
+  flex-wrap: wrap;
+}
+
+.buttonDiv button {
+  flex-grow: 1;
 }

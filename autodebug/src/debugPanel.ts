@@ -66,6 +66,28 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         );
         break;
       }
+      case "explainCode": {
+        if (
+          !data.debugContext.codeSelections?.filter(
+            (cs: any) => cs.code !== undefined
+          )
+        )
+          break;
+
+        let resp = await apiRequest("debug/explain", {
+          body: {
+            stacktrace: data.debugContext.stacktrace,
+            description: data.debugContext.explanation,
+            code: data.debugContext.codeSelections.map((cs: any) => cs.code!),
+          },
+          method: "POST",
+        });
+        panel.webview.postMessage({
+          type: "explainCode",
+          completion: resp.completion,
+        });
+        break;
+      }
       case "makeEdit": {
         let debugContext = data.debugContext;
         let suggestions = await makeEdit(debugContext);
@@ -135,36 +157,34 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         <title>AutoDebug</title>
       </head>
       <body>
-        <h1>Debug Panel</h1>
-        
-        <p>Relevant Code:</p>
-        <div class="multiselectContainer"></div>
-        
-        <p>Description of Bug:</p>
-        <textarea id="bugDescription" name="bugDescription" class="bugDescription" rows="4" cols="50" placeholder="Describe your bug..."></textarea>
-        
-        <p>Stack Trace:</p>
-        <textarea id="stacktrace" class="stacktrace" name="stacktrace" rows="4" cols="50" placeholder="Paste stack trace here"></textarea>
-        
-        
-        <button hidden>Write a unit test to reproduce bug</button>
-        
-        <select hidden id="relevantVars" class="relevantVars" name="relevantVars"></select>
-        
-        <p>Generate Suggestions:</p>
-        <button class="listTenThingsButton">List 10 things that might be wrong</button>
-        <button class="suggestFixButton">Suggest Fix</button>
-        <pre class="fixSuggestion answer" hidden></pre>
-        
-        
-        <button disabled class="makeEditButton">Make Edit</button>
-        <button disabled class="generateUnitTestButton">Generate Unit Test</button>
-        <div class="loader makeEditLoader" hidden></div>
-        
-        <br></br>
-        <input type="checkbox" id="autoMode" class="autoMode" name="autoMode" checked>
-        <label for="autoMode">Auto Mode: As soon as we see a stacktrace, we'll suggest a fix, no clicking necessary</label>
-        <br></br>
+        <div class="gradient">
+          <div class="container">
+            <h1>Debug Panel</h1>
+          
+            <h3>Code Sections</h3>
+            <div class="multiselectContainer"></div>
+            
+            <h3>Bug Description</h3>
+            <textarea id="bugDescription" name="bugDescription" class="bugDescription" rows="4" cols="50" placeholder="Describe your bug..."></textarea>
+            
+            <h3>Stack Trace</h3>
+            <textarea id="stacktrace" class="stacktrace" name="stacktrace" rows="4" cols="50" placeholder="Paste stack trace here"></textarea>
+            
+            <select hidden id="relevantVars" class="relevantVars" name="relevantVars"></select>
+            
+            <div class="buttonDiv">
+              <button class="explainCodeButton">Explain Code</button>
+              <button class="listTenThingsButton">Generate Ideas</button>
+              <button disabled class="makeEditButton">Suggest Fix</button>
+              <button disabled class="generateUnitTestButton">Create Test</button>
+            </div>
+            <div class="loader makeEditLoader" hidden></div>
+            
+            <pre class="fixSuggestion answer" hidden></pre>
+
+            <br></br>
+          </div>
+        </div>
 
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>
