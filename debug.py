@@ -152,7 +152,8 @@ def ctx_prompt(ctx, final_instruction: str) -> str:
     prompt += final_instruction + "\n\n"
     return prompt
 
-ten_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here are 10 things I could try to fix the problem:"))
+n = 5
+n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"Here are {n} things I could try to fix the problem:"))
 
 class DebugContext(BaseModel):
     stacktrace: str
@@ -161,8 +162,15 @@ class DebugContext(BaseModel):
 
 @router.post("/list")
 def listten(ctx: DebugContext):
-    ten_things = ten_things_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
-    return {"completion": ten_things}
+    n_things = n_things_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+    return {"completion": n_things}
+
+explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
+
+@router.post("/explain")
+def explain(ctx: DebugContext):
+    explanation = explain_code_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+    return {"completion": explanation}
 
 edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"))
 

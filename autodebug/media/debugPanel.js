@@ -6,15 +6,14 @@
   const bugDescription = document.querySelector(".bugDescription");
   const stacktrace = document.querySelector(".stacktrace");
   const fixSuggestion = document.querySelector(".fixSuggestion");
+  const explainCodeButton = document.querySelector(".explainCodeButton");
   const listTenThingsButton = document.querySelector(".listTenThingsButton");
-  const suggestFixButton = document.querySelector(".suggestFixButton");
   const makeEditButton = document.querySelector(".makeEditButton");
   const makeEditLoader = document.querySelector(".makeEditLoader");
   const multiselectContainer = document.querySelector(".multiselectContainer");
   const generateUnitTestButton = document.querySelector(
     ".generateUnitTestButton"
   );
-  const autoModeCheckbox = document.querySelector(".autoMode");
 
   let selectedRanges = []; // Elements are { filename, range, code }
   let canUpdateLast = true;
@@ -30,9 +29,9 @@
   }
 
   function formatFileRange(filename, range) {
-    return `${formatPathRelativeToWorkspace(filename)}, lines ${
+    return `${formatPathRelativeToWorkspace(filename)} (lines ${
       range.start.line + 1
-    }-${range.end.line + 1}:`;
+    }-${range.end.line + 1})`;
     // +1 because VSCode Ranges are 0-indexed
   }
 
@@ -59,7 +58,7 @@
     canUpdateLast = true;
 
     let div = document.createElement("div");
-    div.className = "multiselectOption";
+    div.className = "multiselectOption multiselectOptionSelected";
 
     let pre = document.createElement("pre");
     pre.textContent = code;
@@ -88,14 +87,15 @@
     div.appendChild(pre);
 
     let obj = { filename, range, code, element: div, selected: true };
-    div.style.border = "1px solid orange";
     selectedRanges.push(obj);
 
     div.addEventListener("click", () => {
       obj.selected = !obj.selected;
-      obj.element.style.border = obj.selected
-        ? "1px solid orange"
-        : "1px solid gray";
+      if (obj.selected) {
+        div.classList.add("multiselectOptionSelected");
+      } else {
+        div.classList.remove("multiselectOptionSelected");
+      }
     });
     multiselectContainer.appendChild(div);
 
@@ -117,25 +117,14 @@
     p.textContent = "Highlight relevant code in the editor:";
     multiselectContainer.appendChild(p);
 
-    let buttonDiv = document.createElement("div");
-    buttonDiv.className = "multiselectButtonsDiv";
-
-    let susButton = document.createElement("button");
-    susButton.textContent = "Automatically Find Suspicious Code";
-    susButton.className = "susButton";
-    susButton.addEventListener("click", findSuspiciousCode);
-    multiselectContainer.appendChild(susButton);
-
     let addAnotherButton = document.createElement("button");
-    addAnotherButton.textContent = "Add another code range in same file";
+    addAnotherButton.textContent = "Add Section";
     addAnotherButton.className = "addAnotherButton";
     addAnotherButton.disabled = true;
     addAnotherButton.addEventListener("click", () => {
       canUpdateLast = false;
     });
-    buttonDiv.appendChild(susButton);
-    buttonDiv.appendChild(addAnotherButton);
-    multiselectContainer.appendChild(buttonDiv);
+    multiselectContainer.appendChild(addAnotherButton);
 
     makeEditButton.disabled = true;
   }
@@ -240,13 +229,15 @@
 
           addMultiselectOption(codeLocation.filename, range, codeLocation.code);
         }
-        if (autoModeCheckbox.checked === true) {
-          makeEdit();
-        }
+        // makeEdit();
         break;
       }
       case "listTenThings": {
         fixSuggestion.textContent = message.tenThings;
+        break;
+      }
+      case "explainCode": {
+        fixSuggestion.textContent = message.completion;
         break;
       }
       case "suggestFix": {
@@ -256,7 +247,6 @@
       case "makeEdit": {
         // Edit is done
         makeEditLoader.hidden = true;
-        makeEditButton.hidden = false;
         break;
       }
     }
@@ -274,20 +264,19 @@
   }
   listTenThingsButton.addEventListener("click", listTenThings);
 
-  function suggestFix() {
+  function explainCode() {
     gatherDebugContext();
     fixSuggestion.hidden = false;
     fixSuggestion.innerHTML = `<div class="loader" ></div>`;
     vscode.postMessage({
-      type: "suggestFix",
+      type: "explainCode",
       debugContext,
     });
   }
-  suggestFixButton.addEventListener("click", suggestFix);
+  explainCodeButton.addEventListener("click", explainCode);
 
   function makeEdit() {
     makeEditLoader.hidden = false;
-    makeEditButton.hidden = true;
     gatherDebugContext();
     vscode.postMessage({
       type: "makeEdit",
