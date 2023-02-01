@@ -10,6 +10,13 @@ function get_python_path() {
 }
 
 function get_api_url() {
+  let extensionUri = getExtensionUri();
+  let configFile = path.join(extensionUri.fsPath, "config/config.json");
+  let config = require(configFile);
+  console.log("Loaded config: ", config);
+  if (config.API_URL) {
+    return config.API_URL;
+  }
   return "http://localhost:8000";
 }
 const API_URL = get_api_url();

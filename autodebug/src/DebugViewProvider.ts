@@ -179,23 +179,8 @@ export default class DebugViewProvider implements vscode.WebviewViewProvider {
               </head>
               <body>
                   
-                  <p>How to use AutoDebug:
-                    <ul>
-                      <li>Click the button above to open a debug window</li>
-                      <li>In the debug window, you can fill out information about the bug you're trying to fix</li>
-                      <li>Once you've inputted any info, click "Suggest Fix", "Make Edit", or some of the other buttons and we'll do the work for you.</li>
-                    </ul>
-                  </p>
-  
-                  <hr></hr>
-                  <h2>Ask a Question</h2>
-                  <input type="text" id="question" name="question" class="question" placeholder="Ask a question about your codebase" value="Where is binary search?" />
-                  <button id="ask" class="ask-button">Ask</button>
-  
-                  <p>Answer:</p>
-                  <div id="answer" class="answer"></div>
-                  
-                  <script nonce="${nonce}" src="${scriptUri}"></script>
+                  <a href="https://basin-dev.notion.site/autodebug-1c6ad99887d0474d9e42206f6c98efa4"><h1>How to use AutoDebug</h1></a>
+
               </body>
               </html>`;
   }

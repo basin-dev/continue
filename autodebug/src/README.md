@@ -8,21 +8,19 @@
 
 3. Run `cd autodebug` command in the VS Code terminal
 
-4. Create a `src/.env` file with the variable `PYTHON_PATH` that points to the location of your `unit-test-experiments` file path
+4. Run `npm install`
 
-5. Run `npm install`
+5. Start a virtual environment in `unit-test-experiments` by running `source env/bin/activate`
 
-6. Start a virtual environment in `unit-test-experiments` by running `source env/bin/activate`
+6. Start the FastAPI server by running `uvicorn server:app --reload`
 
-7. Start the FastAPI server by running `uvicorn server:app --reload`
+7. Open `src/extension.ts` file
 
-8. Open `src/extension.ts` file
+8. Press `F5` on your keyboard to start `Run and Debug` mode
 
-9. Press `F5` on your keyboard to start `Run and Debug` mode
+9. `cmd+shift+p` for extension commands?? (I can't find anything though...)
 
-10. `cmd+shift+p` for extension commands?? (I can't find anything though...)
-
-11. Every time you make changes to the code, you need to run `npm run compile`
+10. Every time you make changes to the code, you need to run `npm run compile`
 
 ## Alternative: Install a packaged version
 
