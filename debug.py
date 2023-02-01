@@ -152,7 +152,7 @@ def ctx_prompt(ctx, final_instruction: str) -> str:
     prompt += final_instruction + "\n\n"
     return prompt
 
-n = 5
+n = 3
 n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"Here are {n} things I could try to fix the problem:"))
 
 class DebugContext(BaseModel):
