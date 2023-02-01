@@ -10,15 +10,19 @@
 
 4. Create a `src/.env` file with the variable `PYTHON_PATH` that points to the location of your `unit-test-experiments` file path
 
-5. run `npm install`
+5. Run `npm install`
 
-6. Open `src/extension.ts` file
+6. Start a virtual environment in `unit-test-experiments` by running `source env/bin/activate`
 
-7. Press `F5` on your keyboard to start `Run and Debug` mode
+7. Start the FastAPI server by running `uvicorn server:app --reload`
 
-8. `cmd+shift+p` for extension commands?? (I can't find anything though...)
+8. Open `src/extension.ts` file
 
-9. Every time you make changes to the code, you need to run `npm run compile`
+9. Press `F5` on your keyboard to start `Run and Debug` mode
+
+10. `cmd+shift+p` for extension commands?? (I can't find anything though...)
+
+11. Every time you make changes to the code, you need to run `npm run compile`
 
 ## Alternative: Install a packaged version
 
@@ -26,7 +30,7 @@ You should always have a packaged version installed in VSCode, because when auto
 
 1. `npm run package` will create a .vsix file in the `build/` folder that can then be installed. It is this same file that you can share with others who want to try the extension.
 
-2. `npm run install` will install the extension to VSCode. You should then see it in your installed extensions in the VSCode sidebar.
+2. `npm run install-extension` will install the extension to VSCode. You should then see it in your installed extensions in the VSCode sidebar.
 
 3. `npm run uninstall` will uninstall the extension. You don't always have to do this thanks to the reinstall command, but can be useful when you want to do so manually.
 
