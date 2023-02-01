@@ -26,6 +26,14 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
     vscode.Uri.joinPath(extensionUri, "media", "main.css")
   );
 
+  const highlightJsUri = debugPanelWebview.asWebviewUri(
+    vscode.Uri.joinPath(extensionUri, "media/highlight/highlight.min.js")
+  );
+
+  const highlightJsStylesUri = debugPanelWebview.asWebviewUri(
+    vscode.Uri.joinPath(extensionUri, "media/highlight/styles/dark.min.css")
+  );
+
   const nonce = getNonce();
 
   vscode.window.onDidChangeTextEditorSelection((e) => {
@@ -153,7 +161,10 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="${styleMainUri}" rel="stylesheet">
-        
+
+        <link href="${highlightJsStylesUri}" rel="stylesheet">
+        <script src="${highlightJsUri}"></script>
+                
         <title>AutoDebug</title>
       </head>
       <body>

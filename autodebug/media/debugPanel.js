@@ -35,6 +35,34 @@
     // +1 because VSCode Ranges are 0-indexed
   }
 
+  const filenameToLanguage = {
+    py: "python",
+    js: "javascript",
+    ts: "typescript",
+    html: "html",
+    css: "css",
+    java: "java",
+    c: "c",
+    cpp: "cpp",
+    cs: "csharp",
+    go: "go",
+    rb: "ruby",
+    rs: "rust",
+    swift: "swift",
+    php: "php",
+    scala: "scala",
+    kt: "kotlin",
+    dart: "dart",
+    hs: "haskell",
+    lua: "lua",
+    pl: "perl",
+    r: "r",
+    sql: "sql",
+    vb: "vb",
+    xml: "xml",
+    yaml: "yaml",
+  };
+
   function addMultiselectOption(filename, range, code) {
     // First, we check if this is just an update to the last range
     if (
@@ -50,8 +78,13 @@
         filename,
         range
       );
-      element.getElementsByTagName("pre")[0].textContent = code;
-      console.log("Updated", element.getElementsByTagName("pre").length);
+      let codeElement = element
+        .getElementsByTagName("pre")[0]
+        .getElementsByTagName("code")[0];
+      codeElement.textContent = code;
+
+      hljs.highlightElement(codeElement);
+
       return;
     }
 
@@ -61,7 +94,14 @@
     div.className = "multiselectOption multiselectOptionSelected";
 
     let pre = document.createElement("pre");
-    pre.textContent = code;
+    // Code element inside because required for highlight.js
+    let codeElement = document.createElement("code");
+    let ext = filename.split(".").pop();
+    if (ext in filenameToLanguage) {
+      codeElement.className = "language-" + filenameToLanguage[ext];
+    }
+    codeElement.textContent = code;
+    pre.appendChild(codeElement);
 
     let topDiv = document.createElement("div");
     topDiv.className = "multiselectOptionTopDiv";
@@ -98,6 +138,8 @@
       }
     });
     multiselectContainer.appendChild(div);
+
+    hljs.highlightElement(codeElement);
 
     // If this is the first added option, we should display an "add another" button
     if (selectedRanges.length >= 1) {
