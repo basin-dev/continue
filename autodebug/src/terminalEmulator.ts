@@ -50,10 +50,7 @@ class PythonTracebackSnooper {
             type: "traceback",
             traceback: wholeTraceback,
           });
-        } else if (
-          vscode.workspace.getConfiguration("AutoDebug").get("automode") ===
-          true
-        ) {
+        } else {
           vscode.commands
             .executeCommand("autodebug.openDebugPanel")
             .then(() => {

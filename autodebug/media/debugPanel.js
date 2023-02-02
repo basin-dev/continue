@@ -257,6 +257,7 @@
       case "findSuspiciousCode": {
         clearMultiselectOptions();
         for (let codeLocation of message.codeLocations) {
+          canUpdateLast = false;
           // It's serialized to be an array [startPos, endPos]
           let range = {
             start: {
@@ -271,6 +272,7 @@
 
           addMultiselectOption(codeLocation.filename, range, codeLocation.code);
         }
+        canUpdateLast = true;
         // makeEdit();
         break;
       }

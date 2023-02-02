@@ -3,27 +3,23 @@ from boltons import tbutils
 import ast
 from llm import OpenAI
 import numpy as np
+from tools_context.index import build_gitignore_spec
 
 gpt = OpenAI()
 
-ignore = ["bin/"] # Ideally just write in .gitignore-style format, and this can be customizable
-def is_my_code(path: str) -> bool:
-    for p in ignore:
-        if path.startswith(p):
-            return False
+ignore_in_stacktrace_spec = build_gitignore_spec(custom_match_patterns=[
+    "**/bin/**",
+    "**/opt/**",
+    "**/env/**"
+])
 
-        if not p.startswith("/") and p in path:
-            return False
-    
-    return True
-
-def filter_relevant(frames: List[Dict]) -> List[Dict]:
+def filter_stacktrace_frames(frames: List[Dict]) -> List[Dict]:
     """Filter out frames that are not relevant to the user's code."""
-    return list(filter(lambda x: is_my_code(x['filepath']), frames))
+    return list(filter(lambda x: ignore_in_stacktrace_spec.match_file(x['filepath']), frames))
 
 def fl1(tb: tbutils.ParsedException) -> Dict:
     """Find the most relevant frame in the traceback."""
-    relevant = filter_relevant(tb.frames)
+    relevant = filter_stacktrace_frames(tb.frames)
     if len(relevant) == 0:
         return tb.frames[-1]
     return relevant[-1]
@@ -91,19 +87,15 @@ def indices_of_top_k(arr: List[float], k: int) -> List[int]:
     """Return the indices of the top k elements in the array."""
     return sorted(range(len(arr)), key=lambda i: arr[i])[-k:]
 
-def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: int = 2) -> List[Dict]:
+def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: int = 4) -> List[Dict]:
     """Return the most relevant frames in the stacktrace."""
     # First, filter out code that isn't mine
-    my_code = filter_relevant(tb.frames)
+    my_code = filter_stacktrace_frames(tb.frames)
 
     # Then, find the most specific context for each frame, getting the code snippets
     snippets = []
     for frame in my_code:
         code = frame_to_code_location(frame, files=files)['code']
-        if len(code.splitlines()) == 1:
-            # If code is just a single line, probably isn't important
-            continue
-        
         snippets.append(code)
 
     if len(snippets) <= n:
@@ -111,7 +103,6 @@ def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: 
         return my_code
 
     # Then, similarity search by the query to return top n frames
-    print("Query:", snippets + [query])
     embeddings = gpt.embed(snippets + [query])
     similarities = [np.dot(embeddings[-1], x) for x in embeddings[:-1]]
     top_n = indices_of_top_k(similarities, n)

@@ -379,14 +379,14 @@ def forline(fp: FilePosition):
     print("ctx: ", ctx)
     
     fn_prompter = prompts.BasicCommentPrompter("Write tests for the above code using pytest. Consider doing any of the following as needed: writing mocks, creating fixtures, using parameterization, setting up, and tearing down. All tests should pass:")
-    cls_prompter = prompts.SimplePrompter(lambda x: prompts.cls_1(x[0]['name'], x[0]['init'], x[1]))
-    prompter = prompts.MixedPrompter([fn_prompter, cls_prompter], lambda inp: 1 if isinstance(inp, list) and len(inp) == 2 else 0)
+    cls_prompter = prompts.SimplePrompter(lambda x: prompts.cls_1(x[0]['name'], x[0]['init'], ast.unparse(x[1])))
+    prompter = prompts.MixedPrompter([fn_prompter, cls_prompter], lambda inp: 1 if isinstance(inp, tuple) and len(inp) == 2 else 0)
 
     print("PROMPT: ", prompter._compile_prompt(ctx)[0])
 
     test = prompter.complete(ctx)
 
-    return {"completion": test.strip()}
+    return {"completion": test.strip() + "\n\n"}
 
 def file_position_to_code_str(fp: FilePosition) -> str | None:
     """Given a line in a file, find the most specific containing function, and return it as a string, including the class header if it's a method."""
@@ -427,7 +427,7 @@ def failingtest(body: FailingTestBody):
         raise HTTPException(status_code=500, detail="No function or class method found at line number")
 
     test = failing_test_prompter.complete({"description": body.description, "code": code})
-    return {"completion": test.strip()}
+    return {"completion": test.strip() + "\n\n"}
 
 
 if __name__ == "__main__":
