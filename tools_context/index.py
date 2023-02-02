@@ -13,12 +13,13 @@ def upward_traverse_filetree(path: str=".", search_for: str=".gitignore") -> Lis
         if os.path.exists(target_file_path):
             found.append(target_file_path)
         
-        if os.pardir(path) == path:
+        parent_dir = os.path.abspath(os.path.join(path, os.pardir))
+        if parent_dir == path:
             # Reached root
             break
 
         # Move up one directory
-        path = os.pardir(path)
+        path = parent_dir
 
     return found
 
@@ -34,7 +35,7 @@ DEFAULT_GIT_IGNORE_PATTERNS = [
     "**/.mypy_cache",
     "**/.coverage",
     "**/.DS_Store",
-    "**/coverage.xml",
+    "**/coverage.xml"
 ]
 
 def build_gitignore_spec(gitignore_paths: List[str]=[".gitignore"], custom_match_patterns: List[str]=DEFAULT_GIT_IGNORE_PATTERNS) -> pathspec.PathSpec:
@@ -49,8 +50,8 @@ def build_gitignore_spec(gitignore_paths: List[str]=[".gitignore"], custom_match
             # Don't throw if the file doesn't exist
             pass
     
-    # Negate all lines, because we want to ignoring them
-    lines = [f"!{line}" for line in lines]
+    # Negate all line, except for comments and empty lines, because we want to ignore them
+    lines = [f"!{line}" for line in lines if not line.startswith("#") and line.strip() != ""]
 
     return pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, lines)
 
