@@ -1,0 +1,6 @@
+---
+library: false
+name: basin-dev/autodebug-pack
+version: 0.0.1
+dependencies:
+  codeql/python-all: 0.7.1
