@@ -7,7 +7,7 @@ from tools_context.index import build_gitignore_spec
 
 gpt = OpenAI()
 
-ignore_in_stacktrace_spec = build_gitignore_spec(custom_match_patterns=[
+to_be_ignored_spec = build_gitignore_spec(custom_match_patterns=[
     "**/bin/**",
     "**/opt/**",
     "**/env/**"
@@ -15,7 +15,7 @@ ignore_in_stacktrace_spec = build_gitignore_spec(custom_match_patterns=[
 
 def filter_stacktrace_frames(frames: List[Dict]) -> List[Dict]:
     """Filter out frames that are not relevant to the user's code."""
-    return list(filter(lambda x: ignore_in_stacktrace_spec.match_file(x['filepath']), frames))
+    return list(filter(lambda x: not to_be_ignored_spec.match_file(x['filepath']), frames))
 
 def fl1(tb: tbutils.ParsedException) -> Dict:
     """Find the most relevant frame in the traceback."""
@@ -89,25 +89,22 @@ def indices_of_top_k(arr: List[float], k: int) -> List[int]:
 
 def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: int = 4) -> List[Dict]:
     """Return the most relevant frames in the stacktrace."""
-    # First, filter out code that isn't mine
-    my_code = filter_stacktrace_frames(tb.frames)
+    filtered_frames = filter_stacktrace_frames(tb.frames)
+    if len(filtered_frames) <= n:
+        return filtered_frames
 
-    # Then, find the most specific context for each frame, getting the code snippets
-    snippets = []
-    for frame in my_code:
-        code = frame_to_code_location(frame, files=files)['code']
-        snippets.append(code)
-
-    if len(snippets) <= n:
-        # If there are <= n snippets, then just return all of them
-        return my_code
+    # Find the most specific context for each frame, getting the code snippets
+    surrounding_snippets = [
+        frame_to_code_location(frame, files=files)['code']
+        for frame in filtered_frames
+    ]
 
     # Then, similarity search by the query to return top n frames
-    embeddings = gpt.embed(snippets + [query])
+    embeddings = gpt.embed(surrounding_snippets + [query])
     similarities = [np.dot(embeddings[-1], x) for x in embeddings[:-1]]
     top_n = indices_of_top_k(similarities, n)
 
-    return [my_code[i] for i in top_n]
+    return [filtered_frames[i] for i in top_n]
 
 def get_start_end_lines(tree: ast.AST) -> Tuple[int, int]:
     """Get the start and end line numbers of the AST node."""
