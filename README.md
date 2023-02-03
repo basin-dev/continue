@@ -10,3 +10,11 @@ Run the server:
 7. If you run into a memory error, do `pip cache purge` and run the above command again repeatedly until everything is installed.
 8. `uvicorn server:app --reload`
 9. If you are seeing any errors that seem dependency related, you can try uninstall and reinstalling the problematic packages.
+10. Make sure there is a `.env` file with the following:
+    - OPENAI_API_KEY
+
+Setup NGINX:
+1. Follow steps [here](https://www.digitalocean.com/community/tutorials/how-to-configure-nginx-as-a-reverse-proxy-on-ubuntu-22-04)
+2. Setup letsencrypt certificate:
+    - `sudo apt install certbot python3-certbot-nginx`
+    - `sudo certbot --nginx -d basin.dev`
