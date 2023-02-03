@@ -40,8 +40,7 @@ DEFAULT_GIT_IGNORE_PATTERNS = [
 def build_gitignore_spec(gitignore_paths: List[str]=None, custom_match_patterns: List[str]=[]) -> pathspec.PathSpec:
     """Build a pathspec.PathSpec from a given list of .gitignore files."""
     if gitignore_paths is None:
-        gitignore_paths = upward_search_in_filetree(".gitignore", )
-
+        gitignore_paths = upward_search_in_filetree(".gitignore", ".")
 
     # Acculumate lines from all .gitignore files
     lines = set(custom_match_patterns)
@@ -52,15 +51,13 @@ def build_gitignore_spec(gitignore_paths: List[str]=None, custom_match_patterns:
         except BaseException:
             # Don't throw if the file doesn't exist
             pass
-    
-    # Negate all line, except for comments and empty lines, because we want to ignore them
-    lines = [f"!{line}" for line in lines if not line.startswith("#") and line.strip() != ""]
 
     return pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, lines)
 
-documents = SimpleDirectoryReader('data').load_data()
-index = GPTSimpleVectorIndex(documents)
-index.save_to_disk('index.json')
-# index = GPTSimpleVectorIndex.load_from_disk('index.json')
-response = index.query("What is sestinj working on right now?")
-print(response)
+if __name__ == "__main__":
+    documents = SimpleDirectoryReader('data').load_data()
+    index = GPTSimpleVectorIndex(documents)
+    index.save_to_disk('index.json')
+    # index = GPTSimpleVectorIndex.load_from_disk('index.json')
+    response = index.query("What is sestinj working on right now?")
+    print(response)
