@@ -29,21 +29,6 @@ function listToCmdLineArgs(list: string[]): string {
   return list.map((el) => `"$(echo "${el}")"`).join(" ");
 }
 
-export async function setupPythonEnv() {
-  let command = `cd ${path.join(
-    getExtensionUri().fsPath,
-    "scripts"
-  )} && python3 -m venv env && source env/bin/activate && pip3 install -r requirements.txt`;
-  const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
-  }
-  console.log(
-    "Successfully set up python env at ",
-    getExtensionUri().fsPath + "/scripts/env"
-  );
-}
-
 export async function runPythonScript(
   scriptName: string,
   args: string[]
