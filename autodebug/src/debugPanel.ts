@@ -170,30 +170,44 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
       <body>
         <div class="gradient">
           <div class="container">
-            <h1>Debug Panel</h1>
-          
-            <h3>Code Sections</h3>
-            <div class="multiselectContainer"></div>
+            <div class="tabContainer">
+              <div class="tabBar">
+                <div class="tab selectedTab">Debug Panel</div>
+                <div class="tab unselectedTab">Additional Context</div>
+              </div>
+              <div class="contentContainer">
+                <h1>Debug Panel</h1>
             
-            <h3>Bug Description</h3>
-            <textarea id="bugDescription" name="bugDescription" class="bugDescription" rows="4" cols="50" placeholder="Describe your bug..."></textarea>
-            
-            <h3>Stack Trace</h3>
-            <textarea id="stacktrace" class="stacktrace" name="stacktrace" rows="4" cols="50" placeholder="Paste stack trace here"></textarea>
-            
-            <select hidden id="relevantVars" class="relevantVars" name="relevantVars"></select>
-            
-            <div class="buttonDiv">
-              <button class="explainCodeButton">Explain Code</button>
-              <button class="listTenThingsButton">Generate Ideas</button>
-              <button disabled class="makeEditButton">Suggest Fix</button>
-              <button disabled class="generateUnitTestButton">Create Test</button>
+                <h3>Code Sections</h3>
+                <div class="multiselectContainer"></div>
+                
+                <h3>Bug Description</h3>
+                <textarea id="bugDescription" name="bugDescription" class="bugDescription" rows="4" cols="50" placeholder="Describe your bug..."></textarea>
+                
+                <h3>Stack Trace</h3>
+                <textarea id="stacktrace" class="stacktrace" name="stacktrace" rows="4" cols="50" placeholder="Paste stack trace here"></textarea>
+                
+                <select hidden id="relevantVars" class="relevantVars" name="relevantVars"></select>
+                
+                <div class="buttonDiv">
+                  <button class="explainCodeButton">Explain Code</button>
+                  <button class="listTenThingsButton">Generate Ideas</button>
+                  <button disabled class="makeEditButton">Suggest Fix</button>
+                  <button disabled class="generateUnitTestButton">Create Test</button>
+                </div>
+                <div class="loader makeEditLoader" hidden></div>
+                
+                <pre class="fixSuggestion answer" hidden></pre>
+    
+                <br></br>
+              </div>
+              <div class="contentContainer" hidden>
+                <h3>Additional Context</h3>
+                <textarea rows="8" placeholder="Copy and paste information related to the bug from GitHub Issues, Slack threads, or other notes here." class="additionalContextTextarea"></textarea>
+                <br></br>
+              </div>
             </div>
-            <div class="loader makeEditLoader" hidden></div>
-            
-            <pre class="fixSuggestion answer" hidden></pre>
 
-            <br></br>
           </div>
         </div>
 

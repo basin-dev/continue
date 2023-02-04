@@ -150,7 +150,7 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "package": "cp ./config/prod_config.json ./config/config.json && npm run compile && mkdir -p ./build && vsce package --out ./build && cp ./config/dev_config.json ./config/config.json",
+    "package": "cp ./config/prod_config.json ./config/config.json && npm run compile && mkdir -p ./build && vsce package --out ./build && chmod 777 ./build/autodebug-0.0.1.vsix && cp ./config/dev_config.json ./config/config.json",
     "install-extension": "code --install-extension ./build/autodebug-0.0.1.vsix",
     "uninstall": "code --uninstall-extension Basin.autodebug",
     "reinstall": "rm -rf ./build && npm run package && npm run uninstall && npm run install-extension"
