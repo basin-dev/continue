@@ -11,9 +11,30 @@
   const makeEditButton = document.querySelector(".makeEditButton");
   const makeEditLoader = document.querySelector(".makeEditLoader");
   const multiselectContainer = document.querySelector(".multiselectContainer");
+  const extraContextTextarea = document.querySelector(".extraContextTextarea");
   const generateUnitTestButton = document.querySelector(
     ".generateUnitTestButton"
   );
+  const tabBar = document.querySelector(".tabBar");
+  const tabs = document.getElementsByClassName("tab");
+  function setTab(index) {
+    let contentContainers = document.getElementsByClassName("contentContainer");
+    for (let j = 0; j < contentContainers.length; j++) {
+      if (index === j) {
+        contentContainers[j].hidden = false;
+        tabs[j].className = "tab selectedTab";
+      } else {
+        contentContainers[j].hidden = true;
+        tabs[j].className = "tab unselectedTab";
+      }
+    }
+    updateState({ currentTab: index });
+  }
+  for (let i = 0; i < tabs.length; i++) {
+    tabs[i].addEventListener("click", (e) => {
+      setTab(i);
+    });
+  }
 
   let selectedRanges = []; // Elements are { filename, range, code }
   let canUpdateLast = true;
@@ -178,6 +199,7 @@
     debugContext.explanation = bugDescription.value;
     debugContext.stacktrace = stacktrace.value;
     debugContext.suggestion = fixSuggestion.innerHTML;
+    debugContext.extraContext = extraContextTextarea.value;
     debugContext.codeSelections = selectedRanges
       .filter((obj) => obj.selected)
       .map((obj) => {
@@ -199,6 +221,7 @@
       bugDescription.value = state.debugContext.explanation;
       stacktrace.value = state.debugContext.stacktrace;
       fixSuggestion.innerHTML = state.debugContext.suggestion;
+      extraContextTextarea.value = state.debugContext.extraContext;
       for (let codeSelection of state.debugContext.codeSelections) {
         canUpdateLast = false;
         addMultiselectOption(
@@ -215,6 +238,7 @@
           selected: true,
         };
       });
+      setTab(state.currentTab || 0);
     }
   }
 

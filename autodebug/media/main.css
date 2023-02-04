@@ -27,11 +27,9 @@ body {
 }
 
 .container {
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 10px;
   height: 100%;
   border-radius: var(--def-border-radius);
+  overflow: hidden;
 
   background-color: var(--vsc-background);
 }
@@ -191,4 +189,30 @@ pre {
 
 .buttonDiv button {
   flex-grow: 1;
+}
+
+.tabBar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--secondary-dark);
+}
+
+.selectedTab {
+  background-color: var(--secondary-dark);
+}
+
+.unselectedTab {
+  background-color: var(--vsc-background);
+}
+
+.tab {
+  padding: 8px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.contentContainer {
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 10px;
 }
