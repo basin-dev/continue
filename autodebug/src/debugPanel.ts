@@ -172,8 +172,8 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
           <div class="container">
             <div class="tabContainer">
               <div class="tabBar">
-                <div class="tab selectedTab">Main</div>
-                <div class="tab unselectedTab">Extra Context</div>
+                <div class="tab selectedTab">Debug Panel</div>
+                <div class="tab unselectedTab">Additional Context</div>
               </div>
               <div class="contentContainer">
                 <h1>Debug Panel</h1>
@@ -202,8 +202,8 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
                 <br></br>
               </div>
               <div class="contentContainer" hidden>
-                <h3>Extra Context</h3>
-                <textarea rows="8" placeholder="Copy paste GitHub Issues, Slack conversations, or other notes on the bug." class="extraContextTextarea"></textarea>
+                <h3>Additional Context</h3>
+                <textarea rows="8" placeholder="Copy and paste information related to the bug from GitHub Issues, Slack threads, or other notes here." class="additionalContextTextarea"></textarea>
                 <br></br>
               </div>
             </div>

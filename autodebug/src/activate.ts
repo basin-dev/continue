@@ -3,6 +3,10 @@ import { registerAllCommands } from "./commands";
 import DebugViewProvider from "./DebugViewProvider";
 import { MyCodeLensProvider } from "./languageServer";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
+import { openEditorAndRevealRange } from "./textEditorDisplay";
+import { getExtensionUri } from "./vscodeUtils";
+import * as path from "path";
+import { openCapturedTerminal } from "./terminalEmulator";
 
 export function activateExtension(context: vscode.ExtensionContext) {
   sendTelemetryEvent(TelemetryEvent.ExtensionActivated);
@@ -18,4 +22,12 @@ export function activateExtension(context: vscode.ExtensionContext) {
   );
 
   registerAllCommands(context);
+
+  openEditorAndRevealRange(
+    path.join(getExtensionUri().fsPath, "examples/python/main.py")
+  );
+
+  vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
+    openCapturedTerminal();
+  });
 }

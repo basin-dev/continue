@@ -11,7 +11,9 @@
   const makeEditButton = document.querySelector(".makeEditButton");
   const makeEditLoader = document.querySelector(".makeEditLoader");
   const multiselectContainer = document.querySelector(".multiselectContainer");
-  const extraContextTextarea = document.querySelector(".extraContextTextarea");
+  const additionalContextTextarea = document.querySelector(
+    ".additionalContextTextarea"
+  );
   const generateUnitTestButton = document.querySelector(
     ".generateUnitTestButton"
   );
@@ -199,7 +201,7 @@
     debugContext.explanation = bugDescription.value;
     debugContext.stacktrace = stacktrace.value;
     debugContext.suggestion = fixSuggestion.innerHTML;
-    debugContext.extraContext = extraContextTextarea.value;
+    debugContext.additionalContext = additionalContextTextarea.value;
     debugContext.codeSelections = selectedRanges
       .filter((obj) => obj.selected)
       .map((obj) => {
@@ -221,7 +223,7 @@
       bugDescription.value = state.debugContext.explanation;
       stacktrace.value = state.debugContext.stacktrace;
       fixSuggestion.innerHTML = state.debugContext.suggestion;
-      extraContextTextarea.value = state.debugContext.extraContext;
+      additionalContextTextarea.value = state.debugContext.additionalContext;
       for (let codeSelection of state.debugContext.codeSelections) {
         canUpdateLast = false;
         addMultiselectOption(
