@@ -4,22 +4,22 @@ import pathspec
 import os
 import faiss # https://github.com/facebookresearch/faiss/blob/main/INSTALL.md
 
-def upward_traverse_filetree(path: str=".", search_for: str=".gitignore") -> List[str]:
+def upward_search_in_filetree(search_for: str, start_path: str=".") -> List[str]:
     """Find all files of the name search_for in parent directories of the given path."""
     found = []
     while True:
         # Check whether there is a file named search_for here
-        target_file_path = os.path.join(path, search_for)
+        target_file_path = os.path.join(start_path, search_for)
         if os.path.exists(target_file_path):
             found.append(target_file_path)
         
-        parent_dir = os.path.abspath(os.path.join(path, os.pardir))
-        if parent_dir == path:
+        parent_dir = os.path.abspath(os.path.join(start_path, os.pardir))
+        if parent_dir == start_path:
             # Reached root
             break
 
         # Move up one directory
-        path = parent_dir
+        start_path = parent_dir
 
     return found
 
@@ -38,8 +38,11 @@ DEFAULT_GIT_IGNORE_PATTERNS = [
     "**/coverage.xml"
 ]
 
-def build_gitignore_spec(gitignore_paths: List[str]=[".gitignore"], custom_match_patterns: List[str]=DEFAULT_GIT_IGNORE_PATTERNS) -> pathspec.PathSpec:
+def build_gitignore_spec(gitignore_paths: List[str]=None, custom_match_patterns: List[str]=[]) -> pathspec.PathSpec:
     """Build a pathspec.PathSpec from a given list of .gitignore files."""
+    if gitignore_paths is None:
+        gitignore_paths = upward_search_in_filetree(".gitignore", ".")
+
     # Acculumate lines from all .gitignore files
     lines = set(custom_match_patterns)
     for gitignore_path in gitignore_paths:
@@ -57,10 +60,8 @@ def build_gitignore_spec(gitignore_paths: List[str]=[".gitignore"], custom_match
 
 def load_gpt_index_documents(root: str) -> List[Document]:
     """Loads a list of GPTIndex Documents, respecting .gitignore files."""
-    # Find all applicable .gitignore files
-    gitignore_paths = upward_traverse_filetree(root)
     # Build a pathspec.PathSpec from the .gitignore files
-    gitignore_spec = build_gitignore_spec(gitignore_paths)
+    gitignore_spec = build_gitignore_spec()
     # Walk the root directory to get a list of all non-ignored files
     input_files = gitignore_spec.match_tree_files(root)
     # Use SimpleDirectoryReader to load the files into Documents
