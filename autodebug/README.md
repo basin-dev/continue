@@ -33,4 +33,4 @@ Any stacktrace that appears in your VSCode terminal will be caught by us so we c
 
 ### Generate Unit Tests and Docstrings
 
-Use `cmd+shift+i` to generate a unit test for the function surrounding your cursor position, and `cmd+shift+i` to generate a docstring.
+Use `cmd+shift+i` to generate a unit test for the function surrounding your cursor position, and `cmd+shift+l` to generate a docstring.
