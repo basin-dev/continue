@@ -34,7 +34,10 @@ DEFAULT_GIT_IGNORE_PATTERNS = [
     "**/.mypy_cache",
     "**/.coverage",
     "**/.DS_Store",
-    "**/coverage.xml"
+    "**/coverage.xml",
+    "**/bin/**",
+    "**/opt/**",
+    "**/env/**"
 ]
 
 def build_gitignore_spec(gitignore_paths: List[str]=None, custom_match_patterns: List[str]=[]) -> pathspec.PathSpec:

@@ -3,15 +3,12 @@ from boltons import tbutils
 import ast
 from llm import OpenAI
 import numpy as np
-from tools_context.index import build_gitignore_spec
+from tools_context.index import DEFAULT_GIT_IGNORE_PATTERNS
+import pathspec
 
 gpt = OpenAI()
 
-to_be_ignored_spec = build_gitignore_spec(custom_match_patterns=[
-    "**/bin/**",
-    "**/opt/**",
-    "**/env/**"
-])
+to_be_ignored_spec = pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, DEFAULT_GIT_IGNORE_PATTERNS)
 
 def filter_stacktrace_frames(frames: List[Dict]) -> List[Dict]:
     """Filter out frames that are not relevant to the user's code."""
