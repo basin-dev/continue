@@ -65,7 +65,7 @@ def load_gpt_index_documents(root: str) -> List[Document]:
     # Walk the root directory to get a list of all non-ignored files
     input_files = gitignore_spec.match_tree_files(root)
     # Use SimpleDirectoryReader to load the files into Documents
-    return SimpleDirectoryReader(root, input_files=input_files).load_data()
+    return SimpleDirectoryReader(rot, input_files=input_files).load_data()
 
 documents = load_gpt_index_documents("data")
 d = 1536 # Dimension of text-ada-embedding-002
