@@ -35,7 +35,11 @@ DEFAULT_GIT_IGNORE_PATTERNS = [
     "**/.mypy_cache",
     "**/.coverage",
     "**/.DS_Store",
-    "**/coverage.xml"
+    "**/coverage.xml",
+    "**/bin/**",
+    "**/opt/**",
+    "**/env/**"
+    "autodebug/data/**"
 ]
 
 def build_gitignore_spec(gitignore_paths: List[str]=None, custom_match_patterns: List[str]=[]) -> pathspec.PathSpec:
@@ -72,7 +76,7 @@ d = 1536 # Dimension of text-ada-embedding-002
 faiss_index = faiss.IndexFlatL2(d)
 index = GPTFaissIndex(documents, faiss_index=faiss_index)
 index = GPTSimpleVectorIndex(documents)
-index.save_to_disk('index.json')
+index.save_to_disk('file_index.json')
 # index = GPTSimpleVectorIndex.load_from_disk('index.json')
 response = index.query("What is sestinj working on right now?")
 print(response)
