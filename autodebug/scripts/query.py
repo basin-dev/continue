@@ -1,12 +1,12 @@
 import subprocess
 import sys
-from gpt_index import GPTSimpleVectorIndex
+from gpt_index import GPTSimpleVectorIndex, GPTFaissIndex
 
 
 def query_codebase_index(query):
     """Query the codebase index."""
     branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
-    index = GPTSimpleVectorIndex.load_from_disk('data/{branch}/index.json')
+    index = GPTFaissIndex.load_from_disk('data/{branch}/index.json')
     response = index.query(query)
     print(response)
 
