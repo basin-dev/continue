@@ -75,7 +75,6 @@ documents = load_gpt_index_documents("data")
 d = 1536 # Dimension of text-ada-embedding-002
 faiss_index = faiss.IndexFlatL2(d)
 index = GPTFaissIndex(documents, faiss_index=faiss_index)
-index = GPTSimpleVectorIndex(documents)
 index.save_to_disk('file_index.json')
 # index = GPTSimpleVectorIndex.load_from_disk('index.json')
 response = index.query("What is sestinj working on right now?")
