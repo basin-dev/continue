@@ -1,8 +1,7 @@
-from gpt_index import GPTSimpleVectorIndex, SimpleDirectoryReader, Document, GPTFaissIndex
-from typing import List, Generator
-import pathspec
+from gpt_index import GPTSimpleVectorIndex, SimpleDirectoryReader
+from typing import List
 import os
-import faiss # https://github.com/facebookresearch/faiss/blob/main/INSTALL.md
+import pathspec
 
 def upward_search_in_filetree(search_for: str, start_path: str=".") -> List[str]:
     """Find all files of the name search_for in parent directories of the given path."""
@@ -56,26 +55,13 @@ def build_gitignore_spec(gitignore_paths: List[str]=None, custom_match_patterns:
         except BaseException:
             # Don't throw if the file doesn't exist
             pass
-    
-    # Negate all line, except for comments and empty lines, because we want to ignore them
-    lines = [f"!{line}" for line in lines if not line.startswith("#") and line.strip() != ""]
 
     return pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, lines)
 
-def load_gpt_index_documents(root: str) -> List[Document]:
-    """Loads a list of GPTIndex Documents, respecting .gitignore files."""
-    # Build a pathspec.PathSpec from the .gitignore files
-    gitignore_spec = build_gitignore_spec()
-    # Walk the root directory to get a list of all non-ignored files
-    input_files = gitignore_spec.match_tree_files(root)
-    # Use SimpleDirectoryReader to load the files into Documents
-    return SimpleDirectoryReader(rot, input_files=input_files).load_data()
-
-documents = load_gpt_index_documents("data")
-d = 1536 # Dimension of text-ada-embedding-002
-faiss_index = faiss.IndexFlatL2(d)
-index = GPTFaissIndex(documents, faiss_index=faiss_index)
-index.save_to_disk('file_index.json')
-# index = GPTSimpleVectorIndex.load_from_disk('index.json')
-response = index.query("What is sestinj working on right now?")
-print(response)
+if __name__ == "__main__":
+    documents = SimpleDirectoryReader('data').load_data()
+    index = GPTSimpleVectorIndex(documents)
+    index.save_to_disk('index.json')
+    # index = GPTSimpleVectorIndex.load_from_disk('index.json')
+    response = index.query("What is sestinj working on right now?")
+    print(response)

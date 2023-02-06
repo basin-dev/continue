@@ -29,7 +29,7 @@ let newSelDecorationType = vscode.window.createTextEditorDecorationType({
   backgroundColor: "rgb(0, 255, 0, 0.25)",
   isWholeLine: true,
   after: {
-    contentText: "Press cmd+shift+enter to accept",
+    contentText: "Press ctrl+shift+enter to accept",
     margin: "0 0 0 1em",
   },
 });
@@ -37,7 +37,7 @@ let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
   backgroundColor: "rgb(255, 0, 0, 0.25)",
   isWholeLine: true,
   after: {
-    contentText: "Press cmd+shift+enter to reject",
+    contentText: "Press ctrl+shift+enter to reject",
     margin: "0 0 0 1em",
   },
 });
@@ -270,7 +270,10 @@ export async function showSuggestion(
         if (range.end.line + 1 >= editor.document.lineCount) {
           suggestion = "\n" + suggestion;
         }
-        edit.insert(new vscode.Position(range.end.line + 1, 0), suggestion);
+        edit.insert(
+          new vscode.Position(range.end.line + 1, 0),
+          suggestion + "\n"
+        );
       })
       .then(
         (success) => {
@@ -571,6 +574,48 @@ export function openEditorAndRevealRange(
 }
 
 // Show unit test
+const pythonImportDistinguisher = (line: string): boolean => {
+  if (line.startsWith("from") || line.startsWith("import")) {
+    return true;
+  }
+  return false;
+};
+const javascriptImportDistinguisher = (line: string): boolean => {
+  if (line.startsWith("import")) {
+    return true;
+  }
+  return false;
+};
+const importDistinguishersMap: {
+  [fileExtension: string]: (line: string) => boolean;
+} = {
+  js: javascriptImportDistinguisher,
+  ts: javascriptImportDistinguisher,
+  py: pythonImportDistinguisher,
+};
+function getImportsFromFileString(
+  fileString: string,
+  importDistinguisher: (line: string) => boolean
+): Set<string> {
+  let importLines = new Set<string>();
+  for (let line of fileString.split("\n")) {
+    if (importDistinguisher(line)) {
+      importLines.add(line);
+    }
+  }
+  return importLines;
+}
+function removeRedundantLinesFrom(
+  fileContents: string,
+  linesToRemove: Set<string>
+): string {
+  let fileLines = fileContents.split("\n");
+  fileLines = fileLines.filter((line: string) => {
+    return !linesToRemove.has(line);
+  });
+  return fileLines.join("\n");
+}
+
 export async function writeAndShowUnitTest(
   filename: string,
   test: string
@@ -579,26 +624,33 @@ export async function writeAndShowUnitTest(
     let testFilename = getTestFile(filename, true);
     vscode.workspace.openTextDocument(testFilename).then((doc) => {
       let column = getRightViewColumn();
-      vscode.window.showTextDocument(doc, column).then((editor) => {
-        let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-        let testRange = new vscode.Range(
-          lastLine.range.end,
-          new vscode.Position(
-            test.split("\n").length + lastLine.range.end.line,
-            0
-          )
-        );
-        editor
-          .edit((edit) => {
-            edit.insert(lastLine.range.end, "\n\n" + test);
-            return true;
-          })
-          .then((success) => {
-            if (!success) reject("Failed to insert test");
-            let key = highlightCode(editor, testRange);
-            resolve(key);
-          });
-      });
+      let fileContent = doc.getText();
+      let existingImportLines = getImportsFromFileString(
+        fileContent,
+        importDistinguishersMap[doc.fileName.split(".").at(-1) || ".py"]
+      );
+      test = removeRedundantLinesFrom(test, existingImportLines);
+      for (let line of test.split("\n"))
+        vscode.window.showTextDocument(doc, column).then((editor) => {
+          let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+          let testRange = new vscode.Range(
+            lastLine.range.end,
+            new vscode.Position(
+              test.split("\n").length + lastLine.range.end.line,
+              0
+            )
+          );
+          editor
+            .edit((edit) => {
+              edit.insert(lastLine.range.end, "\n\n" + test);
+              return true;
+            })
+            .then((success) => {
+              if (!success) reject("Failed to insert test");
+              let key = highlightCode(editor, testRange);
+              resolve(key);
+            });
+        });
     });
   });
 }

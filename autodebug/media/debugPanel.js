@@ -11,15 +11,38 @@
   const makeEditButton = document.querySelector(".makeEditButton");
   const makeEditLoader = document.querySelector(".makeEditLoader");
   const multiselectContainer = document.querySelector(".multiselectContainer");
+  const additionalContextTextarea = document.querySelector(
+    ".additionalContextTextarea"
+  );
   const generateUnitTestButton = document.querySelector(
     ".generateUnitTestButton"
   );
+  const tabBar = document.querySelector(".tabBar");
+  const tabs = document.getElementsByClassName("tab");
+  function setTab(index) {
+    let contentContainers = document.getElementsByClassName("contentContainer");
+    for (let j = 0; j < contentContainers.length; j++) {
+      if (index === j) {
+        contentContainers[j].hidden = false;
+        tabs[j].className = "tab selectedTab";
+      } else {
+        contentContainers[j].hidden = true;
+        tabs[j].className = "tab unselectedTab";
+      }
+    }
+    updateState({ currentTab: index });
+  }
+  for (let i = 0; i < tabs.length; i++) {
+    tabs[i].addEventListener("click", (e) => {
+      setTab(i);
+    });
+  }
 
   let selectedRanges = []; // Elements are { filename, range, code }
   let canUpdateLast = true;
 
-  let workspacePath = undefined;
   function formatPathRelativeToWorkspace(path) {
+    let workspacePath = vscode.getState()?.workspacePath;
     if (!workspacePath) return path;
     if (path.startsWith(workspacePath)) {
       return path.substring(workspacePath.length + 1);
@@ -34,6 +57,34 @@
     }-${range.end.line + 1})`;
     // +1 because VSCode Ranges are 0-indexed
   }
+
+  const filenameToLanguage = {
+    py: "python",
+    js: "javascript",
+    ts: "typescript",
+    html: "html",
+    css: "css",
+    java: "java",
+    c: "c",
+    cpp: "cpp",
+    cs: "csharp",
+    go: "go",
+    rb: "ruby",
+    rs: "rust",
+    swift: "swift",
+    php: "php",
+    scala: "scala",
+    kt: "kotlin",
+    dart: "dart",
+    hs: "haskell",
+    lua: "lua",
+    pl: "perl",
+    r: "r",
+    sql: "sql",
+    vb: "vb",
+    xml: "xml",
+    yaml: "yaml",
+  };
 
   function addMultiselectOption(filename, range, code) {
     // First, we check if this is just an update to the last range
@@ -50,8 +101,13 @@
         filename,
         range
       );
-      element.getElementsByTagName("pre")[0].textContent = code;
-      console.log("Updated", element.getElementsByTagName("pre").length);
+      let codeElement = element
+        .getElementsByTagName("pre")[0]
+        .getElementsByTagName("code")[0];
+      codeElement.textContent = code;
+
+      hljs.highlightElement(codeElement);
+
       return;
     }
 
@@ -61,7 +117,14 @@
     div.className = "multiselectOption multiselectOptionSelected";
 
     let pre = document.createElement("pre");
-    pre.textContent = code;
+    // Code element inside because required for highlight.js
+    let codeElement = document.createElement("code");
+    let ext = filename.split(".").pop();
+    if (ext in filenameToLanguage) {
+      codeElement.className = "language-" + filenameToLanguage[ext];
+    }
+    codeElement.textContent = code;
+    pre.appendChild(codeElement);
 
     let topDiv = document.createElement("div");
     topDiv.className = "multiselectOptionTopDiv";
@@ -99,6 +162,8 @@
     });
     multiselectContainer.appendChild(div);
 
+    hljs.highlightElement(codeElement);
+
     // If this is the first added option, we should display an "add another" button
     if (selectedRanges.length >= 1) {
       document.querySelector(".addAnotherButton").disabled = false;
@@ -131,13 +196,12 @@
 
   clearMultiselectOptions();
 
-  // SAVE AND LOAD STATE
-  let debugContext = {};
-
   function gatherDebugContext() {
+    let debugContext = {};
     debugContext.explanation = bugDescription.value;
     debugContext.stacktrace = stacktrace.value;
     debugContext.suggestion = fixSuggestion.innerHTML;
+    debugContext.additionalContext = additionalContextTextarea.value;
     debugContext.codeSelections = selectedRanges
       .filter((obj) => obj.selected)
       .map((obj) => {
@@ -151,21 +215,24 @@
   }
 
   function loadState() {
-    const oldState = vscode.getState();
-    if (!oldState) {
+    let state = vscode.getState();
+    if (!state) {
       return;
     }
-    if (oldState.debugContext) {
-      debugContext = oldState.debugContext;
-    }
-    workspacePath = debugContext.workspacePath;
-
-    if (debugContext.explanation) {
-      bugDescription.value = debugContext.explanation;
-      stacktrace.value = debugContext.stacktrace;
-      fixSuggestion.innerHTML = debugContext.suggestion;
-      selectedRanges = debugContext.codeSelections.map((obj) => {
-        addMultiselectOption(obj.filename, obj.range, obj.code);
+    if (state.debugContext) {
+      bugDescription.value = state.debugContext.explanation;
+      stacktrace.value = state.debugContext.stacktrace;
+      fixSuggestion.innerHTML = state.debugContext.suggestion;
+      additionalContextTextarea.value = state.debugContext.additionalContext;
+      for (let codeSelection of state.debugContext.codeSelections) {
+        canUpdateLast = false;
+        addMultiselectOption(
+          codeSelection.filename,
+          codeSelection.range,
+          codeSelection.code
+        );
+      }
+      selectedRanges = state.debugContext.codeSelections.map((obj) => {
         return {
           filename: obj.filename,
           range: obj.range,
@@ -173,19 +240,20 @@
           selected: true,
         };
       });
+      setTab(state.currentTab || 0);
     }
   }
 
-  function saveState() {
-    let ctx = gatherDebugContext();
-    vscode.setState({
-      debugContext: ctx,
-      workspacePath,
-    });
+  function updateState(newState) {
+    let oldState = vscode.getState() || {};
+    vscode.setState(Object.assign(oldState, newState));
   }
+
   loadState();
-  setInterval(saveState, 1000);
-  // SAVE AND LOAD STATE
+  setInterval(() => {
+    let debugContext = gatherDebugContext();
+    updateState({ debugContext });
+  }, 500);
 
   // Handle messages sent from the extension to the webview
   window.addEventListener("message", (event) => {
@@ -208,13 +276,14 @@
         break;
       }
       case "highlightedCode": {
-        workspacePath = message.workspacePath;
+        updateState({ workspacePath: message.workspacePath });
         addMultiselectOption(message.filename, message.range, message.code);
         break;
       }
       case "findSuspiciousCode": {
         clearMultiselectOptions();
         for (let codeLocation of message.codeLocations) {
+          canUpdateLast = false;
           // It's serialized to be an array [startPos, endPos]
           let range = {
             start: {
@@ -229,7 +298,8 @@
 
           addMultiselectOption(codeLocation.filename, range, codeLocation.code);
         }
-        // makeEdit();
+        canUpdateLast = true;
+        listTenThings();
         break;
       }
       case "listTenThings": {
@@ -250,11 +320,11 @@
         break;
       }
     }
-    saveState();
+    updateState({ debugContext: gatherDebugContext() });
   });
 
   function listTenThings() {
-    gatherDebugContext();
+    let debugContext = gatherDebugContext();
     fixSuggestion.hidden = false;
     fixSuggestion.innerHTML = `<div class="loader" ></div>`;
     vscode.postMessage({
@@ -265,7 +335,7 @@
   listTenThingsButton.addEventListener("click", listTenThings);
 
   function explainCode() {
-    gatherDebugContext();
+    let debugContext = gatherDebugContext();
     fixSuggestion.hidden = false;
     fixSuggestion.innerHTML = `<div class="loader" ></div>`;
     vscode.postMessage({
@@ -277,7 +347,7 @@
 
   function makeEdit() {
     makeEditLoader.hidden = false;
-    gatherDebugContext();
+    let debugContext = gatherDebugContext();
     vscode.postMessage({
       type: "makeEdit",
       debugContext,
@@ -288,7 +358,7 @@
   });
 
   generateUnitTestButton.addEventListener("click", () => {
-    gatherDebugContext();
+    let debugContext = gatherDebugContext();
     vscode.postMessage({
       type: "generateUnitTest",
       debugContext,
@@ -296,7 +366,7 @@
   });
 
   function findSuspiciousCode() {
-    gatherDebugContext();
+    let debugContext = gatherDebugContext();
     vscode.postMessage({
       type: "findSuspiciousCode",
       debugContext,

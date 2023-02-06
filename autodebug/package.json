@@ -1,5 +1,9 @@
 {
   "name": "autodebug",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
   "displayName": "AutoDebug",
   "description": "Reduce debugging time by 10x",
   "version": "0.0.1",
@@ -146,10 +150,10 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "package": "npm run compile && mkdir -p ./build && vsce package --out ./build",
+    "package": "cp ./config/prod_config.json ./config/config.json && npm run compile && mkdir -p ./build && vsce package --out ./build && chmod 777 ./build/autodebug-0.0.1.vsix && cp ./config/dev_config.json ./config/config.json",
     "install-extension": "code --install-extension ./build/autodebug-0.0.1.vsix",
     "uninstall": "code --uninstall-extension Basin.autodebug",
-    "reinstall": "rm -rf ./build && npm run package && npm run install"
+    "reinstall": "rm -rf ./build && npm run package && npm run uninstall && npm run install-extension"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.2.10",

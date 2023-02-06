@@ -33,7 +33,7 @@ def get_steps(stacktrace: str) -> str:
     if len(exc.frames) == 0:
         raise Exception("No frames found in stacktrace")
     sus_frame = fault_loc.fl1(exc)
-    relevant_frames = fault_loc.filter_relevant(exc.frames)
+    relevant_frames = fault_loc.filter_stacktrace_frames(exc.frames)
     exc.frames = relevant_frames
 
     resp = fix_suggestion_prompter.complete(stacktrace)
@@ -152,8 +152,8 @@ def ctx_prompt(ctx, final_instruction: str) -> str:
     prompt += final_instruction + "\n\n"
     return prompt
 
-n = 5
-n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"Here are {n} things I could try to fix the problem:"))
+n = 3
+n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potential solutions to the problem or causes. They should be precise and useful:"))
 
 class DebugContext(BaseModel):
     stacktrace: str
@@ -178,6 +178,13 @@ edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the cod
 def edit(ctx: DebugContext):
     print(edit_prompter._compile_prompt((ctx.stacktrace, ctx.code, ctx.description)))
     new_code = edit_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+
+    # Should do a better job of ensuring the ``` format, but for now the issue is mostly just on single file inputs:
+    if not '```' in new_code:
+        new_code = "```\n" + new_code + "\n```"
+    elif new_code.splitlines()[0].strip() == '```':
+        new_code = "File #1\n" + new_code
+
     return {"completion": new_code}
 
 class FindModel(BaseModel):

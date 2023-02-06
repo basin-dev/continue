@@ -10,8 +10,14 @@ export async function writeUnitTestCommand(editor: vscode.TextEditor) {
   let position = editor.selection.active;
 
   let gutterSpinnerKey = showGutterSpinner(editor, position.line);
-  let test = await writeUnitTestForFunction(editor.document.fileName, position);
-
-  decorationManager.deleteDecoration(gutterSpinnerKey);
-  writeAndShowUnitTest(editor.document.fileName, test);
+  try {
+    let test = await writeUnitTestForFunction(
+      editor.document.fileName,
+      position
+    );
+    writeAndShowUnitTest(editor.document.fileName, test);
+  } catch {
+  } finally {
+    decorationManager.deleteDecoration(gutterSpinnerKey);
+  }
 }

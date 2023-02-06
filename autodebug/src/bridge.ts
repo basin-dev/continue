@@ -10,6 +10,13 @@ function get_python_path() {
 }
 
 function get_api_url() {
+  let extensionUri = getExtensionUri();
+  let configFile = path.join(extensionUri.fsPath, "config/config.json");
+  let config = require(configFile);
+  console.log("Loaded config: ", config);
+  if (config.API_URL) {
+    return config.API_URL;
+  }
   return "http://localhost:8000";
 }
 const API_URL = get_api_url();
@@ -20,21 +27,6 @@ function build_python_command(cmd: string): string {
 
 function listToCmdLineArgs(list: string[]): string {
   return list.map((el) => `"$(echo "${el}")"`).join(" ");
-}
-
-export async function setupPythonEnv() {
-  let command = `cd ${path.join(
-    getExtensionUri().fsPath,
-    "scripts"
-  )} && python3 -m venv env && source env/bin/activate && pip3 install -r requirements.txt`;
-  const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
-  }
-  console.log(
-    "Successfully set up python env at ",
-    getExtensionUri().fsPath + "/scripts/env"
-  );
 }
 
 export async function runPythonScript(

@@ -50,10 +50,7 @@ class PythonTracebackSnooper {
             type: "traceback",
             traceback: wholeTraceback,
           });
-        } else if (
-          vscode.workspace.getConfiguration("AutoDebug").get("automode") ===
-          true
-        ) {
+        } else {
           vscode.commands
             .executeCommand("autodebug.openDebugPanel")
             .then(() => {
@@ -81,10 +78,6 @@ vscode.window.onDidOpenTerminal((terminal) => {
 export function openCapturedTerminal(
   snoopers: TerminalSnooper[] = DEFAULT_SNOOPERS
 ) {
-  // A lot of basic setup for the terminal emulator
-  let workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders) return;
-
   // If there is another existing, non-AutoDebug terminal, delete it
   let terminals = vscode.window.terminals;
   for (let i = 0; i < terminals.length; i++) {
@@ -119,7 +112,12 @@ export function openCapturedTerminal(
   process.on("exit", () => ptyProcess.kill());
 
   setTimeout(() => {
-    ptyProcess.write("cd " + workspaceFolders![0].uri.fsPath + " && clear\r");
+    let workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders) {
+      ptyProcess.write("cd " + workspaceFolders![0].uri.fsPath + " && clear\r");
+    } else {
+      ptyProcess.write("clear\r");
+    }
     // setTimeout(() => {
     //   writeEmitter.fire(
     //     "This terminal will parse stdout to automatically detect stacktraces\r\n"

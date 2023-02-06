@@ -3,27 +3,20 @@ from boltons import tbutils
 import ast
 from llm import OpenAI
 import numpy as np
+from tools_context.index import DEFAULT_GIT_IGNORE_PATTERNS
+import pathspec
 
 gpt = OpenAI()
 
-ignore = ["bin/"] # Ideally just write in .gitignore-style format, and this can be customizable
-def is_my_code(path: str) -> bool:
-    for p in ignore:
-        if path.startswith(p):
-            return False
+to_be_ignored_spec = pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, DEFAULT_GIT_IGNORE_PATTERNS)
 
-        if not p.startswith("/") and p in path:
-            return False
-    
-    return True
-
-def filter_relevant(frames: List[Dict]) -> List[Dict]:
+def filter_stacktrace_frames(frames: List[Dict]) -> List[Dict]:
     """Filter out frames that are not relevant to the user's code."""
-    return list(filter(lambda x: is_my_code(x['filepath']), frames))
+    return list(filter(lambda x: not to_be_ignored_spec.match_file(x['filepath']), frames))
 
 def fl1(tb: tbutils.ParsedException) -> Dict:
     """Find the most relevant frame in the traceback."""
-    relevant = filter_relevant(tb.frames)
+    relevant = filter_stacktrace_frames(tb.frames)
     if len(relevant) == 0:
         return tb.frames[-1]
     return relevant[-1]
@@ -91,32 +84,24 @@ def indices_of_top_k(arr: List[float], k: int) -> List[int]:
     """Return the indices of the top k elements in the array."""
     return sorted(range(len(arr)), key=lambda i: arr[i])[-k:]
 
-def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: int = 2) -> List[Dict]:
+def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: int = 4) -> List[Dict]:
     """Return the most relevant frames in the stacktrace."""
-    # First, filter out code that isn't mine
-    my_code = filter_relevant(tb.frames)
+    filtered_frames = filter_stacktrace_frames(tb.frames)
+    if len(filtered_frames) <= n:
+        return filtered_frames
 
-    # Then, find the most specific context for each frame, getting the code snippets
-    snippets = []
-    for frame in my_code:
-        code = frame_to_code_location(frame, files=files)['code']
-        if len(code.splitlines()) == 1:
-            # If code is just a single line, probably isn't important
-            continue
-        
-        snippets.append(code)
-
-    if len(snippets) <= n:
-        # If there are <= n snippets, then just return all of them
-        return my_code
+    # Find the most specific context for each frame, getting the code snippets
+    surrounding_snippets = [
+        frame_to_code_location(frame, files=files)['code']
+        for frame in filtered_frames
+    ]
 
     # Then, similarity search by the query to return top n frames
-    print("Query:", snippets + [query])
-    embeddings = gpt.embed(snippets + [query])
+    embeddings = gpt.embed(surrounding_snippets + [query])
     similarities = [np.dot(embeddings[-1], x) for x in embeddings[:-1]]
     top_n = indices_of_top_k(similarities, n)
 
-    return [my_code[i] for i in top_n]
+    return [filtered_frames[i] for i in top_n]
 
 def get_start_end_lines(tree: ast.AST) -> Tuple[int, int]:
     """Get the start and end line numbers of the AST node."""

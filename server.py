@@ -7,3 +7,7 @@ app = FastAPI()
 app.include_router(debug_router)
 app.include_router(docstring_router)
 app.include_router(unittest_router)
+
+@app.get("/test")
+def test():
+    return "Success"
