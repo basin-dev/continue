@@ -5,7 +5,7 @@ import pathspec
 import subprocess
 
 from gpt_index import GPTSimpleVectorIndex, SimpleDirectoryReader, Document, GPTFaissIndex
-from typing import List, Generator
+from typing import List, Generator, Tuple
 
 
 DEFAULT_GIT_IGNORE_PATTERNS = [
@@ -78,29 +78,37 @@ def load_gpt_index_documents(root: str) -> List[Document]:
     # Use SimpleDirectoryReader to load the files into Documents
     return SimpleDirectoryReader(root, input_files=input_files).load_data()
 
+def index_dir_for(branch: str) -> str:
+    return f"data/{branch}"
+
+def get_current_branch() -> str:
+    return subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
+
+def get_current_commit() -> str:
+    return subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
 
 def create_file_index():
     """Create a new index for the current branch."""
-    branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
-    if not os.path.exists("data/{branch}"):
-        os.makedirs(f"data/{branch}")
+    branch = get_current_branch()
+    if not os.path.exists(index_dir_for(branch)):
+        os.makedirs(index_dir_for(branch))
 
     d = 1536 # Dimension of text-ada-embedding-002
     faiss_index = faiss.IndexFlatL2(d)
     documents = load_gpt_index_documents("/Users/ty/Documents/nate-ty-side-projects/unit-test-experiments/")
     index = GPTFaissIndex(documents, faiss_index=faiss_index)
-    index.save_to_disk(f"data/{branch}/index.json")
-    with open(f"data/{branch}/metadata.json", "w") as f:
-        f.write(json.dumps({"commit": subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()}))
+    index.save_to_disk(f"{index_dir_for(branch)}/index.json")
+    with open(f"{index_dir_for(branch)}/metadata.json", "w") as f:
+        f.write(json.dumps({"commit": get_current_commit()}))
     print("Codebase index created")
 
 
-def get_modified_deleted_files():
+def get_modified_deleted_files() -> Tuple[List[str], List[str]]:
     """Get a list of all files that have been modified since the last commit."""
-    branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
-    current_commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
+    branch = get_current_branch()
+    current_commit = get_current_commit()
 
-    metadata = "data/{branch}/metadata.json"
+    metadata = f"{index_dir_for(branch)}/metadata.json"
     with open(metadata, "r") as f:
         previous_commit = f.read()["commit"]
 
@@ -119,13 +127,13 @@ def get_modified_deleted_files():
 
 def update_codebase_index():
     """Update the index with a list of files."""
-    branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
+    branch = get_current_branch()
     gitignore_spec = build_gitignore_spec(custom_match_patterns=DEFAULT_GIT_IGNORE_PATTERNS)
 
-    if not os.path.exists(f"data/{branch}"):
+    if not os.path.exists({index_dir_for(branch)}):
         create_file_index()
     else:
-        index = GPTFaissIndex.load_from_disk(f"data/{branch}/index.json")
+        index = GPTFaissIndex.load_from_disk(f"{index_dir_for(branch)}/index.json")
         modified_files, deleted_files = get_modified_deleted_files()
         for file in modified_files:
             if not gitignore_spec.match_file(file):

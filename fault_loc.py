@@ -3,7 +3,7 @@ from boltons import tbutils
 import ast
 from llm import OpenAI
 import numpy as np
-from tools_context.index import DEFAULT_GIT_IGNORE_PATTERNS
+from autodebug.scripts.update import DEFAULT_GIT_IGNORE_PATTERNS
 import pathspec
 
 gpt = OpenAI()

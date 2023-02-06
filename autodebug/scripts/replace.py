@@ -1,7 +1,7 @@
 import sys
 from gpt_index import GPTSimpleVectorIndex, Document
 
-def replace_additional_index(info):
+def replace_additional_index(info: str):
     """Replace the additional index."""
     with open('data/additional_context.txt', 'w') as f:
         f.write(info)
