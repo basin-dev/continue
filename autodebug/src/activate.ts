@@ -24,6 +24,9 @@ export function activateExtension(context: vscode.ExtensionContext) {
   registerAllCommands(context);
 
   openEditorAndRevealRange(
+    path.join(getExtensionUri().fsPath, "examples/python/sum.py")
+  );
+  openEditorAndRevealRange(
     path.join(getExtensionUri().fsPath, "examples/python/main.py")
   );
 

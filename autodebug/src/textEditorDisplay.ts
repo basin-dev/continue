@@ -29,7 +29,7 @@ let newSelDecorationType = vscode.window.createTextEditorDecorationType({
   backgroundColor: "rgb(0, 255, 0, 0.25)",
   isWholeLine: true,
   after: {
-    contentText: "Press cmd+shift+enter to accept",
+    contentText: "Press ctrl+shift+enter to accept",
     margin: "0 0 0 1em",
   },
 });
@@ -37,7 +37,7 @@ let oldSelDecorationType = vscode.window.createTextEditorDecorationType({
   backgroundColor: "rgb(255, 0, 0, 0.25)",
   isWholeLine: true,
   after: {
-    contentText: "Press cmd+shift+enter to reject",
+    contentText: "Press ctrl+shift+enter to reject",
     margin: "0 0 0 1em",
   },
 });
@@ -270,7 +270,10 @@ export async function showSuggestion(
         if (range.end.line + 1 >= editor.document.lineCount) {
           suggestion = "\n" + suggestion;
         }
-        edit.insert(new vscode.Position(range.end.line + 1, 0), suggestion);
+        edit.insert(
+          new vscode.Position(range.end.line + 1, 0),
+          suggestion + "\n"
+        );
       })
       .then(
         (success) => {
