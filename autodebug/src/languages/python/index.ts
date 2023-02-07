@@ -6,6 +6,10 @@ export function parseFunctionDefForName(line: string): string {
   return line.split("def ")[1].split("(")[0];
 }
 
+export function lineIsComment(line: string): boolean {
+  return line.trim().startsWith("#");
+}
+
 const tracebackStart = "Traceback (most recent call last):";
 const tracebackEnd = (buf: string): string | undefined => {
   let lines = buf.split("\n").filter((line: string) => line.trim() !== "~~^~~");
