@@ -7,13 +7,88 @@ import { debugPanelWebview } from "./debugPanel"; // Need to consider having mul
 
 abstract class TerminalSnooper {
   abstract onData(data: string): void;
+  abstract onWrite(data: string): void;
 }
 
-class PythonTracebackSnooper {
+abstract class CommandCaptureSnooper extends TerminalSnooper {
+  stdinBuffer = "";
+  cursorPos = 0;
+  stdoutHasInterrupted = false;
+
+  abstract onCommand(data: string): void;
+
+  static RETURN_KEY = "\r";
+  static DEL_KEY = "\x7F";
+  static UP_KEY = "\x1B[A";
+  static DOWN_KEY = "\x1B[B";
+  static RIGHT_KEY = "\x1B[C";
+  static LEFT_KEY = "\x1B[D";
+  static CONTROL_KEYS = new Set([
+    CommandCaptureSnooper.RETURN_KEY,
+    CommandCaptureSnooper.DEL_KEY,
+    CommandCaptureSnooper.UP_KEY,
+    CommandCaptureSnooper.DOWN_KEY,
+    CommandCaptureSnooper.RIGHT_KEY,
+    CommandCaptureSnooper.LEFT_KEY,
+  ]);
+
+  private _cursorLeft() {
+    this.cursorPos = Math.max(0, this.cursorPos - 1);
+  }
+  private _cursorRight() {
+    this.cursorPos = Math.min(this.stdinBuffer.length, this.cursorPos + 1);
+  }
+  // Known issue: This does not handle autocomplete.
+  // Would be preferable to find a way that didn't require this all, just parsing by command prompt
+  // but that has it's own challenges
+  private handleControlKey(data: string): void {
+    switch (data) {
+      case CommandCaptureSnooper.DEL_KEY:
+        this.stdinBuffer =
+          this.stdinBuffer.slice(0, this.cursorPos - 1) +
+          this.stdinBuffer.slice(this.cursorPos);
+        this._cursorLeft();
+        break;
+      case CommandCaptureSnooper.RETURN_KEY:
+        this.onCommand(this.stdinBuffer);
+        this.stdinBuffer = "";
+        break;
+      case CommandCaptureSnooper.UP_KEY:
+      case CommandCaptureSnooper.DOWN_KEY:
+        this.stdinBuffer = "";
+        break;
+      case CommandCaptureSnooper.RIGHT_KEY:
+        this._cursorRight();
+        break;
+      case CommandCaptureSnooper.LEFT_KEY:
+        this._cursorLeft();
+        break;
+    }
+  }
+
+  onWrite(data: string): void {
+    console.log({ data });
+    if (CommandCaptureSnooper.CONTROL_KEYS.has(data)) {
+      this.handleControlKey(data);
+    } else {
+      this.stdinBuffer =
+        this.stdinBuffer.substring(0, this.cursorPos) +
+        data +
+        this.stdinBuffer.substring(this.cursorPos);
+      this._cursorRight();
+    }
+  }
+
+  onData(data: string): void {}
+}
+
+class PythonTracebackSnooper extends TerminalSnooper {
   static tracebackStart = "Traceback (most recent call last):";
   tracebackBuffer = "";
 
-  constructor() {}
+  constructor() {
+    super();
+  }
 
   static tracebackEnd = (buf: string): string | undefined => {
     let lines = buf.split("\n");
@@ -28,8 +103,8 @@ class PythonTracebackSnooper {
     }
     return undefined;
   };
-
-  onData(data: string): void {
+  override onWrite(data: string): void {}
+  override onData(data: string): void {
     // Snoop for traceback
     let idx = data.indexOf(PythonTracebackSnooper.tracebackStart);
     if (idx >= 0) {
@@ -65,7 +140,23 @@ class PythonTracebackSnooper {
   }
 }
 
-const DEFAULT_SNOOPERS = [new PythonTracebackSnooper()];
+class PyTestSnooper extends CommandCaptureSnooper {
+  constructor() {
+    super();
+  }
+
+  override onCommand(data: string): void {
+    if (data.trim().startsWith("pytest ")) {
+      let fileAndFunctionSpecifier = data.split(" ")[1];
+      vscode.commands.executeCommand(
+        "autodebug.debugTest",
+        fileAndFunctionSpecifier
+      );
+    }
+  }
+}
+
+const DEFAULT_SNOOPERS = [new PythonTracebackSnooper(), new PyTestSnooper()];
 
 // Whenever a user opens a terminal, replace it with ours
 vscode.window.onDidOpenTerminal((terminal) => {
@@ -130,6 +221,9 @@ export function openCapturedTerminal(
     open: () => {},
     close: () => {},
     handleInput: (data) => {
+      for (let snooper of snoopers) {
+        snooper.onWrite(data);
+      }
       ptyProcess.write(data);
     },
   };
