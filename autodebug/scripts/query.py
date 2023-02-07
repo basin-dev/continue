@@ -4,7 +4,7 @@ from gpt_index import GPTSimpleVectorIndex, GPTFaissIndex
 import os
 from typer import Typer
 from enum import Enum
-from update import update_codebase_index, create_file_index, index_dir_for, get_current_branch
+from update import update_codebase_index, create_codebase_index, index_dir_for, get_current_branch
 from replace import replace_additional_index
 
 app = Typer()
@@ -51,7 +51,7 @@ def update():
 
 @app.command()
 def create_index(path: str):
-    create_file_index()
+    create_codebase_index()
     print("Created file index")
 
 @app.command()

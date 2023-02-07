@@ -62,9 +62,8 @@ def build_gitignore_spec(gitignore_paths: List[str]=None, custom_match_patterns:
         except BaseException:
             # Don't throw if the file doesn't exist
             pass
-    
-    # Negate all line, except for comments and empty lines, because we want to ignore them
-    lines = [f"!{line}" for line in lines if not line.startswith("#") and line.strip() != ""]
+
+    print(lines)
 
     return pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, lines)
 
@@ -81,13 +80,17 @@ def load_gpt_index_documents(root: str) -> List[Document]:
 def index_dir_for(branch: str) -> str:
     return f"data/{branch}"
 
+def get_git_root_dir():
+    result = subprocess.run(['git', 'rev-parse', '--show-toplevel'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return result.stdout.decode().strip()
+
 def get_current_branch() -> str:
     return subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
 
 def get_current_commit() -> str:
     return subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
 
-def create_file_index():
+def create_codebase_index():
     """Create a new index for the current branch."""
     branch = get_current_branch()
     if not os.path.exists(index_dir_for(branch)):
@@ -95,7 +98,8 @@ def create_file_index():
 
     d = 1536 # Dimension of text-ada-embedding-002
     faiss_index = faiss.IndexFlatL2(d)
-    documents = load_gpt_index_documents("/Users/ty/Documents/nate-ty-side-projects/unit-test-experiments/")
+    documents = load_gpt_index_documents(get_git_root_dir())
+    print(documents)
     index = GPTFaissIndex(documents, faiss_index=faiss_index)
     index.save_to_disk(f"{index_dir_for(branch)}/index.json")
     with open(f"{index_dir_for(branch)}/metadata.json", "w") as f:
@@ -130,10 +134,11 @@ def update_codebase_index():
     branch = get_current_branch()
     gitignore_spec = build_gitignore_spec(custom_match_patterns=DEFAULT_GIT_IGNORE_PATTERNS)
 
-    if not os.path.exists({index_dir_for(branch)}):
-        create_file_index()
+    if not os.path.exists(index_dir_for(branch)):
+        create_codebase_index()
     else:
-        index = GPTFaissIndex.load_from_disk(f"{index_dir_for(branch)}/index.json")
+        dir = index_dir_for(branch)
+        index = GPTFaissIndex.load_from_disk(f"{dir}/index.json")
         modified_files, deleted_files = get_modified_deleted_files()
         for file in modified_files:
             if not gitignore_spec.match_file(file):
