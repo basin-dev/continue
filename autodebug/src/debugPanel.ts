@@ -42,10 +42,15 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
       return;
     }
     // Don't highlight if fully within comment
-    let text = e.textEditor.document.getText(e.selections[0]);
+    let fullLineText = e.textEditor.document.getText(
+      new vscode.Range(
+        new vscode.Position(e.selections[0].start.line, 0),
+        e.selections[0].end
+      )
+    );
     let allComments = true;
-    for (let line of text.split("\n")) {
-      if (!lineIsComment(line)) {
+    for (let line of fullLineText.split("\n")) {
+      if (!lineIsComment(line) && line.trim() !== "") {
         allComments = false;
         break;
       }
@@ -54,7 +59,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
 
     panel.webview.postMessage({
       type: "highlightedCode",
-      code: text,
+      code: e.textEditor.document.getText(e.selections[0]),
       filename: e.textEditor.document.fileName,
       range: e.selections[0],
       workspacePath: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
