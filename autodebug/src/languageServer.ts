@@ -1,8 +1,8 @@
-import { randomBytes } from "crypto";
 import * as vscode from "vscode";
+import { lineIsFunctionDef, parseFunctionDefForName } from "./languages/python";
 import { editorToSuggestions } from "./textEditorDisplay";
 
-export class MyCodeLensProvider implements vscode.CodeLensProvider {
+class SuggestionsCodeLensProvider implements vscode.CodeLensProvider {
   public provideCodeLenses(
     document: vscode.TextDocument,
     token: vscode.CancellationToken
@@ -48,6 +48,51 @@ export class MyCodeLensProvider implements vscode.CodeLensProvider {
           );
         }
       });
+    }
+  }
+}
+
+class PytestCodeLensProvider implements vscode.CodeLensProvider {
+  public provideCodeLenses(
+    document: vscode.TextDocument,
+    token: vscode.CancellationToken
+  ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
+    let codeLenses: vscode.CodeLens[] = [];
+    let lineno = 1;
+    for (let line of document.getText().split("\n")) {
+      if (
+        lineIsFunctionDef(line) &&
+        parseFunctionDefForName(line).startsWith("test_")
+      ) {
+        let functionToTest = parseFunctionDefForName(line);
+        let fileAndFunctionNameSpecifier =
+          document.fileName + "::" + functionToTest;
+        codeLenses.push(
+          new vscode.CodeLens(new vscode.Range(lineno, 0, lineno, 1), {
+            title: "AutoDebug This Test",
+            command: "autodebug.debugTest",
+            arguments: [fileAndFunctionNameSpecifier],
+          })
+        );
+      }
+      lineno++;
+    }
+
+    return codeLenses;
+  }
+}
+
+const allCodeLensProviders: { [langauge: string]: vscode.CodeLensProvider[] } =
+  {
+    python: [new SuggestionsCodeLensProvider(), new PytestCodeLensProvider()],
+  };
+
+export function registerAllCodeLensProviders(context: vscode.ExtensionContext) {
+  for (let language in allCodeLensProviders) {
+    for (let codeLensProvider of allCodeLensProviders[language]) {
+      context.subscriptions.push(
+        vscode.languages.registerCodeLensProvider(language, codeLensProvider)
+      );
     }
   }
 }

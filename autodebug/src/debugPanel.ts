@@ -6,6 +6,7 @@ import {
   makeEdit,
   apiRequest,
 } from "./bridge";
+import { lineIsComment } from "./languages/python";
 import { showSuggestion, writeAndShowUnitTest } from "./textEditorDisplay";
 import { getExtensionUri, getNonce } from "./vscodeUtils";
 
@@ -40,9 +41,20 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
     if (e.selections[0].isEmpty) {
       return;
     }
+    // Don't highlight if fully within comment
+    let text = e.textEditor.document.getText(e.selections[0]);
+    let allComments = true;
+    for (let line of text.split("\n")) {
+      if (!lineIsComment(line)) {
+        allComments = false;
+        break;
+      }
+    }
+    if (allComments) return;
+
     panel.webview.postMessage({
       type: "highlightedCode",
-      code: e.textEditor.document.getText(e.selections[0]),
+      code: text,
       filename: e.textEditor.document.fileName,
       range: e.selections[0],
       workspacePath: vscode.workspace.workspaceFolders?.[0].uri.fsPath,

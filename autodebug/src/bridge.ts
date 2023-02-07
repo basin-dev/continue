@@ -29,6 +29,41 @@ function listToCmdLineArgs(list: string[]): string {
   return list.map((el) => `"$(echo "${el}")"`).join(" ");
 }
 
+function charIsEscapedAtIndex(index: number, str: string): boolean {
+  if (index === 0) return false;
+  if (str[index - 1] !== "\\") return false;
+  return !charIsEscapedAtIndex(index - 1, str);
+}
+
+function convertSingleToDoubleQuoteJSON(json: string): string {
+  // Escape "s
+  let newJson = "";
+  for (let i = 0; i < json.length; i++) {
+    if (json[i] === '"') {
+      newJson += "\\";
+    }
+    newJson += json[i];
+  }
+
+  // Convert ' -> "
+  for (let i = 0; i < newJson.length; i++) {
+    if (newJson[i] === "'" && !charIsEscapedAtIndex(i, newJson)) {
+      newJson = newJson.substring(0, i) + '"' + newJson.substring(i + 1);
+    }
+  }
+
+  // Unescape 's
+  let newNewJson = "";
+  for (let i = 0; i < newJson.length; i++) {
+    if (newJson[i] === "'" && charIsEscapedAtIndex(i, newJson)) {
+      newNewJson = newNewJson.substring(0, newNewJson.length - 1);
+    }
+    newNewJson += newJson[i];
+  }
+
+  return newNewJson;
+}
+
 export async function runPythonScript(
   scriptName: string,
   args: string[]
@@ -49,7 +84,7 @@ export async function runPythonScript(
     stdout.indexOf("{"),
     stdout.lastIndexOf("}") + 1
   );
-  jsonString = jsonString.replace(/'/g, '"').replace(/"/g, "'"); // This is problematic if you have any escaped quotes
+  jsonString = convertSingleToDoubleQuoteJSON(jsonString);
   return JSON.parse(jsonString);
 }
 

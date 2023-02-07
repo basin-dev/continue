@@ -13,8 +13,9 @@ import * as bridge from "./bridge";
 import { debugPanelWebview, setupDebugPanel } from "./debugPanel";
 import { openCapturedTerminal } from "./terminalEmulator";
 import { getRightViewColumn } from "./vscodeUtils";
-import { findSuspiciousCode } from "./bridge";
+import { findSuspiciousCode, runPythonScript } from "./bridge";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
+import { parseFirstStacktrace } from "./languages/python";
 
 // COpy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
@@ -84,6 +85,19 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
         });
       }
     );
+  },
+  "autodebug.debugTest": async (fileAndFunctionSpecifier: string) => {
+    let { stdout } = await runPythonScript("run_unit_test.py", [
+      fileAndFunctionSpecifier,
+    ]);
+    let stacktrace = parseFirstStacktrace(stdout);
+    if (!stacktrace) return;
+    vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
+      debugPanelWebview?.postMessage({
+        type: "traceback",
+        traceback: stacktrace,
+      });
+    });
   },
 };
 
