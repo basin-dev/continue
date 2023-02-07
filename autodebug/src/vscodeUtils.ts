@@ -99,3 +99,31 @@ export function getRightViewColumn(): vscode.ViewColumn {
   }
   return column;
 }
+
+export async function readFileAtRange(
+  range: vscode.Range,
+  filepath: string
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    fs.readFile(filepath, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        let lines = data.toString().split("\n");
+        if (range.isSingleLine) {
+          resolve(
+            lines[range.start.line].slice(
+              range.start.character,
+              range.end.character
+            )
+          );
+        } else {
+          let firstLine = lines[range.start.line].slice(range.start.character);
+          let lastLine = lines[range.end.line].slice(0, range.end.character);
+          let middleLines = lines.slice(range.start.line + 1, range.end.line);
+          resolve([firstLine, ...middleLines, lastLine].join("\n"));
+        }
+      }
+    });
+  });
+}

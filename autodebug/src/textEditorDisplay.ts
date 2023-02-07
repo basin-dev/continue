@@ -3,6 +3,7 @@ import {
   getRightViewColumn,
   getTestFile,
   getViewColumnOfFile,
+  readFileAtRange,
   translate,
 } from "./vscodeUtils";
 import * as path from "path";
@@ -225,11 +226,9 @@ export async function showSuggestion(
   range: vscode.Range,
   suggestion: string
 ): Promise<boolean> {
-  let editor = await openEditorAndRevealRange(editorFilename, range);
-  if (!editor) return Promise.resolve(false);
-
-  let existingCode = editor.document.getText(
-    new vscode.Range(range.start, range.end)
+  let existingCode = await readFileAtRange(
+    new vscode.Range(range.start, range.end),
+    editorFilename
   );
 
   // If any of the outside lines are the same, don't repeat them in the suggestion
@@ -263,6 +262,9 @@ export async function showSuggestion(
       elines.at(-1)?.length || 0
     )
   );
+
+  let editor = await openEditorAndRevealRange(editorFilename, range);
+  if (!editor) return Promise.resolve(false);
 
   return new Promise((resolve, reject) => {
     editor!
