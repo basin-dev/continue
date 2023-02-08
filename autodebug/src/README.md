@@ -4,21 +4,21 @@
 
 1. Clone the `unit-test-experiments` repo
 
-2. Open the `unit-test-experiments` repo in VS Code
+2. Open the `autodebug` sub-directory of the repo in VS Code
 
-3. Run `cd autodebug` command in the VS Code terminal
+3. Run `npm install`
 
-4. Run `npm install`
+4. Open `src/extension.ts` file
 
-5. Start a virtual environment in `unit-test-experiments` by running `source env/bin/activate`
+5. Press `F5` on your keyboard to start `Run and Debug` mode
 
-6. Start the FastAPI server by running `uvicorn server:app --reload`
+6. Open a second VS Code window with `unit-test-experiments`
 
-7. Open `src/extension.ts` file
+7. Start a virtual environment in this workspace `source env/bin/activate`
 
-8. Press `F5` on your keyboard to start `Run and Debug` mode
+8. Start the FastAPI server by running `uvicorn server:app --reload`
 
-9. `cmd+shift+p` for extension commands?? (I can't find anything though...)
+9. `cmd+shift+p` to look at Developer console / AutoDebug commands
 
 10. Every time you make changes to the code, you need to run `npm run compile`
 
