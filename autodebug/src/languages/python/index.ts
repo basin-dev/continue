@@ -12,7 +12,10 @@ export function lineIsComment(line: string): boolean {
 
 const tracebackStart = "Traceback (most recent call last):";
 const tracebackEnd = (buf: string): string | undefined => {
-  let lines = buf.split("\n").filter((line: string) => line.trim() !== "~~^~~");
+  let lines = buf
+    .split("\n")
+    .filter((line: string) => line.trim() !== "~~^~~")
+    .filter((line: string) => line.trim() !== "");
   for (let i = 0; i < lines.length; i++) {
     if (
       lines[i].startsWith("  File") &&
