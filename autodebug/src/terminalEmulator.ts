@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 const pty = require("node-pty");
 const os = require("os");
 import { debugPanelWebview } from "./debugPanel"; // Need to consider having multiple panels, where to store this state.
+import * as stackTraceParser from "stacktrace-parser";
 
 abstract class TerminalSnooper {
   abstract onData(data: string): void;
@@ -82,6 +83,22 @@ abstract class CommandCaptureSnooper extends TerminalSnooper {
   onData(data: string): void {}
 }
 
+function sendTracebackToWebview(traceback: string) {
+  if (debugPanelWebview) {
+    debugPanelWebview.postMessage({
+      type: "traceback",
+      traceback: traceback,
+    });
+  } else {
+    vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
+      debugPanelWebview?.postMessage({
+        type: "traceback",
+        traceback: traceback,
+      });
+    });
+  }
+}
+
 class PythonTracebackSnooper extends TerminalSnooper {
   static tracebackStart = "Traceback (most recent call last):";
   tracebackBuffer = "";
@@ -119,25 +136,27 @@ class PythonTracebackSnooper extends TerminalSnooper {
       );
       if (wholeTraceback) {
         this.tracebackBuffer = "";
-
-        if (debugPanelWebview) {
-          debugPanelWebview.postMessage({
-            type: "traceback",
-            traceback: wholeTraceback,
-          });
-        } else {
-          vscode.commands
-            .executeCommand("autodebug.openDebugPanel")
-            .then(() => {
-              debugPanelWebview?.postMessage({
-                type: "traceback",
-                traceback: wholeTraceback,
-              });
-            });
-        }
+        sendTracebackToWebview(wholeTraceback);
       }
     }
   }
+}
+
+class JavascriptTracebackSnooper extends TerminalSnooper {
+  tracebackBuffer = "";
+  constructor() {
+    super();
+  }
+
+  onData(data: string): void {
+    this.tracebackBuffer += data;
+    let parsed = stackTraceParser.parse(this.tracebackBuffer);
+    if (parsed.length > 0) {
+      sendTracebackToWebview(parsed.toString());
+      this.tracebackBuffer = "";
+    }
+  }
+  onWrite(data: string): void {}
 }
 
 class PyTestSnooper extends CommandCaptureSnooper {
@@ -156,7 +175,11 @@ class PyTestSnooper extends CommandCaptureSnooper {
   }
 }
 
-const DEFAULT_SNOOPERS = [new PythonTracebackSnooper(), new PyTestSnooper()];
+const DEFAULT_SNOOPERS = [
+  new PythonTracebackSnooper(),
+  new PyTestSnooper(),
+  new JavascriptTracebackSnooper(),
+];
 
 // Whenever a user opens a terminal, replace it with ours
 vscode.window.onDidOpenTerminal((terminal) => {

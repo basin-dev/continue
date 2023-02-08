@@ -180,6 +180,7 @@
     "axios": "^1.2.5",
     "node-pty": "^0.10.1",
     "octokit": "^2.0.11",
+    "stacktrace-parser": "^0.1.10",
     "vscode-languageclient": "^8.0.2"
   }
 }
