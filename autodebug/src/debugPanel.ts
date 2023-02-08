@@ -41,21 +41,6 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
     if (e.selections[0].isEmpty) {
       return;
     }
-    // Don't highlight if fully within comment
-    let fullLineText = e.textEditor.document.getText(
-      new vscode.Range(
-        new vscode.Position(e.selections[0].start.line, 0),
-        e.selections[0].end
-      )
-    );
-    let allComments = true;
-    for (let line of fullLineText.split("\n")) {
-      if (!lineIsComment(line) && line.trim() !== "") {
-        allComments = false;
-        break;
-      }
-    }
-    if (allComments) return;
 
     panel.webview.postMessage({
       type: "highlightedCode",
@@ -190,7 +175,6 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
             <div class="tabContainer">
               <div class="tabBar">
                 <div class="tab selectedTab">Debug Panel</div>
-                <div class="tab unselectedTab">Additional Context</div>
               </div>
               <div class="contentContainer">
                 <h1>Debug Panel</h1>
