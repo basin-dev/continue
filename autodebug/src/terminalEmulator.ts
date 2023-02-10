@@ -5,6 +5,7 @@ const pty = require("node-pty");
 const os = require("os");
 import { debugPanelWebview } from "./debugPanel"; // Need to consider having multiple panels, where to store this state.
 import * as stackTraceParser from "stacktrace-parser";
+import { parseFirstStacktrace } from "./languages/python";
 
 abstract class TerminalSnooper {
   abstract onData(data: string): void;
@@ -107,37 +108,14 @@ class PythonTracebackSnooper extends TerminalSnooper {
     super();
   }
 
-  static tracebackEnd = (buf: string): string | undefined => {
-    let lines = buf.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      if (
-        lines[i].startsWith("  File") &&
-        i + 2 < lines.length &&
-        lines[i + 2][0] != " "
-      ) {
-        return lines.slice(0, i + 3).join("\n");
-      }
-    }
-    return undefined;
-  };
   override onWrite(data: string): void {}
   override onData(data: string): void {
     // Snoop for traceback
-    let idx = data.indexOf(PythonTracebackSnooper.tracebackStart);
-    if (idx >= 0) {
-      this.tracebackBuffer = data.substr(idx);
-    } else if (this.tracebackBuffer.length > 0) {
-      this.tracebackBuffer += data;
-    }
-    // End of traceback, send to webview
-    if (idx > 0 || this.tracebackBuffer.length > 0) {
-      let wholeTraceback = PythonTracebackSnooper.tracebackEnd(
-        this.tracebackBuffer
-      );
-      if (wholeTraceback) {
-        this.tracebackBuffer = "";
-        sendTracebackToWebview(wholeTraceback);
-      }
+    this.tracebackBuffer += data;
+    let traceback = parseFirstStacktrace(this.tracebackBuffer);
+    if (traceback) {
+      this.tracebackBuffer = "";
+      sendTracebackToWebview(traceback);
     }
   }
 }
