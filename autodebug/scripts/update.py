@@ -81,8 +81,8 @@ def create_codebase_index():
     d = 1536 # Dimension of text-ada-embedding-002
     faiss_index = faiss.IndexFlatL2(d)
     documents = load_gpt_index_documents(get_git_root_dir())
-    index = GPTSimpleVectorIndex(documents) # , faiss_index=faiss_index)
-    index.save_to_disk(f"{index_dir_for(branch)}/index.json")
+    index = GPTFaissIndex(documents, faiss_index=faiss_index)
+    index.save_to_disk(f"{index_dir_for(branch)}/index.json", faiss_index_save_path=f"{index_dir_for(branch)}/index_faiss_core.index")
     with open(f"{index_dir_for(branch)}/metadata.json", "w") as f:
         json.dump({"commit": get_current_commit()}, f, indent=4)
     print("Codebase index created")
@@ -113,13 +113,13 @@ def update_codebase_index():
     if not os.path.exists(index_dir_for(branch)):
         create_codebase_index()
     else:
-        index = GPTSimpleVectorIndex.load_from_disk(f"{index_dir_for(branch)}/index.json")
+        index = GPTFaissIndex.load_from_disk(f"{index_dir_for(branch)}/index.json", faiss_index_save_path=f"{index_dir_for(branch)}/index_faiss_core.index")
         modified_files, deleted_files = get_modified_deleted_files()
         
         for file in modified_files:
-            index.update(file)
+            index.update(index.get_doc_id(file))
         for file in deleted_files:
-            index.delete(file)
+            index.delete(index.get_doc_id(file))
         
         metadata = f"{index_dir_for(branch)}/metadata.json"
         with open(metadata, "w") as f:
