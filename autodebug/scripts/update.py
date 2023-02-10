@@ -100,14 +100,9 @@ def get_modified_deleted_files() -> Tuple[List[str], List[str]]:
     modified_deleted_files = modified_deleted_files.split("\n")
     modified_deleted_files = [f for f in modified_deleted_files if f]
 
-    deleted_files = [f for f in modified_deleted_files if not os.path.exists(f)]
-    modified_files = [f for f in modified_deleted_files if os.path.exists(f)]
-
-    with open(metadata, "w") as f:
-        json.dump({"commit": get_current_commit()}, f, indent=4)
-
-    print(f"Modified files: {modified_files}")
-    print(f"Deleted files: {deleted_files}")
+    root = get_git_root_dir()
+    deleted_files = [f for f in modified_deleted_files if not os.path.exists(root + "/" + f)]
+    modified_files = [f for f in modified_deleted_files if os.path.exists(root + "/" +  f)]
 
     return further_filter(modified_files, index_dir_for(branch)), further_filter(deleted_files, index_dir_for(branch))
 
@@ -120,10 +115,15 @@ def update_codebase_index():
     else:
         index = GPTSimpleVectorIndex.load_from_disk(f"{index_dir_for(branch)}/index.json")
         modified_files, deleted_files = get_modified_deleted_files()
+        
         for file in modified_files:
             index.update(file)
         for file in deleted_files:
             index.delete(file)
+        
+        metadata = f"{index_dir_for(branch)}/metadata.json"
+        with open(metadata, "w") as f:
+            json.dump({"commit": get_current_commit()}, f, indent=4)
         print("Codebase index updated")
 
 if __name__ == "__main__":
