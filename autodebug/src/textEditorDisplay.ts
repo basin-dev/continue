@@ -627,32 +627,36 @@ export async function writeAndShowUnitTest(
     vscode.workspace.openTextDocument(testFilename).then((doc) => {
       let column = getRightViewColumn();
       let fileContent = doc.getText();
+      let fileEmpty = fileContent.trim() === "";
       let existingImportLines = getImportsFromFileString(
         fileContent,
         importDistinguishersMap[doc.fileName.split(".").at(-1) || ".py"]
       );
+
+      // Remove redundant imports, make sure pytest is there
       test = removeRedundantLinesFrom(test, existingImportLines);
-      for (let line of test.split("\n"))
-        vscode.window.showTextDocument(doc, column).then((editor) => {
-          let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-          let testRange = new vscode.Range(
-            lastLine.range.end,
-            new vscode.Position(
-              test.split("\n").length + lastLine.range.end.line,
-              0
-            )
-          );
-          editor
-            .edit((edit) => {
-              edit.insert(lastLine.range.end, "\n\n" + test);
-              return true;
-            })
-            .then((success) => {
-              if (!success) reject("Failed to insert test");
-              let key = highlightCode(editor, testRange);
-              resolve(key);
-            });
-        });
+      test = (fileEmpty ? "import pytest\n\n" : "\n\n") + test.trim();
+
+      vscode.window.showTextDocument(doc, column).then((editor) => {
+        let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        let testRange = new vscode.Range(
+          lastLine.range.end,
+          new vscode.Position(
+            test.split("\n").length + lastLine.range.end.line,
+            0
+          )
+        );
+        editor
+          .edit((edit) => {
+            edit.insert(lastLine.range.end, test);
+            return true;
+          })
+          .then((success) => {
+            if (!success) reject("Failed to insert test");
+            let key = highlightCode(editor, testRange);
+            resolve(key);
+          });
+      });
     });
   });
 }

@@ -21,7 +21,7 @@
   const tabs = document.getElementsByClassName("tab");
   function setTab(index) {
     let contentContainers = document.getElementsByClassName("contentContainer");
-    for (let j = 0; j < contentContainers.length; j++) {
+    for (let j = 0; j < Math.min(contentContainers.length, tabs.length); j++) {
       if (index === j) {
         contentContainers[j].hidden = false;
         tabs[j].className = "tab selectedTab";

@@ -91,7 +91,10 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       fileAndFunctionSpecifier,
     ]);
     let stacktrace = parseFirstStacktrace(stdout);
-    if (!stacktrace) return;
+    if (!stacktrace) {
+      vscode.window.showInformationMessage("The test passes!");
+      return;
+    }
     vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
       debugPanelWebview?.postMessage({
         type: "traceback",
