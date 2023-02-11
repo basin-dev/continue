@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 
+from gpt_index.langchain_helpers.text_splitter import TokenTextSplitter
 from gpt_index import GPTSimpleVectorIndex, SimpleDirectoryReader, Document, GPTFaissIndex
 from typing import List, Generator, Tuple
 
@@ -57,7 +58,7 @@ def load_gpt_index_documents(root: str) -> List[Document]:
     # Get input files
     input_files = get_input_files(root)
     # Use SimpleDirectoryReader to load the files into Documents
-    return SimpleDirectoryReader(root, input_files=input_files).load_data()
+    return SimpleDirectoryReader(root, input_files=input_files, file_metadata=lambda filename: {"filename": filename}).load_data()
 
 def index_dir_for(branch: str) -> str:
     return f"data/{branch}"
@@ -78,13 +79,32 @@ def create_codebase_index():
     if not os.path.exists(index_dir_for(branch)):
         os.makedirs(index_dir_for(branch))
 
-    d = 1536 # Dimension of text-ada-embedding-002
-    faiss_index = faiss.IndexFlatL2(d)
     documents = load_gpt_index_documents(get_git_root_dir())
-    index = GPTFaissIndex(documents, faiss_index=faiss_index)
-    index.save_to_disk(f"{index_dir_for(branch)}/index.json", faiss_index_save_path=f"{index_dir_for(branch)}/index_faiss_core.index")
+    
+    chunks = {}
+    doc_chunks = []
+    for doc in documents:
+        text_splitter = TokenTextSplitter()
+        text_chunks = text_splitter.split_text(doc.text)
+        filename = doc.extra_info["filename"]
+        for i, text in enumerate(text_chunks):
+            doc_chunks.append(Document(text, doc_id=f"{filename}::{i}"))
+        chunks[filename] = len(text_chunks)
+
     with open(f"{index_dir_for(branch)}/metadata.json", "w") as f:
-        json.dump({"commit": get_current_commit()}, f, indent=4)
+        json.dump({"commit": get_current_commit(), "chunks" : chunks}, f, indent=4)
+
+    index = GPTSimpleVectorIndex([])
+    for chunk in doc_chunks:
+        index.insert(chunk)
+
+    # d = 1536 # Dimension of text-ada-embedding-002
+    # faiss_index = faiss.IndexFlatL2(d)
+    # index = GPTFaissIndex(documents, faiss_index=faiss_index)
+    # index.save_to_disk(f"{index_dir_for(branch)}/index.json", faiss_index_save_path=f"{index_dir_for(branch)}/index_faiss_core.index")
+
+    index.save_to_disk(f"{index_dir_for(branch)}/index.json")
+
     print("Codebase index created")
 
 def get_modified_deleted_files() -> Tuple[List[str], List[str]]:
@@ -113,17 +133,35 @@ def update_codebase_index():
     if not os.path.exists(index_dir_for(branch)):
         create_codebase_index()
     else:
-        index = GPTFaissIndex.load_from_disk(f"{index_dir_for(branch)}/index.json", faiss_index_save_path=f"{index_dir_for(branch)}/index_faiss_core.index")
+        # index = GPTFaissIndex.load_from_disk(f"{index_dir_for(branch)}/index.json", faiss_index_save_path=f"{index_dir_for(branch)}/index_faiss_core.index")
+        index = GPTSimpleVectorIndex.load_from_disk(f"{index_dir_for(branch)}/index.json")
         modified_files, deleted_files = get_modified_deleted_files()
-        
-        for file in modified_files:
-            index.update(index.get_doc_id(file))
+
+        with open(f"{index_dir_for(branch)}/metadata.json", "r") as f:
+            metadata = json.load(f)
+
         for file in deleted_files:
-            index.delete(index.get_doc_id(file))
+            
+            num_chunks = metadata["chunks"][file]
+            for i in range(num_chunks):
+                index.delete(f"{file}::{i}")
+
+            del metadata["chunks"][file]
+
+        for file in modified_files:
+
+            num_chunks = metadata["chunks"][file]
+
+            for i in range(num_chunks):
+                index.delete(f"{file}::{i}")
+
+            print(f"Need to insert a new version of the {file}")        
+
+        metadata["commit"] = get_current_commit()
+
+        with open(f"{index_dir_for(branch)}/metadata.json", "w") as f:
+            json.dump(metadata, f, indent=4)
         
-        metadata = f"{index_dir_for(branch)}/metadata.json"
-        with open(metadata, "w") as f:
-            json.dump({"commit": get_current_commit()}, f, indent=4)
         print("Codebase index updated")
 
 if __name__ == "__main__":
