@@ -1,4 +1,4 @@
-import faiss
+# import faiss
 import json
 import os
 import subprocess
@@ -13,7 +13,6 @@ FILE_TYPES_TO_IGNORE = [
     '.jpg',
     '.jpeg',
     '.gif',
-    '.pdf',
     '.svg',
     '.ico'
 ]
@@ -87,9 +86,9 @@ def create_codebase_index():
         text_splitter = TokenTextSplitter()
         text_chunks = text_splitter.split_text(doc.text)
         filename = doc.extra_info["filename"]
+        chunks[filename] = len(text_chunks)
         for i, text in enumerate(text_chunks):
             doc_chunks.append(Document(text, doc_id=f"{filename}::{i}"))
-        chunks[filename] = len(text_chunks)
 
     with open(f"{index_dir_for(branch)}/metadata.json", "w") as f:
         json.dump({"commit": get_current_commit(), "chunks" : chunks}, f, indent=4)
@@ -124,7 +123,9 @@ def get_modified_deleted_files() -> Tuple[List[str], List[str]]:
     deleted_files = [f for f in modified_deleted_files if not os.path.exists(root + "/" + f)]
     modified_files = [f for f in modified_deleted_files if os.path.exists(root + "/" +  f)]
 
-    return further_filter(modified_files, index_dir_for(branch)), further_filter(deleted_files, index_dir_for(branch))
+    return [], ["/Users/ty/Documents/nate-ty-side-projects/unit-test-experiments/README.md"]
+
+    # return further_filter(modified_files, index_dir_for(branch)), further_filter(deleted_files, index_dir_for(branch))
 
 def update_codebase_index():
     """Update the index with a list of files."""
@@ -148,14 +149,31 @@ def update_codebase_index():
 
             del metadata["chunks"][file]
 
+            print(f"Deleted {file}")
+
         for file in modified_files:
 
-            num_chunks = metadata["chunks"][file]
+            if file in metadata["chunks"]:
 
-            for i in range(num_chunks):
-                index.delete(f"{file}::{i}")
+                num_chunks = metadata["chunks"][file]
 
-            print(f"Need to insert a new version of the {file}")        
+                for i in range(num_chunks):
+                    index.delete(f"{file}::{i}")
+
+                print(f"Deleted old version of {file}")
+
+            with open(file, "r") as f:
+                text = f.read()
+
+            text_splitter = TokenTextSplitter()
+            text_chunks = text_splitter.split_text(text)
+            
+            for i, text in enumerate(text_chunks):
+                index.insert(Document(text, doc_id=f"{file}::{i}"))
+            
+            metadata["chunks"][file] = len(text_chunks)
+
+            print(f"Inserted new version of {file}")        
 
         metadata["commit"] = get_current_commit()
 
