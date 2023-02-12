@@ -23,7 +23,6 @@ DEFAULT_GIT_IGNORE_PATTERNS = [
     "**/bin/**",
     "**/opt/**",
     "**/env/**"
-    "autodebug/data/**"
 ]
 
 to_be_ignored_spec = pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, DEFAULT_GIT_IGNORE_PATTERNS)
