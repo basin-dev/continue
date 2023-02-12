@@ -123,9 +123,7 @@ def get_modified_deleted_files() -> Tuple[List[str], List[str]]:
     deleted_files = [f for f in modified_deleted_files if not os.path.exists(root + "/" + f)]
     modified_files = [f for f in modified_deleted_files if os.path.exists(root + "/" +  f)]
 
-    return [], ["/Users/ty/Documents/nate-ty-side-projects/unit-test-experiments/README.md"]
-
-    # return further_filter(modified_files, index_dir_for(branch)), further_filter(deleted_files, index_dir_for(branch))
+    return further_filter(modified_files, index_dir_for(branch)), further_filter(deleted_files, index_dir_for(branch))
 
 def update_codebase_index():
     """Update the index with a list of files."""
