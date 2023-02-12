@@ -70,6 +70,11 @@
         "title": "Create Terminal"
       },
       {
+        "command": "autodebug.debugTest",
+        "category": "AutoDebug",
+        "title": "Debug Test"
+      },
+      {
         "command": "autodebug.suggestionDown",
         "category": "AutoDebug",
         "title": "Suggestion Down"

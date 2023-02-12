@@ -3,6 +3,7 @@ import {
   getRightViewColumn,
   getTestFile,
   getViewColumnOfFile,
+  readFileAtRange,
   translate,
 } from "./vscodeUtils";
 import * as path from "path";
@@ -225,11 +226,9 @@ export async function showSuggestion(
   range: vscode.Range,
   suggestion: string
 ): Promise<boolean> {
-  let editor = await openEditorAndRevealRange(editorFilename, range);
-  if (!editor) return Promise.resolve(false);
-
-  let existingCode = editor.document.getText(
-    new vscode.Range(range.start, range.end)
+  let existingCode = await readFileAtRange(
+    new vscode.Range(range.start, range.end),
+    editorFilename
   );
 
   // If any of the outside lines are the same, don't repeat them in the suggestion
@@ -263,6 +262,9 @@ export async function showSuggestion(
       elines.at(-1)?.length || 0
     )
   );
+
+  let editor = await openEditorAndRevealRange(editorFilename, range);
+  if (!editor) return Promise.resolve(false);
 
   return new Promise((resolve, reject) => {
     editor!
@@ -625,32 +627,36 @@ export async function writeAndShowUnitTest(
     vscode.workspace.openTextDocument(testFilename).then((doc) => {
       let column = getRightViewColumn();
       let fileContent = doc.getText();
+      let fileEmpty = fileContent.trim() === "";
       let existingImportLines = getImportsFromFileString(
         fileContent,
         importDistinguishersMap[doc.fileName.split(".").at(-1) || ".py"]
       );
+
+      // Remove redundant imports, make sure pytest is there
       test = removeRedundantLinesFrom(test, existingImportLines);
-      for (let line of test.split("\n"))
-        vscode.window.showTextDocument(doc, column).then((editor) => {
-          let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-          let testRange = new vscode.Range(
-            lastLine.range.end,
-            new vscode.Position(
-              test.split("\n").length + lastLine.range.end.line,
-              0
-            )
-          );
-          editor
-            .edit((edit) => {
-              edit.insert(lastLine.range.end, "\n\n" + test);
-              return true;
-            })
-            .then((success) => {
-              if (!success) reject("Failed to insert test");
-              let key = highlightCode(editor, testRange);
-              resolve(key);
-            });
-        });
+      test = (fileEmpty ? "import pytest\n\n" : "\n\n") + test.trim();
+
+      vscode.window.showTextDocument(doc, column).then((editor) => {
+        let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        let testRange = new vscode.Range(
+          lastLine.range.end,
+          new vscode.Position(
+            test.split("\n").length + lastLine.range.end.line,
+            0
+          )
+        );
+        editor
+          .edit((edit) => {
+            edit.insert(lastLine.range.end, test);
+            return true;
+          })
+          .then((success) => {
+            if (!success) reject("Failed to insert test");
+            let key = highlightCode(editor, testRange);
+            resolve(key);
+          });
+      });
     });
   });
 }

@@ -6,6 +6,7 @@ import {
   makeEdit,
   apiRequest,
 } from "./bridge";
+import { lineIsComment } from "./languages/python";
 import { showSuggestion, writeAndShowUnitTest } from "./textEditorDisplay";
 import { getExtensionUri, getNonce } from "./vscodeUtils";
 
@@ -40,6 +41,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
     if (e.selections[0].isEmpty) {
       return;
     }
+
     panel.webview.postMessage({
       type: "highlightedCode",
       code: e.textEditor.document.getText(e.selections[0]),
@@ -119,37 +121,49 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "generateUnitTest": {
-        let codeSelection = data.debugContext.codeSelections?.at(0);
-        if (codeSelection && codeSelection.filename && codeSelection.range) {
-          vscode.window.withProgress(
-            {
-              location: vscode.ProgressLocation.Notification,
-              title: "Generating Unit Test...",
-              cancellable: false,
-            },
-            async () => {
-              let resp = await apiRequest("/unittest/failingtest", {
-                method: "POST",
-                body: {
-                  fp: {
-                    filecontents: (
-                      await vscode.workspace.fs.readFile(
-                        vscode.Uri.file(codeSelection.filename)
-                      )
-                    ).toString(),
-                    lineno: codeSelection.range.end.line,
-                  },
-                  description: data.debugContext.explanation,
-                },
-              });
+        vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: "Generating Unit Test...",
+            cancellable: false,
+          },
+          async () => {
+            for (let i = 0; i < data.debugContext.codeSelections?.length; i++) {
+              let codeSelection = data.debugContext.codeSelections?.at(i);
+              if (
+                codeSelection &&
+                codeSelection.filename &&
+                codeSelection.range
+              ) {
+                try {
+                  let resp = await apiRequest("/unittest/failingtest", {
+                    method: "POST",
+                    body: {
+                      fp: {
+                        filecontents: (
+                          await vscode.workspace.fs.readFile(
+                            vscode.Uri.file(codeSelection.filename)
+                          )
+                        ).toString(),
+                        lineno: codeSelection.range.end.line,
+                      },
+                      description: data.debugContext.explanation,
+                    },
+                  });
 
-              let decorationKey = await writeAndShowUnitTest(
-                codeSelection.filename,
-                resp.completion
-              );
+                  if (resp.completion) {
+                    let decorationKey = await writeAndShowUnitTest(
+                      codeSelection.filename,
+                      resp.completion
+                    );
+                    break;
+                  }
+                } catch {}
+              }
             }
-          );
-        }
+          }
+        );
+
         break;
       }
     }
@@ -173,7 +187,6 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
             <div class="tabContainer">
               <div class="tabBar">
                 <div class="tab selectedTab">Debug Panel</div>
-                <div class="tab unselectedTab">Additional Context</div>
               </div>
               <div class="contentContainer">
                 <h1>Debug Panel</h1>
