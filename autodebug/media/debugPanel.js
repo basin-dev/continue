@@ -5,6 +5,13 @@
   const highlightedCode = document.querySelector(".highlightedCode");
   const bugDescription = document.querySelector(".bugDescription");
   const stacktrace = document.querySelector(".stacktrace");
+
+  // Find suspicious code when stacktrace textarea value is changed
+  stacktrace.addEventListener("input", () => {
+    updateState({ debugContext: gatherDebugContext() });
+    findSuspiciousCode();
+  });
+
   const fixSuggestion = document.querySelector(".fixSuggestion");
   const explainCodeButton = document.querySelector(".explainCodeButton");
   const listTenThingsButton = document.querySelector(".listTenThingsButton");

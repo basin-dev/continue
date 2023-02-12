@@ -8,6 +8,7 @@ import {
 } from "./bridge";
 import { lineIsComment } from "./languages/python";
 import { showSuggestion, writeAndShowUnitTest } from "./textEditorDisplay";
+import { parseFirstStacktrace } from "./languages/all";
 import { getExtensionUri, getNonce } from "./vscodeUtils";
 
 export let debugPanelWebview: vscode.Webview | undefined = undefined;
@@ -70,6 +71,8 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "findSuspiciousCode": {
+        let stacktrace = parseFirstStacktrace(data.debugContext.stacktrace);
+        if (stacktrace === undefined) return;
         vscode.commands.executeCommand(
           "autodebug.findSuspiciousCode",
           data.debugContext
