@@ -1,13 +1,15 @@
 import subprocess
-from typing import Dict, List, Tuple
-from fastapi import APIRouter, Body, Query
+from typing import List
+from fastapi import APIRouter
 from pydantic import BaseModel
 import fault_loc
 from boltons import tbutils
 from llm import OpenAI
-from prompts import SimplePrompter, EditPrompter
+from prompts import SimplePrompter
 import ast
 import os
+from models import RangeInFile, SerializedVirtualFileSystem, Traceback
+from virtual_filesystem import VirtualFileSystem
 
 llm = OpenAI()
 router = APIRouter(prefix="/debug", tags=["debug"])
@@ -22,21 +24,22 @@ Instructions to fix:
 fix_suggestion_prompter = SimplePrompter(lambda stderr: prompt.replace("{traceback}", stderr))
 
 
-def parse_stacktrace(stderr: str) -> tbutils.ParsedException:
+def parse_traceback(stderr: str) -> Traceback:
     # Sometimes paths are not quoted, but they need to be
     if "File \"" not in stderr:
         stderr = stderr.replace("File ", "File \"").replace(", line ", "\", line ")
-    return tbutils.ParsedException.from_string(stderr)
+    tbutil_parsed_exc = tbutils.ParsedException.from_string(stderr)
+    return Traceback.from_tbutil_parsed_exc(tbutil_parsed_exc)
 
-def get_steps(stacktrace: str) -> str:
-    exc = parse_stacktrace(stacktrace)
-    if len(exc.frames) == 0:
-        raise Exception("No frames found in stacktrace")
-    sus_frame = fault_loc.fl1(exc)
-    relevant_frames = fault_loc.filter_stacktrace_frames(exc.frames)
-    exc.frames = relevant_frames
+def get_steps(traceback: str) -> str:
+    traceback = parse_traceback(traceback)
+    if len(traceback.frames) == 0:
+        raise Exception("No frames found in traceback")
+    sus_frame = fault_loc.fl1(traceback)
+    relevant_frames = fault_loc.filter_traceback_frames(traceback.frames)
+    traceback.frames = relevant_frames
 
-    resp = fix_suggestion_prompter.complete(stacktrace)
+    resp = fix_suggestion_prompter.complete(traceback)
     return resp
 
 def suggest_fix(stderr: str) -> str:
@@ -82,7 +85,7 @@ attempt_edit_prompter2 = SimplePrompter(lambda x: attempt_prompt.replace("{code}
 
 def make_edit(stderr: str, steps: str):
     # Compile prompt, get response
-    exc = parse_stacktrace(stderr)
+    exc = parse_traceback(stderr)
     sus_frame = fault_loc.fl1(exc)
 
     new_ast = fault_loc.edit_context_ast(sus_frame, lambda code_to_change: 
@@ -118,21 +121,21 @@ def run(filepath: str, make_edit: bool = False):
         if stderr == "":
             return True
 
-class InlineCode(BaseModel):
+class InlineBody(BaseModel):
     filecontents: str
     startline: int
     endline: int
-    stacktrace: str = ""
+    traceback: str = ""
 
 @router.post("/inline")
-def inline(body: InlineCode):
+def inline(body: InlineBody):
     code = fault_loc.find_code_in_range(body.filecontents, body.startline, body.endline)
-    suggestion = attempt_edit_prompter1.complete((code, body.stacktrace))
+    suggestion = attempt_edit_prompter1.complete((code, body.traceback))
     return {"completion": suggestion}
 
 @router.get("/suggestion")
-def suggestion(stacktrace: str):
-    suggestion = get_steps(stacktrace)
+def suggestion(traceback: str):
+    suggestion = get_steps(traceback)
     return {"completion": suggestion}
  
 def ctx_prompt(ctx, final_instruction: str) -> str:
@@ -156,28 +159,28 @@ n = 3
 n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potential solutions to the problem or causes. They should be precise and useful:"))
 
 class DebugContext(BaseModel):
-    stacktrace: str
+    traceback: str
     code: List[str]
     description: str
 
 @router.post("/list")
 def listten(ctx: DebugContext):
-    n_things = n_things_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+    n_things = n_things_prompter.complete((ctx.traceback, ctx.code, ctx.description))
     return {"completion": n_things}
 
 explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
 
 @router.post("/explain")
 def explain(ctx: DebugContext):
-    explanation = explain_code_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+    explanation = explain_code_prompter.complete((ctx.traceback, ctx.code, ctx.description))
     return {"completion": explanation}
 
 edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"))
 
 @router.post("/edit")
 def edit(ctx: DebugContext):
-    print(edit_prompter._compile_prompt((ctx.stacktrace, ctx.code, ctx.description)))
-    new_code = edit_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+    print(edit_prompter._compile_prompt((ctx.traceback, ctx.code, ctx.description)))
+    new_code = edit_prompter.complete((ctx.traceback, ctx.code, ctx.description))
 
     # Should do a better job of ensuring the ``` format, but for now the issue is mostly just on single file inputs:
     if not '```' in new_code:
@@ -187,21 +190,25 @@ def edit(ctx: DebugContext):
 
     return {"completion": new_code}
 
-class FindModel(BaseModel):
-    stacktrace: str
-    files: Dict[str, str]
-    description: str = None
+class FindBody(BaseModel):
+    traceback: str
+    filesystem: SerializedVirtualFileSystem
+    description: str | None = None
+
+class FindResp(BaseModel):
+    response: List[RangeInFile]
 
 @router.post("/find")
-def find_sus_code(body: FindModel):
-    parsed = parse_stacktrace(body.stacktrace)
+def find_sus_code(body: FindBody) -> FindResp:
+    parsed = parse_traceback(body.traceback)
+    filesystem = VirtualFileSystem.from_serialized(body.filesystem)
     description = body.description
     if description is None or description == "":
-        description = parsed.exc_type + ": " + parsed.exc_msg
+        description = parsed.message
 
-    most_sus_frames = fault_loc.fl2(parsed, description, files=body.files)
+    most_sus_frames = fault_loc.fl2(parsed, description, filesystem=filesystem)
 
     return {"response": [
-        fault_loc.frame_to_code_location(frame, files=body.files)
+        fault_loc.frame_to_code_range(frame, filesystem=filesystem)
         for frame in most_sus_frames
     ]}

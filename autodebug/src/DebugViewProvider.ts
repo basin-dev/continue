@@ -57,7 +57,7 @@ export default class DebugViewProvider implements vscode.WebviewViewProvider {
               };
               let ctx = await bridge.getSuggestion({
                 codeSelections: [codeSelection],
-                stacktrace: data.stackTrace,
+                traceback: data.traceback,
                 explanation: data.explanation,
               });
               vscode.window.showInformationMessage(
@@ -187,7 +187,7 @@ export default class DebugViewProvider implements vscode.WebviewViewProvider {
 }
 
 `<h2>Debug</h2>
-<textarea id="stackTrace" name="stackTrace" class="stackTrace" placeholder="Enter a stack trace" cols="80"></textarea>
+<textarea id="traceback" name="traceback" class="traceback" placeholder="Enter a stack trace" cols="80"></textarea>
 <input type="text" id="explanation" name="explanation" class="explanation" placeholder="Describe the problem"/>
 <p>Highlight text in the editor to suggest a fix in that range. Otherwise, we will guess where the problem is coming from.</p>
 <button id="startDebug" class="startDebug">Suggest Fix</button>`;

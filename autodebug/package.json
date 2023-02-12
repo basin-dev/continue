@@ -34,7 +34,7 @@
         "autodebug.automode": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically find relevant code and suggest a fix whenever a stacktrace is found."
+          "description": "Automatically find relevant code and suggest a fix whenever a traceback is found."
         }
       }
     },

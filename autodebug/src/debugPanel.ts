@@ -71,8 +71,8 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "findSuspiciousCode": {
-        let stacktrace = parseFirstStacktrace(data.debugContext.stacktrace);
-        if (stacktrace === undefined) return;
+        let traceback = parseFirstStacktrace(data.debugContext.traceback);
+        if (traceback === undefined) return;
         vscode.commands.executeCommand(
           "autodebug.findSuspiciousCode",
           data.debugContext
@@ -89,7 +89,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
 
         let resp = await apiRequest("debug/explain", {
           body: {
-            stacktrace: data.debugContext.stacktrace,
+            traceback: data.debugContext.traceback,
             description: data.debugContext.explanation,
             code: data.debugContext.codeSelections.map((cs: any) => cs.code!),
           },
@@ -201,7 +201,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
                 <textarea id="bugDescription" name="bugDescription" class="bugDescription" rows="4" cols="50" placeholder="Describe your bug..."></textarea>
                 
                 <h3>Stack Trace</h3>
-                <textarea id="stacktrace" class="stacktrace" name="stacktrace" rows="4" cols="50" placeholder="Paste stack trace here"></textarea>
+                <textarea id="traceback" class="traceback" name="traceback" rows="4" cols="50" placeholder="Paste stack trace here"></textarea>
                 
                 <select hidden id="relevantVars" class="relevantVars" name="relevantVars"></select>
                 

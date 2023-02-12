@@ -1,10 +1,11 @@
 import subprocess
 from boltons import tbutils
-from typing import List, Dict
+from typing import Callable, List, Dict, Tuple
 import os
 import shutil
 import json
-from debug import edit, find_sus_code
+import signal
+from debug import edit, find_sus_code, FindModel, DebugContext
 
 PATH_TO_QUIX_REPO = "/Users/natesesti/Desktop/basin/QuixBugs"
 
@@ -28,14 +29,30 @@ def list_options():
     files = os.listdir(PATH_TO_QUIX_REPO + "/python_programs")
     return list(map(lambda filename: filename.split(".")[0], files))
 
-def run_test(option: str) -> tbutils.ParsedException:
+def run_test(option: str, timeout: int | None=None) -> tbutils.ParsedException:
     os.chdir(PATH_TO_QUIX_REPO)
     command = ["pytest", f"python_testcases/test_{option}.py", "--tb=native"]
-    print("Running test: ", " ".join(command))
-    stdout = subprocess.run(command, capture_output=True).stdout.decode("utf-8")
-
+    if timeout is not None:
+        stdout = exec_command_with_timeout(command, timeout)
+    else:
+        stdout = subprocess.run(command, capture_output=True).stdout.decode("utf-8")
+    if stdout is None:
+        return None
     stacktrace = parse_first_stacktrace(stdout)
     return stacktrace
+
+def exec_command_with_timeout(command: List[str], seconds: int) -> str | None:
+    def handler(signum, frame):
+        raise TimeoutError("Timed out!")
+
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(seconds)
+    try:
+        return subprocess.run(command, capture_output=True).stdout.decode("utf-8")
+    except:
+        return None
+    finally:
+        signal.alarm(0)
 
 def main():
     # We keep an unchanging folder, static_python_programs, and always create a temporary python_programs directory to be edited
@@ -44,25 +61,32 @@ def main():
     shutil.copytree(PATH_TO_QUIX_REPO + "/static_python_programs", python_programs_path)
     
     outcomes = {}
-    for option in list_options():
-        # Timeout after 10s
-        
+    for option in list_options():   
+        print("Running", option)
+        stacktrace = run_test(option, 2)
+        if stacktrace is None:
+            print(f"Test {option} timed out.")
+            continue
 
-        stacktrace = run_test(option)
         filepath = f"{PATH_TO_QUIX_REPO}/python_programs/{option}.py"
-        print("Stacktrace: ", stacktrace)
-        code_snippets = find_sus_code({
-            "stacktrace": stacktrace,
-            "code": {
+        print("Stacktrace: ", stacktrace.to_string() + "\n")
+        code_snippets = find_sus_code(FindModel(**{
+            "stacktrace": stacktrace.to_string(),
+            "description": "",
+            "files": {
                 filepath: open(filepath, "r").read(),
             },
-        })
-        print("Code snippets: ", code_snippets)
-        edited_code = edit({
-            "stacktrace": stacktrace,
-            "code": code_snippets,
-        })
+        }))
+
+        edited_code = edit(DebugContext(**{
+            "stacktrace": stacktrace.to_string(),
+            "description": "",
+            "code": list(map(lambda x: x['code'], code_snippets["response"])),
+        }))['completion']
         print("Edited code: ", edited_code)
+
+        with open(filepath, "w") as f:
+            f.write(edited_code)
 
         outcomes[option] = edited_code
 

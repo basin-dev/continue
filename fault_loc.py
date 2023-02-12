@@ -5,18 +5,20 @@ from llm import OpenAI
 import numpy as np
 from tools_context.index import DEFAULT_GIT_IGNORE_PATTERNS
 import pathspec
+from virtual_filesystem import FileSystem, VirtualFileSystem
+from models import RangeInFile, Range, Traceback, TracebackFrame
 
 gpt = OpenAI()
 
 to_be_ignored_spec = pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, DEFAULT_GIT_IGNORE_PATTERNS)
 
-def filter_stacktrace_frames(frames: List[Dict]) -> List[Dict]:
+def filter_traceback_frames(frames: List[TracebackFrame]) -> List[TracebackFrame]:
     """Filter out frames that are not relevant to the user's code."""
-    return list(filter(lambda x: not to_be_ignored_spec.match_file(x['filepath']), frames))
+    return list(filter(lambda x: not to_be_ignored_spec.match_file(x.filepath), frames))
 
-def fl1(tb: tbutils.ParsedException) -> Dict:
+def fl1(tb: Traceback) -> TracebackFrame:
     """Find the most relevant frame in the traceback."""
-    relevant = filter_stacktrace_frames(tb.frames)
+    relevant = filter_traceback_frames(tb.frames)
     if len(relevant) == 0:
         return tb.frames[-1]
     return relevant[-1]
@@ -84,15 +86,15 @@ def indices_of_top_k(arr: List[float], k: int) -> List[int]:
     """Return the indices of the top k elements in the array."""
     return sorted(range(len(arr)), key=lambda i: arr[i])[-k:]
 
-def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: int = 4) -> List[Dict]:
-    """Return the most relevant frames in the stacktrace."""
-    filtered_frames = filter_stacktrace_frames(tb.frames)
+def fl2(tb: Traceback, query: str, filesystem: FileSystem=VirtualFileSystem({}), n: int = 4) -> List[TracebackFrame]:
+    """Return the most relevant frames in the traceback."""
+    filtered_frames = filter_traceback_frames(tb.frames)
     if len(filtered_frames) <= n:
         return filtered_frames
 
     # Find the most specific context for each frame, getting the code snippets
     surrounding_snippets = [
-        frame_to_code_location(frame, files=files)['code']
+        filesystem.read_range_in_file(frame_to_code_range(frame, filesystem=filesystem))
         for frame in filtered_frames
     ]
 
@@ -103,30 +105,33 @@ def fl2(tb: tbutils.ParsedException, query: str, files: Dict[str, str]=None, n: 
 
     return [filtered_frames[i] for i in top_n]
 
-def get_start_end_lines(tree: ast.AST) -> Tuple[int, int]:
+def get_ast_range(tree: ast.AST) -> Range:
     """Get the start and end line numbers of the AST node."""
     if isinstance(tree, ast.Module):
-        return tree.body[0].lineno, tree.body[-1].end_lineno
-    return tree.lineno, tree.end_lineno
+        return Range(
+            startline=tree.body[0].lineno - 1,
+            endline=tree.body[-1].end_lineno - 1,
+            startcol=tree.body[0].col_offset,
+            endcol=tree.body[-1].end_col_offset,
+        )
+    return Range(
+        startline=tree.lineno - 1,
+        endline=tree.end_lineno - 1,
+        startcol=tree.col_offset,
+        endcol=tree.end_col_offset,
+    )
 
-def frame_to_code_location(frame: Dict, files: Dict[str, str]=None) -> Dict:
-    """Response is in the form {filename: str, code: str, start: int, end: int}"""
-    if files is not None and frame['filepath'] in files:
-        code = files[frame['filepath']]
-        codelines = code.splitlines()
-        for i in range(len(codelines) - 1):
-            codelines[i] += "\n"
-    else:
-        with open(frame['filepath'], "r") as f:
-            codelines = f.readlines()
-            code = "".join(codelines)
+def frame_to_code_range(frame: TracebackFrame, filesystem: FileSystem=VirtualFileSystem({})) -> RangeInFile:
+    """Get the CodeRange specified a traceback frame."""
+    code = filesystem.read(frame.filepath)
+    codelines = code.splitlines()
+    for i in range(len(codelines) - 1):
+        codelines[i] += "\n"
 
-    ctx = find_most_specific_context(code, int(frame['lineno']))
-    startline, endline = get_start_end_lines(ctx)
+    ctx = find_most_specific_context(code, int(frame.lineno))
+    code_range = get_ast_range(ctx)
 
-    return {
-        "filename": frame['filepath'],
-        "code": "".join(codelines[startline - 1:endline]),
-        "startline": startline,
-        "endline": endline
-    }
+    return RangeInFile(
+        filepath=frame.filepath,
+        range=code_range,
+    )

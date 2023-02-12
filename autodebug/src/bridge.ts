@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 const axios = require("axios").default;
-import { getExtensionUri } from "./vscodeUtils";
+import { getExtensionUri, readFileAtRange } from "./vscodeUtils";
 import { convertSingleToDoubleQuoteJSON } from "./util";
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
@@ -121,7 +121,7 @@ export async function apiRequest(
   };
   options = Object.assign(defaults, options); // Second takes over first
   if (endpoint.startsWith("/")) endpoint = endpoint.substring(1);
-
+  console.log("API request: ", options.body);
   let resp = await axios({
     method: options.method,
     url: `${API_URL}/${endpoint}`,
@@ -175,7 +175,7 @@ export interface CompleteCodeSelection {
   code: string;
 }
 export interface DebugContext {
-  stacktrace?: string;
+  traceback?: string;
   explanation?: string;
   unitTest?: string;
   suggestion?: string;
@@ -206,14 +206,14 @@ export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
         ).toString(),
         startline: codeSelection.range.start.line,
         endline: codeSelection.range.end.line,
-        stacktrace: ctx.stacktrace,
+        traceback: ctx.traceback,
       },
       method: "POST",
     });
   } else {
     resp = await apiRequest("debug/suggestion", {
       query: {
-        stacktrace: ctx.stacktrace,
+        traceback: ctx.traceback,
       },
     });
   }
@@ -227,7 +227,7 @@ export async function listTenThings(ctx: DebugContext): Promise<string> {
 
   let resp = await apiRequest("debug/list", {
     body: {
-      stacktrace: ctx.stacktrace,
+      traceback: ctx.traceback,
       description: ctx.explanation,
       code: ctx.codeSelections.map((cs) => cs.code!),
     },
@@ -266,7 +266,7 @@ export async function makeEdit(ctx: DebugContext): Promise<string[]> {
 
   let resp = await apiRequest("debug/edit", {
     body: {
-      stacktrace: ctx.stacktrace,
+      traceback: ctx.traceback,
       description: ctx.explanation,
       code: ctx.codeSelections.map((cs) => cs.code!),
     },
@@ -286,29 +286,35 @@ export interface CodeLocation {
 export async function findSuspiciousCode(
   ctx: DebugContext
 ): Promise<CodeLocation[]> {
-  if (!ctx.stacktrace) return [];
+  if (!ctx.traceback) return [];
   let files = await getFileContents(
-    getFilenamesFromPythonStacktrace(ctx.stacktrace)
+    getFilenamesFromPythonStacktrace(ctx.traceback)
   );
   let resp = await apiRequest("debug/find", {
     body: {
-      stacktrace: ctx.stacktrace,
+      traceback: ctx.traceback,
       description: ctx.explanation,
-      files,
+      filesystem: files,
     },
     method: "POST",
   });
 
-  return resp.response.map((loc: any) => {
-    return {
-      filename: loc.filename,
-      range: new vscode.Range(
-        new vscode.Position(loc.startline - 1, 0),
-        new vscode.Position(loc.endline - 1, loc.code.split("\n").at(-1).length) // - 1 because VSCode Ranges are 0-indexed. Last thing gets last char of line
-      ),
-      code: loc.code,
-    };
-  });
+  return await Promise.all(
+    resp.response.map(async (loc: any) => {
+      let range = new vscode.Range(
+        loc.range.startline,
+        loc.range.startcol,
+        loc.range.endline,
+        loc.range.endcol
+      );
+      let code = await readFileAtRange(range, loc.filepath);
+      return {
+        filename: loc.filepath,
+        range,
+        code,
+      };
+    })
+  );
 }
 
 export async function writeUnitTestForFunction(
@@ -350,9 +356,9 @@ async function getFileContents(
   return fileContents;
 }
 
-function getFilenamesFromPythonStacktrace(stacktrace: string): string[] {
+function getFilenamesFromPythonStacktrace(traceback: string): string[] {
   let filenames: string[] = [];
-  for (let line of stacktrace.split("\n")) {
+  for (let line of traceback.split("\n")) {
     let match = line.match(/File "(.*)", line/);
     if (match) {
       filenames.push(match[1]);

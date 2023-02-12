@@ -9,7 +9,7 @@ Our debugging assistant automatically handles tedious portions of the debugging 
 - Generating fixes
 - Pulling in outside context
 - Following data flows
-- Parsing stacktraces
+- Parsing tracebacks
 - Generate unit tests
 - Generate docstrings
 

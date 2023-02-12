@@ -90,12 +90,12 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
     let { stdout } = await runPythonScript("run_unit_test.py", [
       fileAndFunctionSpecifier,
     ]);
-    let stacktrace = parseFirstStacktrace(stdout);
-    if (!stacktrace) return;
+    let traceback = parseFirstStacktrace(stdout);
+    if (!traceback) return;
     vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
       debugPanelWebview?.postMessage({
         type: "traceback",
-        traceback: stacktrace,
+        traceback: traceback,
       });
     });
   },

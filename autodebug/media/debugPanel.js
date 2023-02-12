@@ -4,10 +4,10 @@
   const relevantVarsSelect = document.querySelector(".relevantVars");
   const highlightedCode = document.querySelector(".highlightedCode");
   const bugDescription = document.querySelector(".bugDescription");
-  const stacktrace = document.querySelector(".stacktrace");
+  const traceback = document.querySelector(".traceback");
 
-  // Find suspicious code when stacktrace textarea value is changed
-  stacktrace.addEventListener("input", () => {
+  // Find suspicious code when traceback textarea value is changed
+  traceback.addEventListener("input", () => {
     updateState({ debugContext: gatherDebugContext() });
     findSuspiciousCode();
   });
@@ -225,7 +225,7 @@
   function gatherDebugContext() {
     let debugContext = {};
     debugContext.explanation = bugDescription.value;
-    debugContext.stacktrace = stacktrace.value;
+    debugContext.traceback = traceback.value;
     debugContext.suggestion = fixSuggestion.innerHTML;
     debugContext.additionalContext = additionalContextTextarea.value;
     debugContext.codeSelections = selectedRanges
@@ -247,7 +247,7 @@
     }
     if (state.debugContext) {
       bugDescription.value = state.debugContext.explanation;
-      stacktrace.value = state.debugContext.stacktrace;
+      traceback.value = state.debugContext.traceback;
       fixSuggestion.innerHTML = state.debugContext.suggestion;
       additionalContextTextarea.value = state.debugContext.additionalContext;
       for (let codeSelection of state.debugContext.codeSelections) {
@@ -295,7 +295,7 @@
         break;
       }
       case "traceback": {
-        stacktrace.value = message.traceback;
+        traceback.value = message.traceback;
         if (selectedRanges.length === 0) {
           findSuspiciousCode();
         }
