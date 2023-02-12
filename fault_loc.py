@@ -3,10 +3,28 @@ from boltons import tbutils
 import ast
 from llm import OpenAI
 import numpy as np
-from autodebug.scripts.update import DEFAULT_GIT_IGNORE_PATTERNS
 import pathspec
 
 gpt = OpenAI()
+
+DEFAULT_GIT_IGNORE_PATTERNS = [
+    "**/.env",
+    "**/env",
+    "**/venv",
+    "**/node_modules",
+    "**/__pycache__",
+    "**/dist",
+    "**/build",
+    "**/.pytest_cache",
+    "**/.mypy_cache",
+    "**/.coverage",
+    "**/.DS_Store",
+    "**/coverage.xml",
+    "**/bin/**",
+    "**/opt/**",
+    "**/env/**"
+    "autodebug/data/**"
+]
 
 to_be_ignored_spec = pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, DEFAULT_GIT_IGNORE_PATTERNS)
 
