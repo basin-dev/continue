@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 import {
   listTenThings,
-  findSuspiciousCode,
   getSuggestion,
   makeEdit,
   apiRequest,
+  serializeDebugContext,
 } from "./bridge";
 import { lineIsComment } from "./languages/python";
 import { showSuggestion, writeAndShowUnitTest } from "./textEditorDisplay";
@@ -80,19 +80,11 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "explainCode": {
-        if (
-          !data.debugContext.codeSelections?.filter(
-            (cs: any) => cs.code !== undefined
-          )
-        )
-          break;
+        let body = serializeDebugContext(data.debugContext);
+        if (!body) break;
 
         let resp = await apiRequest("debug/explain", {
-          body: {
-            traceback: data.debugContext.traceback,
-            description: data.debugContext.explanation,
-            code: data.debugContext.codeSelections.map((cs: any) => cs.code!),
-          },
+          body,
           method: "POST",
         });
         panel.webview.postMessage({
@@ -103,17 +95,19 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
       }
       case "makeEdit": {
         let debugContext = data.debugContext;
-        let suggestions = await makeEdit(debugContext);
-        // TODO: Here we are just hoping that the files come out in the same number and order. Should be making sure.
+        let suggestedEdits = await makeEdit(debugContext);
 
-        for (let i = 0; i < suggestions.length; i++) {
-          let suggestion = suggestions[i];
-          let codeSelection = debugContext.codeSelections[i];
-          if (!codeSelection.filename || !codeSelection.range) continue;
+        for (let i = 0; i < suggestedEdits.length; i++) {
+          let edit = suggestedEdits[i];
           await showSuggestion(
-            codeSelection.filename,
-            codeSelection.range,
-            suggestion
+            edit.filepath,
+            new vscode.Range(
+              edit.range.start.line,
+              edit.range.start.character,
+              edit.range.end.line,
+              edit.range.end.character
+            ),
+            edit.replacement
           );
         }
 
@@ -150,7 +144,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
                         ).toString(),
                         lineno: codeSelection.range.end.line,
                       },
-                      description: data.debugContext.explanation,
+                      description: data.debugContext.description,
                     },
                   });
 

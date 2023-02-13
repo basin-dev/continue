@@ -29,7 +29,7 @@ class CustomDictModel(BaseModel):
 
 class Position(BaseModel):
     line: int
-    col: int
+    character: int
 
     def __le__(self, other: "Position") -> bool:
         return self < other or self == other
@@ -38,13 +38,13 @@ class Position(BaseModel):
         return self > other or self == other
 
     def __eq__(self, other: "Position") -> bool:
-        return self.line == other.line and self.col == other.col
+        return self.line == other.line and self.character == other.character
 
     def __lt__(self, other: "Position") -> bool:
         if self.line < other.line:
             return True
         elif self.line == other.line:
-            return self.col < other.col
+            return self.character < other.character
         else:
             return False
         
@@ -52,7 +52,7 @@ class Position(BaseModel):
         if self.line > other.line:
             return True
         elif self.line == other.line:
-            return self.col > other.col
+            return self.character > other.character
         else:
             return False
 
@@ -112,3 +112,8 @@ class Traceback(BaseModel):
             language=ProgrammingLangauge(ProgrammingLangauge.python),
             full_traceback=tbutil_parsed_exc.to_string(),
         )
+    
+class FileEdit(BaseModel):
+    filepath: str
+    range: Range
+    replacement: str

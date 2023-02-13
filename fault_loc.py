@@ -124,21 +124,21 @@ def get_ast_range(tree: ast.AST) -> Range:
         return Range(
             start=Position(
                 line=tree.body[0].lineno - 1,
-                col=tree.body[0].col_offset,
+                character=tree.body[0].col_offset,
             ),
             end=Position(  
                 line=tree.body[-1].end_lineno - 1,
-                col=tree.body[-1].end_col_offset,
+                character=tree.body[-1].end_col_offset,
             ),
         )
     return Range(
         start=Position(
             line=tree.lineno - 1,
-            col=tree.col_offset,
+            character=tree.col_offset,
         ),
         end=Position(
             line=tree.end_lineno - 1,
-            col=tree.end_col_offset,
+            character=tree.end_col_offset,
         ),
     )
 

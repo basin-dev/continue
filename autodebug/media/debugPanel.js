@@ -224,7 +224,7 @@
 
   function gatherDebugContext() {
     let debugContext = {};
-    debugContext.explanation = bugDescription.value;
+    debugContext.description = bugDescription.value;
     debugContext.traceback = traceback.value;
     debugContext.suggestion = fixSuggestion.innerHTML;
     debugContext.additionalContext = additionalContextTextarea.value;
@@ -246,7 +246,7 @@
       return;
     }
     if (state.debugContext) {
-      bugDescription.value = state.debugContext.explanation;
+      bugDescription.value = state.debugContext.description;
       traceback.value = state.debugContext.traceback;
       fixSuggestion.innerHTML = state.debugContext.suggestion;
       additionalContextTextarea.value = state.debugContext.additionalContext;

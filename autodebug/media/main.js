@@ -8,7 +8,7 @@
   });
 
   const traceback = document.querySelector(".traceback");
-  const explanation = document.querySelector(".explanation");
+  const description = document.querySelector(".description");
   const answerDiv = document.querySelector(".answer");
   const question = document.querySelector(".question");
 
@@ -34,7 +34,7 @@
   function startDebug() {
     vscode.postMessage({
       type: "startDebug",
-      explanation: explanation.value,
+      description: description.value,
       traceback: traceback.value,
     });
   }

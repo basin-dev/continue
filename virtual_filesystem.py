@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List
 import os
-from models import SerializedVirtualFileSystem, RangeInFile, Range
+from models import SerializedVirtualFileSystem, RangeInFile, Range, FileEdit
 
 class FileSystem(ABC):
     """An abstract filesystem that can read/write from a set of files."""
@@ -26,22 +26,22 @@ class FileSystem(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def replace_range_in_file(self, r: RangeInFile, new_content: str):
+    def apply_file_edit(self, edit: FileEdit):
         raise NotImplementedError
     
     @classmethod
     def read_range_in_str(self, s: str, r: Range) -> str:
         lines = s.splitlines()[r.start.line:r.end.line + 1]
-        lines[0] = lines[0][r.start.col:]
-        lines[-1] = lines[-1][:r.end.col + 1]
+        lines[0] = lines[0][r.start.character:]
+        lines[-1] = lines[-1][:r.end.character + 1]
         return "\n".join(lines)
     
     @classmethod
-    def replace_range_in_str(self, s: str, range: Range, replacement: str) -> str:
+    def apply_edit_to_str(self, s: str, edit: FileEdit) -> str:
         lines = s.splitlines()
-        before_lines = lines[:range.start.line]
-        after_lines = lines[range.end.line + 1:]
-        between_str = lines[range.start.line][:range.start.col] + replacement + lines[range.end.line][range.end.col + 1:]
+        before_lines = lines[:edit.range.start.line]
+        after_lines = lines[edit.range.end.line + 1:]
+        between_str = lines[edit.range.start.line][:edit.range.start.character] + edit.replacement + lines[edit.range.end.line][edit.range.end.character + 1:]
         
         lines = before_lines + between_str.splitlines() + after_lines
         return "\n".join(lines)
@@ -66,10 +66,10 @@ class RealFileSystem(FileSystem):
     def read_range_in_file(self, r: RangeInFile) -> str:
         return FileSystem.read_range_in_str(self.read(r.filepath), r.range)
     
-    def replace_range_in_file(self, r: RangeInFile, new_content: str):
-        old_content = self.read(r.filepath)
-        new_content = FileSystem.replace_range_in_str(old_content, r.range, new_content)
-        self.write(r.filepath, new_content)
+    def apply_file_edit(self, edit: FileEdit):
+        old_content = self.read(edit.filepath)
+        new_content = FileSystem.apply_edit_to_str(old_content, edit)
+        self.write(edit.filepath, new_content)
     
 class VirtualFileSystem(FileSystem):
     """A simulated filesystem from a mapping of filepath to file contents."""
@@ -99,7 +99,7 @@ class VirtualFileSystem(FileSystem):
     def read_range_in_file(self, r: RangeInFile) -> str:
         return FileSystem.read_range_in_str(self.read(r.filepath), r.range)
     
-    def replace_range_in_file(self, r: RangeInFile, new_content: str):
-        old_content = self.read(r.filepath)
-        new_content = FileSystem.replace_range_in_str(old_content, r.range, new_content)
-        self.write(r.filepath, new_content)
+    def apply_file_edit(self, edit: FileEdit):
+        old_content = self.read(edit.filepath)
+        new_content = FileSystem.apply_edit_to_str(old_content, edit)
+        self.write(edit.filepath, new_content)

@@ -8,7 +8,7 @@ from llm import OpenAI
 from prompts import SimplePrompter
 import ast
 import os
-from models import RangeInFile, SerializedVirtualFileSystem, Traceback
+from models import RangeInFile, SerializedVirtualFileSystem, Traceback, FileEdit
 from virtual_filesystem import VirtualFileSystem, FileSystem
 from util import merge_ranges_in_files
 
@@ -154,7 +154,14 @@ class DebugContext(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-def ctx_prompt(ctx: DebugContext, final_instruction: str) -> str:
+def ctx_prompt(ctx: DebugContextBody, final_instruction: str) -> str:
+    ctx = DebugContext(
+        traceback=parse_traceback(ctx.traceback),
+        ranges_in_files=ctx.ranges_in_files,
+        filesystem=VirtualFileSystem(ctx.filesystem),
+        description=ctx.description
+    )
+
     prompt = ''
     if ctx.traceback is not None and ctx.traceback != '':
         prompt += f"I ran into this problem with my Python code:\n\n{ctx.traceback.full_traceback}\n\n"
@@ -220,32 +227,32 @@ def parse_multiple_file_completion(completion: str, ranges_in_files: List[RangeI
                 current_file_lines.append(line)
     return suggestions
 
-def edit_in_filesystem(ctx: DebugContext) -> FileSystem:
-    """Edit the code in the filesystem to fix the problem."""
-    completion = edit_prompter.complete(ctx)
-    suggestions = parse_multiple_file_completion(completion, ctx.ranges_in_files)
-
-    for suggestion_filepath, suggestion in suggestions.items():
-        range_in_file = list(filter(lambda r: r.filepath == suggestion_filepath, ctx.ranges_in_files))[0]
-        ctx.filesystem.replace_range_in_file(range_in_file, suggestion)
-
-    return ctx.filesystem
-
-class EditResp(BaseModel):
-    completion: str
-
-@router.post("/edit")
-def edit_endpoint(body: DebugContextBody) -> EditResp:
+def suggest_file_edits(body: DebugContextBody) -> List[FileEdit]:
+    """Suggest edits in the code to fix the problem."""
     ctx = DebugContext(
         traceback=parse_traceback(body.traceback),
         ranges_in_files=body.ranges_in_files,
         filesystem=VirtualFileSystem(body.filesystem),
         description=body.description
     )
+    completion = edit_prompter.complete(body)
+    suggestions = parse_multiple_file_completion(completion, ctx.ranges_in_files)
 
-    filesystem = edit_in_filesystem(ctx.filesystem, ctx)
+    edits: List[FileEdit] = []
+    for suggestion_filepath, suggestion in suggestions.items():
+        range_in_file = list(filter(lambda r: r.filepath == suggestion_filepath, ctx.ranges_in_files))[0]
+        edits.append(FileEdit(range=range_in_file.range, filepath=range_in_file.filepath, replacement=suggestion))
 
-    return {"completion": filesystem.serialize()}
+    return edits
+
+class EditResp(BaseModel):
+    completion: List[FileEdit]
+
+@router.post("/edit")
+def edit_endpoint(body: DebugContextBody) -> EditResp:
+    edits = suggest_file_edits(body)
+
+    return {"completion": edits}
 
 class FindBody(BaseModel):
     traceback: str

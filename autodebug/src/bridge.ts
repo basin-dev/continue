@@ -3,6 +3,7 @@ import * as path from "path";
 const axios = require("axios").default;
 import { getExtensionUri, readFileAtRange } from "./vscodeUtils";
 import { convertSingleToDoubleQuoteJSON } from "./util";
+import { readFileSync } from "fs";
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 
@@ -176,8 +177,7 @@ export interface CompleteCodeSelection {
 }
 export interface DebugContext {
   traceback?: string;
-  explanation?: string;
-  unitTest?: string;
+  description?: string;
   suggestion?: string;
   codeSelections?: CodeSelection[];
 }
@@ -222,59 +222,58 @@ export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
   return ctx;
 }
 
+function codeSelectionsToVirtualFileSystem(codeSelections: CodeSelection[]): {
+  [filepath: string]: string;
+} {
+  let virtualFileSystem: { [filepath: string]: string } = {};
+  for (let cs of codeSelections) {
+    if (!cs.filename) continue;
+    if (cs.filename in virtualFileSystem) continue;
+    let content = readFileSync(cs.filename, "utf8");
+    virtualFileSystem[cs.filename] = content;
+  }
+  return virtualFileSystem;
+}
+
+export function serializeDebugContext(ctx: DebugContext): any {
+  if (!ctx.codeSelections?.filter((cs) => cs.code !== undefined))
+    return undefined;
+
+  return {
+    traceback: ctx.traceback,
+    description: ctx.description,
+    filesystem: codeSelectionsToVirtualFileSystem(ctx.codeSelections),
+    ranges_in_files: ctx.codeSelections.map((cs) => {
+      return {
+        filepath: cs.filename,
+        range: cs.range,
+      };
+    }),
+  };
+}
+
 export async function listTenThings(ctx: DebugContext): Promise<string> {
-  if (!ctx.codeSelections?.filter((cs) => cs.code !== undefined)) return "";
+  let body = serializeDebugContext(ctx);
+  if (!body) return "";
 
   let resp = await apiRequest("debug/list", {
-    body: {
-      traceback: ctx.traceback,
-      description: ctx.explanation,
-      code: ctx.codeSelections.map((cs) => cs.code!),
-    },
+    body,
     method: "POST",
   });
 
   return resp.completion;
 }
 
-function parseMultipleFileSuggestion(suggestion: string): string[] {
-  let suggestions: string[] = [];
-  let currentFileLines: string[] = [];
-  let lastWasFile = false;
-  let insideFile = false;
-  for (let line of suggestion.split("\n")) {
-    if (line.trimStart().startsWith("File #")) {
-      lastWasFile = true;
-    } else if (lastWasFile && line.startsWith("```")) {
-      lastWasFile = false;
-      insideFile = true;
-    } else if (insideFile) {
-      if (line.startsWith("```")) {
-        insideFile = false;
-        suggestions.push(currentFileLines.join("\n"));
-        currentFileLines = [];
-      } else {
-        currentFileLines.push(line);
-      }
-    }
-  }
-  return suggestions;
-}
-
-export async function makeEdit(ctx: DebugContext): Promise<string[]> {
-  if (!ctx.codeSelections?.filter((cs) => cs.code !== undefined)) return [];
+export async function makeEdit(ctx: DebugContext): Promise<any[]> {
+  let body = serializeDebugContext(ctx);
+  if (!body) return [];
 
   let resp = await apiRequest("debug/edit", {
-    body: {
-      traceback: ctx.traceback,
-      description: ctx.explanation,
-      code: ctx.codeSelections.map((cs) => cs.code!),
-    },
+    body,
     method: "POST",
   });
 
-  const suggestions = parseMultipleFileSuggestion(resp.completion);
-  return suggestions;
+  return resp.completion;
 }
 
 export interface CodeLocation {
@@ -293,7 +292,7 @@ export async function findSuspiciousCode(
   let resp = await apiRequest("debug/find", {
     body: {
       traceback: ctx.traceback,
-      description: ctx.explanation,
+      description: ctx.description,
       filesystem: files,
     },
     method: "POST",
@@ -302,10 +301,10 @@ export async function findSuspiciousCode(
   return await Promise.all(
     resp.response.map(async (loc: any) => {
       let range = new vscode.Range(
-        loc.range.startline,
-        loc.range.startcol,
-        loc.range.endline,
-        loc.range.endcol
+        loc.range.start.line,
+        loc.range.start.character,
+        loc.range.end.line,
+        loc.range.end.character
       );
       let code = await readFileAtRange(range, loc.filepath);
       return {
