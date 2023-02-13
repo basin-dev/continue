@@ -1,5 +1,5 @@
 import subprocess
-from typing import List
+from typing import Dict, List
 from fastapi import APIRouter
 from pydantic import BaseModel
 import fault_loc
@@ -9,7 +9,8 @@ from prompts import SimplePrompter
 import ast
 import os
 from models import RangeInFile, SerializedVirtualFileSystem, Traceback
-from virtual_filesystem import VirtualFileSystem
+from virtual_filesystem import VirtualFileSystem, FileSystem
+from util import merge_ranges_in_files
 
 llm = OpenAI()
 router = APIRouter(prefix="/debug", tags=["debug"])
@@ -36,7 +37,7 @@ def get_steps(traceback: str) -> str:
     if len(traceback.frames) == 0:
         raise Exception("No frames found in traceback")
     sus_frame = fault_loc.fl1(traceback)
-    relevant_frames = fault_loc.filter_traceback_frames(traceback.frames)
+    relevant_frames = fault_loc.filter_ignored_traceback_frames(traceback.frames)
     traceback.frames = relevant_frames
 
     resp = fix_suggestion_prompter.complete(traceback)
@@ -138,19 +139,35 @@ def suggestion(traceback: str):
     suggestion = get_steps(traceback)
     return {"completion": suggestion}
  
-def ctx_prompt(ctx, final_instruction: str) -> str:
+class DebugContextBody(BaseModel):
+    traceback: str
+    ranges_in_files: List[RangeInFile]
+    filesystem: SerializedVirtualFileSystem
+    description: str
+
+class DebugContext(BaseModel):
+    traceback: Traceback
+    ranges_in_files: List[RangeInFile]
+    filesystem: FileSystem
+    description: str
+
+    class Config:
+        arbitrary_types_allowed = True
+
+def ctx_prompt(ctx: DebugContext, final_instruction: str) -> str:
     prompt = ''
-    if ctx[0] is not None and ctx[0] != '':
-        prompt += f"I ran into this problem with my Python code:\n\n{ctx[0]}\n\n"
-    if ctx[1] is not None and len(ctx[1]) > 0:
+    if ctx.traceback is not None and ctx.traceback != '':
+        prompt += f"I ran into this problem with my Python code:\n\n{ctx.traceback.full_traceback}\n\n"
+    if len(ctx.ranges_in_files) > 0:
         prompt += "This is the code I am trying to fix:\n\n"
         i = 1
-        for code in ctx[1]:
-            if code.strip() != "":
-                prompt += f"File #{i}\n```\n{code}\n```\n\n"
+        for range_in_file in ctx.ranges_in_files:
+            contents = ctx.filesystem.read_range_in_file(range_in_file)
+            if contents.strip() != "":
+                prompt += f"File ({range_in_file.filepath})\n```\n{contents}\n```\n\n"
                 i += 1
-    if ctx[2] is not None and ctx[2] != '':
-        prompt += f"This is a description of the problem:\n\n{ctx[2]}\n\n"
+    if ctx.description is not None and ctx.description != '':
+        prompt += f"This is a description of the problem:\n\n{ctx.description}\n\n"
     
     prompt += final_instruction + "\n\n"
     return prompt
@@ -158,37 +175,77 @@ def ctx_prompt(ctx, final_instruction: str) -> str:
 n = 3
 n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potential solutions to the problem or causes. They should be precise and useful:"))
 
-class DebugContext(BaseModel):
-    traceback: str
-    code: List[str]
-    description: str
 
 @router.post("/list")
-def listten(ctx: DebugContext):
-    n_things = n_things_prompter.complete((ctx.traceback, ctx.code, ctx.description))
+def listten(body: DebugContextBody):
+    n_things = n_things_prompter.complete(body)
     return {"completion": n_things}
 
 explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
 
 @router.post("/explain")
-def explain(ctx: DebugContext):
-    explanation = explain_code_prompter.complete((ctx.traceback, ctx.code, ctx.description))
+def explain(body: DebugContextBody):
+    explanation = explain_code_prompter.complete(body)
     return {"completion": explanation}
 
 edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"))
 
-@router.post("/edit")
-def edit(ctx: DebugContext):
-    print(edit_prompter._compile_prompt((ctx.traceback, ctx.code, ctx.description)))
-    new_code = edit_prompter.complete((ctx.traceback, ctx.code, ctx.description))
-
+def parse_multiple_file_completion(completion: str, ranges_in_files: List[RangeInFile]) -> Dict[str, str]:
     # Should do a better job of ensuring the ``` format, but for now the issue is mostly just on single file inputs:
-    if not '```' in new_code:
-        new_code = "```\n" + new_code + "\n```"
-    elif new_code.splitlines()[0].strip() == '```':
-        new_code = "File #1\n" + new_code
+    if not '```' in completion:
+        completion = "```\n" + completion + "\n```"
+    elif completion.splitlines()[0].strip() == '```':
+        first_filepath = ranges_in_files[0].filepath
+        completion = f"File ({first_filepath})\n" + completion
 
-    return {"completion": new_code}
+    suggestions: Dict[str, str] = {}
+    current_file_lines: List[str] = []
+    current_filepath: str | None = None
+    last_was_file = False
+    inside_file = False
+    for line in completion.splitlines():
+        if line.strip().startswith("File ("):
+            last_was_file = True
+            current_filepath = line.strip()[6:-1]
+        elif last_was_file and line.startswith("```"):
+            last_was_file = False
+            inside_file = True
+        elif inside_file:
+            if line.startswith("```"):
+                inside_file = False
+                suggestions[current_filepath] = "\n".join(current_file_lines)
+                current_file_lines = []
+                current_filepath = None
+            else:
+                current_file_lines.append(line)
+    return suggestions
+
+def edit_in_filesystem(ctx: DebugContext) -> FileSystem:
+    """Edit the code in the filesystem to fix the problem."""
+    completion = edit_prompter.complete(ctx)
+    suggestions = parse_multiple_file_completion(completion, ctx.ranges_in_files)
+
+    for suggestion_filepath, suggestion in suggestions.items():
+        range_in_file = list(filter(lambda r: r.filepath == suggestion_filepath, ctx.ranges_in_files))[0]
+        ctx.filesystem.replace_range_in_file(range_in_file, suggestion)
+
+    return ctx.filesystem
+
+class EditResp(BaseModel):
+    completion: str
+
+@router.post("/edit")
+def edit_endpoint(body: DebugContextBody) -> EditResp:
+    ctx = DebugContext(
+        traceback=parse_traceback(body.traceback),
+        ranges_in_files=body.ranges_in_files,
+        filesystem=VirtualFileSystem(body.filesystem),
+        description=body.description
+    )
+
+    filesystem = edit_in_filesystem(ctx.filesystem, ctx)
+
+    return {"completion": filesystem.serialize()}
 
 class FindBody(BaseModel):
     traceback: str
@@ -198,17 +255,22 @@ class FindBody(BaseModel):
 class FindResp(BaseModel):
     response: List[RangeInFile]
 
-@router.post("/find")
-def find_sus_code(body: FindBody) -> FindResp:
-    parsed = parse_traceback(body.traceback)
-    filesystem = VirtualFileSystem.from_serialized(body.filesystem)
-    description = body.description
+def find_sus_code(traceback: Traceback, filesystem: FileSystem, description: str | None) -> FindResp:
+    # Refactor this so it's inside of fl2
     if description is None or description == "":
-        description = parsed.message
+        description = traceback.message
 
-    most_sus_frames = fault_loc.fl2(parsed, description, filesystem=filesystem)
-
-    return {"response": [
+    most_sus_frames = fault_loc.fl2(traceback, description, filesystem=filesystem)
+    range_in_files = [
         fault_loc.frame_to_code_range(frame, filesystem=filesystem)
         for frame in most_sus_frames
-    ]}
+    ]
+    range_in_files = merge_ranges_in_files(range_in_files)
+
+    return FindResp(**{"response": range_in_files})
+
+@router.post("/find")
+def find_sus_code_endpoint(body: FindBody) -> FindResp:
+    parsed = parse_traceback(body.traceback)
+    filesystem = VirtualFileSystem.from_serialized(body.filesystem)
+    return find_sus_code(parsed, filesystem, body.description)

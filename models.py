@@ -18,8 +18,8 @@ class CustomDictModel(BaseModel):
     def __getitem__(self, key):
         return self.__root__[key]
 
-class AbsoluteFilePath(CustomStringModel):
-    __root__: str
+# class AbsoluteFilePath(CustomStringModel):
+#     __root__: str
 
     @validator("__root__")
     def validate_path(cls, v):
@@ -27,22 +27,60 @@ class AbsoluteFilePath(CustomStringModel):
             raise ValueError("Path must be absolute")
         return v
 
+class Position(BaseModel):
+    line: int
+    col: int
+
+    def __le__(self, other: "Position") -> bool:
+        return self < other or self == other
+    
+    def __ge__(self, other: "Position") -> bool:
+        return self > other or self == other
+
+    def __eq__(self, other: "Position") -> bool:
+        return self.line == other.line and self.col == other.col
+
+    def __lt__(self, other: "Position") -> bool:
+        if self.line < other.line:
+            return True
+        elif self.line == other.line:
+            return self.col < other.col
+        else:
+            return False
+        
+    def __gt__(self, other: "Position") -> bool:
+        if self.line > other.line:
+            return True
+        elif self.line == other.line:
+            return self.col > other.col
+        else:
+            return False
+
 class Range(BaseModel):
     """A range in a file. 0-indexed."""
-    startline: int
-    endline: int
-    startcol: int
-    endcol: int
+    start: Position
+    end: Position
+
+    def union(self, other: "Range") -> "Range":
+        return Range(
+            start=min(self.start, other.start),
+            end=max(self.end, other.end),
+        )
+
+    def overlaps_with(self, other: "Range") -> bool:
+        return not (self.end < other.start or self.start > other.end)
 
 class RangeInFile(BaseModel):
-    filepath: AbsoluteFilePath
+    filepath: str
     range: Range
 
-class SerializedVirtualFileSystem(CustomDictModel):
-    __root__: Dict[AbsoluteFilePath, str]
+# class SerializedVirtualFileSystem(CustomDictModel):
+    # __root__: Dict[AbsoluteFilePath, str]
+
+SerializedVirtualFileSystem = Dict[str, str]
 
 class TracebackFrame(BaseModel):
-    filepath: AbsoluteFilePath
+    filepath: str
     lineno: int
     function: str
     code: str | None
@@ -56,13 +94,14 @@ class Traceback(BaseModel):
     frames: List[TracebackFrame]
     message: str
     language: ProgrammingLangauge
+    full_traceback: str | None
 
     @classmethod
     def from_tbutil_parsed_exc(cls, tbutil_parsed_exc):
         return cls(
             frames=[
                 TracebackFrame(
-                    filepath=AbsoluteFilePath(__root__=frame["filepath"]),
+                    filepath=frame["filepath"],
                     lineno=frame["lineno"],
                     function=frame["funcname"],
                     code=frame["source_line"],
@@ -71,4 +110,5 @@ class Traceback(BaseModel):
             ],
             message=tbutil_parsed_exc.exc_msg,
             language=ProgrammingLangauge(ProgrammingLangauge.python),
+            full_traceback=tbutil_parsed_exc.to_string(),
         )

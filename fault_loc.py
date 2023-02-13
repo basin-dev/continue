@@ -6,19 +6,31 @@ import numpy as np
 from tools_context.index import DEFAULT_GIT_IGNORE_PATTERNS
 import pathspec
 from virtual_filesystem import FileSystem, VirtualFileSystem
-from models import RangeInFile, Range, Traceback, TracebackFrame
+from models import RangeInFile, Range, Traceback, TracebackFrame, Position
+import os
 
 gpt = OpenAI()
 
 to_be_ignored_spec = pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, DEFAULT_GIT_IGNORE_PATTERNS)
 
-def filter_traceback_frames(frames: List[TracebackFrame]) -> List[TracebackFrame]:
+def filter_ignored_traceback_frames(frames: List[TracebackFrame]) -> List[TracebackFrame]:
     """Filter out frames that are not relevant to the user's code."""
     return list(filter(lambda x: not to_be_ignored_spec.match_file(x.filepath), frames))
 
+def filter_test_traceback_frames(frames: List[TracebackFrame]) -> List[TracebackFrame]:
+    """Filter out frames that are test files."""
+    not_test = []
+    for frame in frames:
+        basename = os.path.basename(frame.filepath)
+        if basename.endswith("_test.py") or basename.startswith("test_"):
+            continue
+        not_test.append(frame)
+
+    return not_test
+
 def fl1(tb: Traceback) -> TracebackFrame:
     """Find the most relevant frame in the traceback."""
-    relevant = filter_traceback_frames(tb.frames)
+    relevant = filter_ignored_traceback_frames(tb.frames)
     if len(relevant) == 0:
         return tb.frames[-1]
     return relevant[-1]
@@ -88,7 +100,8 @@ def indices_of_top_k(arr: List[float], k: int) -> List[int]:
 
 def fl2(tb: Traceback, query: str, filesystem: FileSystem=VirtualFileSystem({}), n: int = 4) -> List[TracebackFrame]:
     """Return the most relevant frames in the traceback."""
-    filtered_frames = filter_traceback_frames(tb.frames)
+    filtered_frames = filter_ignored_traceback_frames(tb.frames)
+    filtered_frames = filter_test_traceback_frames(filtered_frames)
     if len(filtered_frames) <= n:
         return filtered_frames
 
@@ -109,16 +122,24 @@ def get_ast_range(tree: ast.AST) -> Range:
     """Get the start and end line numbers of the AST node."""
     if isinstance(tree, ast.Module):
         return Range(
-            startline=tree.body[0].lineno - 1,
-            endline=tree.body[-1].end_lineno - 1,
-            startcol=tree.body[0].col_offset,
-            endcol=tree.body[-1].end_col_offset,
+            start=Position(
+                line=tree.body[0].lineno - 1,
+                col=tree.body[0].col_offset,
+            ),
+            end=Position(  
+                line=tree.body[-1].end_lineno - 1,
+                col=tree.body[-1].end_col_offset,
+            ),
         )
     return Range(
-        startline=tree.lineno - 1,
-        endline=tree.end_lineno - 1,
-        startcol=tree.col_offset,
-        endcol=tree.end_col_offset,
+        start=Position(
+            line=tree.lineno - 1,
+            col=tree.col_offset,
+        ),
+        end=Position(
+            line=tree.end_lineno - 1,
+            col=tree.end_col_offset,
+        ),
     )
 
 def frame_to_code_range(frame: TracebackFrame, filesystem: FileSystem=VirtualFileSystem({})) -> RangeInFile:

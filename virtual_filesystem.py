@@ -25,11 +25,25 @@ class FileSystem(ABC):
     def read_range_in_file(self, r: RangeInFile) -> str:
         raise NotImplementedError
     
+    @abstractmethod
+    def replace_range_in_file(self, r: RangeInFile, new_content: str):
+        raise NotImplementedError
+    
     @classmethod
     def read_range_in_str(self, s: str, r: Range) -> str:
-        lines = s.splitlines()[r.range.startline:r.range.endline + 1]
-        lines[0] = lines[0][r.range.startcol:]
-        lines[-1] = lines[-1][:r.range.endcol + 1]
+        lines = s.splitlines()[r.start.line:r.end.line + 1]
+        lines[0] = lines[0][r.start.col:]
+        lines[-1] = lines[-1][:r.end.col + 1]
+        return "\n".join(lines)
+    
+    @classmethod
+    def replace_range_in_str(self, s: str, range: Range, replacement: str) -> str:
+        lines = s.splitlines()
+        before_lines = lines[:range.start.line]
+        after_lines = lines[range.end.line + 1:]
+        between_str = lines[range.start.line][:range.start.col] + replacement + lines[range.end.line][range.end.col + 1:]
+        
+        lines = before_lines + between_str.splitlines() + after_lines
         return "\n".join(lines)
 
 class RealFileSystem(FileSystem):
@@ -52,6 +66,11 @@ class RealFileSystem(FileSystem):
     def read_range_in_file(self, r: RangeInFile) -> str:
         return FileSystem.read_range_in_str(self.read(r.filepath), r.range)
     
+    def replace_range_in_file(self, r: RangeInFile, new_content: str):
+        old_content = self.read(r.filepath)
+        new_content = FileSystem.replace_range_in_str(old_content, r.range, new_content)
+        self.write(r.filepath, new_content)
+    
 class VirtualFileSystem(FileSystem):
     """A simulated filesystem from a mapping of filepath to file contents."""
     files: SerializedVirtualFileSystem
@@ -61,6 +80,9 @@ class VirtualFileSystem(FileSystem):
     @classmethod
     def from_serialized(cls, serialized: SerializedVirtualFileSystem):
         return cls(serialized)
+    
+    def serialize(self) -> SerializedVirtualFileSystem:
+        return self.files.copy()
     
     def read(self, path) -> str:
         return self.files[path]
@@ -76,3 +98,8 @@ class VirtualFileSystem(FileSystem):
     
     def read_range_in_file(self, r: RangeInFile) -> str:
         return FileSystem.read_range_in_str(self.read(r.filepath), r.range)
+    
+    def replace_range_in_file(self, r: RangeInFile, new_content: str):
+        old_content = self.read(r.filepath)
+        new_content = FileSystem.replace_range_in_str(old_content, r.range, new_content)
+        self.write(r.filepath, new_content)

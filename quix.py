@@ -5,11 +5,13 @@ import os
 import shutil
 import json
 import signal
-from debug import edit, find_sus_code, FindModel, DebugContext
+from debug import edit_in_filesystem, find_sus_code, FindBody, DebugContext
+from virtual_filesystem import RealFileSystem
+from models import Traceback
 
 PATH_TO_QUIX_REPO = "/Users/natesesti/Desktop/basin/QuixBugs"
 
-def parse_first_stacktrace(stdout: str) -> None | List[Dict]:
+def parse_first_traceback(stdout: str) -> None | Traceback:
     lines = stdout.splitlines()
     for i in range(len(lines)):
         if (lines[i].startswith("Traceback (most recent call last):")):
@@ -23,13 +25,17 @@ def parse_first_stacktrace(stdout: str) -> None | List[Dict]:
             break
     
     stdout = "\n".join(lines[i:j + 1])
-    return tbutils.ParsedException.from_string(stdout)
+
+    tbutil_parsed = tbutils.ParsedException.from_string(stdout)
+    if tbutil_parsed is None:
+        return None
+    return Traceback.from_tbutil_parsed_exc(tbutil_parsed)
 
 def list_options():
     files = os.listdir(PATH_TO_QUIX_REPO + "/python_programs")
     return list(map(lambda filename: filename.split(".")[0], files))
 
-def run_test(option: str, timeout: int | None=None) -> tbutils.ParsedException:
+def run_test(option: str, timeout: int | None=None) -> Traceback | None:
     os.chdir(PATH_TO_QUIX_REPO)
     command = ["pytest", f"python_testcases/test_{option}.py", "--tb=native"]
     if timeout is not None:
@@ -38,8 +44,8 @@ def run_test(option: str, timeout: int | None=None) -> tbutils.ParsedException:
         stdout = subprocess.run(command, capture_output=True).stdout.decode("utf-8")
     if stdout is None:
         return None
-    stacktrace = parse_first_stacktrace(stdout)
-    return stacktrace
+    traceback = parse_first_traceback(stdout)
+    return traceback
 
 def exec_command_with_timeout(command: List[str], seconds: int) -> str | None:
     def handler(signum, frame):
@@ -59,38 +65,42 @@ def main():
     python_programs_path = PATH_TO_QUIX_REPO + "/python_programs"
     shutil.rmtree(python_programs_path, ignore_errors=True)
     shutil.copytree(PATH_TO_QUIX_REPO + "/static_python_programs", python_programs_path)
+    local_filesystem = RealFileSystem()
     
-    outcomes = {}
-    for option in list_options():   
+    successes = []
+    options = list_options()
+    for option in options:   
         print("Running", option)
-        stacktrace = run_test(option, 2)
-        if stacktrace is None:
+        traceback = run_test(option, 2)
+        if traceback is None:
             print(f"Test {option} timed out.")
             continue
 
         filepath = f"{PATH_TO_QUIX_REPO}/python_programs/{option}.py"
-        print("Stacktrace: ", stacktrace.to_string() + "\n")
-        code_snippets = find_sus_code(FindModel(**{
-            "stacktrace": stacktrace.to_string(),
-            "description": "",
-            "files": {
-                filepath: open(filepath, "r").read(),
-            },
-        }))
+        print("Stacktrace: ", traceback.full_traceback + "\n")
+        code_snippets = find_sus_code(traceback, local_filesystem, "")
 
-        edited_code = edit(DebugContext(**{
-            "stacktrace": stacktrace.to_string(),
-            "description": "",
-            "code": list(map(lambda x: x['code'], code_snippets["response"])),
-        }))['completion']
-        print("Edited code: ", edited_code)
+        print("Code Snippets: ", code_snippets.response)
 
-        with open(filepath, "w") as f:
-            f.write(edited_code)
+        try:
+            edit_in_filesystem(DebugContext(
+                traceback=traceback,
+                description="",
+                ranges_in_files=code_snippets.response,
+                filesystem=local_filesystem,
+            ))
+        except:
+            continue
 
-        outcomes[option] = edited_code
+        traceback = run_test(option, 2)
+        if traceback is None:
+            print(f"Successfully fixed {option}.")
+            successes.append(option)
+            continue
+        print("\n\nAfter Fixing: ", traceback.full_traceback + "\n\n")
 
-    print(json.dumps(outcomes, indent=2))
+    print("DONE!")
+    print(f"{len(successes)}/{len(options)} successes: ", successes)
 
 if __name__ == "__main__":
     main()
@@ -99,6 +109,6 @@ if __name__ == "__main__":
 Benchmarking:
 0. Copy the bad python folder to a temporary folder where you will make edits
 1. Run the test on the failing code
-2. Pass the stacktrace and code to an edit generator
+2. Pass the traceback and code to an edit generator
 3. Make the edit on a copy of the file
 """
