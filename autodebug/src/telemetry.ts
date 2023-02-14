@@ -27,6 +27,20 @@ export enum TelemetryEvent {
   SuggestionRejected = "SuggestionRejected",
   // Queried universal prompt
   UniversalPromptQuery = "UniversalPromptQuery",
+  // `Enable Highlight` button clicked
+  HighlightEnabled = "HighlightEnabled",
+  // `Disable Highlight` button clicked
+  HighlightDisabled = "HighlightDisabled",
+  // `Explain Code` button clicked
+  ExplainCode = "ExplainCode",
+  // `Generate Ideas` button clicked
+  GenerateIdeas = "GenerateIdeas",
+  // `Suggest Fix` button clicked
+  SuggestFix = "SuggestFix",
+  // `Create Test` button clicked
+  CreateTest = "CreateTest",
+  // `AutoDebug This Test` button clicked
+  AutoDebugThisTest = "AutoDebugThisTest",
 }
 
 export function sendTelemetryEvent(

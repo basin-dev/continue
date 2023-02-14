@@ -17,7 +17,7 @@ import { findSuspiciousCode, runPythonScript } from "./bridge";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { parseFirstStacktrace } from "./languages/python";
 
-// COpy everything over from extension.ts
+// Copy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
   "autodebug.askQuestion": (data: any, webviewView: vscode.WebviewView) => {
     if (!vscode.workspace.workspaceFolders) {
@@ -87,6 +87,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
     );
   },
   "autodebug.debugTest": async (fileAndFunctionSpecifier: string) => {
+    sendTelemetryEvent(TelemetryEvent.AutoDebugThisTest)
     let { stdout } = await runPythonScript("run_unit_test.py", [
       fileAndFunctionSpecifier,
     ]);

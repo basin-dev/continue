@@ -7,6 +7,7 @@ import {
   apiRequest,
 } from "./bridge";
 import { lineIsComment } from "./languages/python";
+import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { showSuggestion, writeAndShowUnitTest } from "./textEditorDisplay";
 import { getExtensionUri, getNonce } from "./vscodeUtils";
 
@@ -54,6 +55,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
   panel.webview.onDidReceiveMessage(async (data) => {
     switch (data.type) {
       case "listTenThings": {
+        sendTelemetryEvent(TelemetryEvent.GenerateIdeas);
         let tenThings = await listTenThings(data.debugContext);
         panel.webview.postMessage({
           type: "listTenThings",
@@ -77,6 +79,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "explainCode": {
+        sendTelemetryEvent(TelemetryEvent.ExplainCode);
         if (
           !data.debugContext.codeSelections?.filter(
             (cs: any) => cs.code !== undefined
@@ -99,6 +102,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "makeEdit": {
+        sendTelemetryEvent(TelemetryEvent.SuggestFix);
         let debugContext = data.debugContext;
         let suggestions = await makeEdit(debugContext);
         // TODO: Here we are just hoping that the files come out in the same number and order. Should be making sure.
@@ -121,6 +125,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "generateUnitTest": {
+        sendTelemetryEvent(TelemetryEvent.CreateTest);
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
