@@ -108,6 +108,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
 const textEditorCommandsMap: { [command: string]: (...args: any) => {} } = {
   "autodebug.writeUnitTest": writeUnitTestCommand,
   "autodebug.writeDocstring": async (editor: vscode.TextEditor, _) => {
+    sendTelemetryEvent(TelemetryEvent.GenerateDocstring)
     let gutterSpinnerKey = showGutterSpinner(
       editor,
       editor.selection.active.line

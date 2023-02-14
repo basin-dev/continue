@@ -37,6 +37,8 @@ export enum TelemetryEvent {
   CreateTest = "CreateTest",
   // `AutoDebug This Test` button clicked
   AutoDebugThisTest = "AutoDebugThisTest",
+  // Command run to generate docstring
+  GenerateDocstring = "GenerateDocstring",
 }
 
 export function sendTelemetryEvent(

@@ -64,6 +64,11 @@ Recorded when the `Create Test` button is clicked.
 
 Recorded when the `AutoDebug This Test` button is clicked.
 
+#### GenerateDocstring
+
+Recorded when a user generates a docstring for a function
+using `cmd+shift+l` on MacOS or `ctrl+shift+l` on Windows.
+
 ### Future Ideas
 
 Server side
