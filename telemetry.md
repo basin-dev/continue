@@ -44,14 +44,6 @@ Recorded when a code fix suggestion is rejected.
 Recorded when a user asks a question to the prompt opened by `cmd+shift+j` 
 on MacOS or `ctrl+shift+j` on Windows. It includes what question was asked.
 
-#### HighlightEnabled
-
-Recorded when the `Enable Highlight` button is clicked.
-
-#### HighlightDisabled
-
-Recorded when the `Disable Highlight` button is clicked.
-
 #### ExplainCode
 
 Recorded when the `Explain Code` button is clicked.
@@ -81,5 +73,7 @@ Server side
 - Collect the code that was selected
 
 Client side
+- Collect `Enable Highlight` button clicked
+- Collect `Disable Highlight` button clicked
 - Collect the files that were edited
 - Collect the final state of the code

@@ -27,10 +27,6 @@ export enum TelemetryEvent {
   SuggestionRejected = "SuggestionRejected",
   // Queried universal prompt
   UniversalPromptQuery = "UniversalPromptQuery",
-  // `Enable Highlight` button clicked
-  HighlightEnabled = "HighlightEnabled",
-  // `Disable Highlight` button clicked
-  HighlightDisabled = "HighlightDisabled",
   // `Explain Code` button clicked
   ExplainCode = "ExplainCode",
   // `Generate Ideas` button clicked
