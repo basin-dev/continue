@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from llm import OpenAI
 from prompts import SimplePrompter
 import fault_loc
+from telemetry import send_telemetry_event, TelemetryEvent
 
 gpt = OpenAI()
 router = APIRouter(prefix="/docstring", tags=["docstring"])
@@ -137,7 +138,7 @@ def write_ds(input: str, output: str, double: bool=False, format: str="google", 
         write_ds_for_file(input, output, double=double, format=format)
 
 @router.get("/forline")
-def forline(filecontents: str, lineno: int, format: str="google"):
+def forline(userid: str, filecontents: str, lineno: int, format: str="google"):
     """Write a docstring for a function at a line number"""
     most_specific_context = fault_loc.find_most_specific_context(filecontents, lineno)
     
@@ -152,4 +153,14 @@ def forline(filecontents: str, lineno: int, format: str="google"):
     else:
         raise HTTPException(status_code=400, detail="Line number is not inside a function or class")
     
+    properties = {
+        "user_id": userid,
+        "selected_code": filecontents,
+        "language": "python", # TODO: Make this dynamic
+        "line_num": most_specific_context.lineno,
+        "docstring": docstring
+    }
+
+    send_telemetry_event(TelemetryEvent.DOCSTRING_GENERATED, properties)
+
     return {"completion": docstring, "lineno": most_specific_context.lineno}

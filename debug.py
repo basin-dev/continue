@@ -6,6 +6,7 @@ import fault_loc
 from boltons import tbutils
 from llm import OpenAI
 from prompts import SimplePrompter, EditPrompter
+from telemetry import send_telemetry_event, TelemetryEvent
 import ast
 import os
 
@@ -163,6 +164,18 @@ class DebugContext(BaseModel):
 @router.post("/list")
 def listten(ctx: DebugContext):
     n_things = n_things_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+
+    properties = {
+        "user_id": ctx.userid,
+        "selected_code": ctx.code,
+        "language": "python", # TODO: Make this dynamic
+        "bug_description": ctx.description,
+        "stack_trace": ctx.stacktrace,
+        "ideas": n_things
+    }
+
+    send_telemetry_event(TelemetryEvent.IDEAS_GENERATED, properties)
+
     return {"completion": n_things}
 
 explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
@@ -170,6 +183,18 @@ explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a th
 @router.post("/explain")
 def explain(ctx: DebugContext):
     explanation = explain_code_prompter.complete((ctx.stacktrace, ctx.code, ctx.description))
+
+    properties = {
+        "user_id": ctx.userid,
+        "selected_code": ctx.code,
+        "language": "python", # TODO: Make this dynamic
+        "bug_description": ctx.description,
+        "stack_trace": ctx.stacktrace,
+        "explanation": explanation
+    }
+
+    send_telemetry_event(TelemetryEvent.CODE_EXPLAINED, properties)
+
     return {"completion": explanation}
 
 edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"))
@@ -184,6 +209,17 @@ def edit(ctx: DebugContext):
         new_code = "```\n" + new_code + "\n```"
     elif new_code.splitlines()[0].strip() == '```':
         new_code = "File #1\n" + new_code
+
+    properties = {
+        "user_id": ctx.userid,
+        "selected_code": ctx.code,
+        "language": "python", # TODO: Make this dynamic
+        "bug_description": ctx.description,
+        "stack_trace": ctx.stacktrace,
+        "suggestion": new_code
+    }
+
+    send_telemetry_event(TelemetryEvent.FIX_SUGGESTED, properties)
 
     return {"completion": new_code}
 
