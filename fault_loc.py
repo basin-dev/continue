@@ -98,6 +98,14 @@ def indices_of_top_k(arr: List[float], k: int) -> List[int]:
     """Return the indices of the top k elements in the array."""
     return sorted(range(len(arr)), key=lambda i: arr[i])[-k:]
 
+def fl_assert(tb: Traceback, filesystem: FileSystem=VirtualFileSystem({})) -> List[RangeInFile]:
+    """Given a traceback which is only an assertion error, return the most likely locations of the bug."""
+    if not tb.message.startswith("AssertionError"):
+        return []
+    
+    # Figure out the function name
+    # In general this is an opposite problem. Want to narrow down offending scope
+
 def fl2(tb: Traceback, query: str, filesystem: FileSystem=VirtualFileSystem({}), n: int = 4) -> List[TracebackFrame]:
     """Return the most relevant frames in the traceback."""
     filtered_frames = filter_ignored_traceback_frames(tb.frames)

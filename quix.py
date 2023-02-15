@@ -5,7 +5,7 @@ import os
 import shutil
 import json
 import signal
-from debug import edit_in_filesystem, find_sus_code, FindBody, DebugContext
+from debug import suggest_file_edits, find_sus_code, FindBody, DebugContext
 from virtual_filesystem import RealFileSystem
 from models import Traceback
 
@@ -83,14 +83,18 @@ def main():
         print("Code Snippets: ", code_snippets.response)
 
         try:
-            edit_in_filesystem(DebugContext(
+            edits = suggest_file_edits(DebugContext(
                 traceback=traceback,
                 description="",
                 ranges_in_files=code_snippets.response,
                 filesystem=local_filesystem,
             ))
-        except:
+        except Exception as e:
+            print("Failed to generate edits: ", e + "\n\n")
             continue
+
+        for edit in edits:
+            local_filesystem.apply_file_edit(edit)
 
         traceback = run_test(option, 2)
         if traceback is None:

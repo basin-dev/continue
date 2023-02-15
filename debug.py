@@ -145,6 +145,14 @@ class DebugContextBody(BaseModel):
     filesystem: SerializedVirtualFileSystem
     description: str
 
+    def deserialize(self):
+        return DebugContext(
+            traceback=parse_traceback(self.traceback),
+            ranges_in_files=self.ranges_in_files,
+            filesystem=VirtualFileSystem(self.filesystem),
+            description=self.description
+        )
+
 class DebugContext(BaseModel):
     traceback: Traceback
     ranges_in_files: List[RangeInFile]
@@ -154,14 +162,7 @@ class DebugContext(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-def ctx_prompt(ctx: DebugContextBody, final_instruction: str) -> str:
-    ctx = DebugContext(
-        traceback=parse_traceback(ctx.traceback),
-        ranges_in_files=ctx.ranges_in_files,
-        filesystem=VirtualFileSystem(ctx.filesystem),
-        description=ctx.description
-    )
-
+def ctx_prompt(ctx: DebugContext, final_instruction: str) -> str:
     prompt = ''
     if ctx.traceback is not None and ctx.traceback != '':
         prompt += f"I ran into this problem with my Python code:\n\n{ctx.traceback.full_traceback}\n\n"
@@ -185,14 +186,14 @@ n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potent
 
 @router.post("/list")
 def listten(body: DebugContextBody):
-    n_things = n_things_prompter.complete(body)
+    n_things = n_things_prompter.complete(body.deserialize())
     return {"completion": n_things}
 
 explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
 
 @router.post("/explain")
 def explain(body: DebugContextBody):
-    explanation = explain_code_prompter.complete(body)
+    explanation = explain_code_prompter.complete(body.deserialize())
     return {"completion": explanation}
 
 edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"))
@@ -227,15 +228,9 @@ def parse_multiple_file_completion(completion: str, ranges_in_files: List[RangeI
                 current_file_lines.append(line)
     return suggestions
 
-def suggest_file_edits(body: DebugContextBody) -> List[FileEdit]:
+def suggest_file_edits(ctx: DebugContext) -> List[FileEdit]:
     """Suggest edits in the code to fix the problem."""
-    ctx = DebugContext(
-        traceback=parse_traceback(body.traceback),
-        ranges_in_files=body.ranges_in_files,
-        filesystem=VirtualFileSystem(body.filesystem),
-        description=body.description
-    )
-    completion = edit_prompter.complete(body)
+    completion = edit_prompter.complete(ctx)
     suggestions = parse_multiple_file_completion(completion, ctx.ranges_in_files)
 
     edits: List[FileEdit] = []
@@ -250,7 +245,7 @@ class EditResp(BaseModel):
 
 @router.post("/edit")
 def edit_endpoint(body: DebugContextBody) -> EditResp:
-    edits = suggest_file_edits(body)
+    edits = suggest_file_edits(body.deserialize())
 
     return {"completion": edits}
 
