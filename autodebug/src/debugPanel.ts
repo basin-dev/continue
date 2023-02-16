@@ -92,6 +92,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
             stacktrace: data.debugContext.stacktrace,
             description: data.debugContext.explanation,
             code: data.debugContext.codeSelections.map((cs: any) => cs.code!),
+            userid: vscode.env.machineId,
           },
           method: "POST",
         });

@@ -241,6 +241,7 @@ export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
         startline: codeSelection.range.start.line,
         endline: codeSelection.range.end.line,
         stacktrace: ctx.stacktrace,
+        userid: vscode.env.machineId,
       },
       method: "POST",
     });
@@ -264,6 +265,7 @@ export async function listTenThings(ctx: DebugContext): Promise<string> {
       stacktrace: ctx.stacktrace,
       description: ctx.explanation,
       code: ctx.codeSelections.map((cs) => cs.code!),
+      userid: vscode.env.machineId,
     },
     method: "POST",
   });
@@ -303,6 +305,7 @@ export async function makeEdit(ctx: DebugContext): Promise<string[]> {
       stacktrace: ctx.stacktrace,
       description: ctx.explanation,
       code: ctx.codeSelections.map((cs) => cs.code!),
+      userid: vscode.env.machineId,
     },
     method: "POST",
   });
@@ -356,6 +359,7 @@ export async function writeUnitTestForFunction(
         await vscode.workspace.fs.readFile(vscode.Uri.file(filename))
       ).toString(),
       lineno: position.line,
+      userid: vscode.env.machineId,
     },
   });
 
