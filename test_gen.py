@@ -389,7 +389,7 @@ def forline(userid: str, fp: FilePosition):
 
     properties = {
         "user_id": userid,
-        "selected_code": ctx.code,
+        "selected_code": ctx,
         "language": "python", # TODO: Make this dynamic
         "test": test.strip()
     }
