@@ -14,7 +14,7 @@ describe("Python Test Suite", () => {
     return a + b
 TypeError: unsupported operand type(s) for +: 'int' and 'str'`;
 
-  test("", () => {
+  test("Onboarding trace", () => {
     expect(parseFirstStacktrace(onboarding_trace)).toBe(onboarding_trace);
   });
 });
