@@ -3,7 +3,6 @@ import os
 from typing import Any, Dict, List, Tuple
 
 from pydantic import BaseModel
-import fault_loc
 from llm import OpenAI, count_tokens
 import pytest
 from fastapi import APIRouter, HTTPException

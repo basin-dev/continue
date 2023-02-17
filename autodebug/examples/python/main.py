@@ -4,7 +4,11 @@
 
 from sum import sum
 
+def sum(a, b):
+    return a + b
+
 first = 1
 second = "two"
 
-sum(first, second)
+# sum(first, second)
+sum(1, 2)

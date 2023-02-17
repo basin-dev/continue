@@ -4,7 +4,7 @@ import docstring_parser
 from fastapi import APIRouter, HTTPException
 from llm import OpenAI
 from prompts import SimplePrompter
-import fault_loc
+import fault_loc_utils as fault_loc
 
 gpt = OpenAI()
 router = APIRouter(prefix="/docstring", tags=["docstring"])

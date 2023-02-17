@@ -2,7 +2,7 @@ import subprocess
 from typing import Dict, List
 from fastapi import APIRouter
 from pydantic import BaseModel
-import fault_loc
+import fault_loc_utils as fault_loc
 from boltons import tbutils
 from llm import OpenAI
 from prompts import SimplePrompter

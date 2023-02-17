@@ -3,7 +3,7 @@ import sys
 from boltons import tbutils
 sys.path.append("..")
 
-from fault_loc import fl2
+from fault_loc_utils import fl2
 from debug import parse_traceback
 from virtual_filesystem import VirtualFilesystem
 
