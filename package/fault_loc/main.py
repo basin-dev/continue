@@ -3,12 +3,12 @@ from boltons import tbutils
 import ast
 import importlib
 from pydantic import BaseModel
-from ..llm import OpenAI
+from ..libs.language_models.llm import OpenAI
 import numpy as np
 from ..tools_context.index import DEFAULT_GIT_IGNORE_PATTERNS
 import pathspec
-from ..virtual_filesystem import FileSystem, VirtualFileSystem
-from ..models import RangeInFile, Range, Traceback, TracebackFrame, Position, CallGraph
+from ..libs.virtual_filesystem import FileSystem, VirtualFileSystem
+from ..libs.models import RangeInFile, Range, Traceback, TracebackFrame, Position, CallGraph
 import os
 from .dyn_call_graph import call_graph_to_traceback_frames, trace_unit_test, cov_results_to_call_graph, prune_call_graph
 from .utils import find_fn_def_range, find_last_node, get_ast_range

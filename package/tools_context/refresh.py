@@ -18,7 +18,7 @@ def get_latest_commit(repo: git.Repo, branch: str):
 
 def save_metadata(repo: git.Repo, branch: str):
     """Save the latest commit of a branch to a file."""
-    dir = REPO_PATH + f'/autodebug/data/{branch}'
+    dir = REPO_PATH + f'/extension/data/{branch}'
     if not os.path.exists(dir):
         os.makedirs(dir)
     metadata = { 'latest_commit': str(get_latest_commit(repo, branch)) }
@@ -28,7 +28,7 @@ def save_metadata(repo: git.Repo, branch: str):
 
 def create_branch_index(repo: git.Repo, branch: str):
     """Create the index for a branch."""
-    dir = REPO_PATH + f'/autodebug/data/{branch}'
+    dir = REPO_PATH + f'/extension/data/{branch}'
     if not os.path.exists(dir):
         os.makedirs(dir)
     documents = SimpleDirectoryReader(REPO_PATH).load_data()
@@ -39,7 +39,7 @@ def create_branch_index(repo: git.Repo, branch: str):
 
 def check_metadata(repo: git.Repo, branch: str):
     """Check if the latest commit of a branch is the same as the one saved in the file."""
-    dir = REPO_PATH + f'/autodebug/data/{branch}'
+    dir = REPO_PATH + f'/extension/data/{branch}'
     if not os.path.exists(dir):
         return False
     with open(dir + '/metadata.json', 'r') as f:
@@ -49,7 +49,7 @@ def check_metadata(repo: git.Repo, branch: str):
 
 def get_branch_index(repo: git.Repo, branch: str):
     """Get the index of a branch."""
-    dir = REPO_PATH + f'/autodebug/data/{branch}'
+    dir = REPO_PATH + f'/extension/data/{branch}'
     if not os.path.exists(dir):
         create_branch_index(repo, branch)
     return GPTSimpleVectorIndex.load_from_disk(dir + '/index.json')

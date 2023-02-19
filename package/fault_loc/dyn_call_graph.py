@@ -1,8 +1,8 @@
 import trace
 from typing import Callable, List
 from .utils import find_fn_def_range
-from ..virtual_filesystem import FileSystem, VirtualFileSystem, RealFileSystem
-from ..models import TracebackFrame, CallGraph
+from ..libs.virtual_filesystem import FileSystem, VirtualFileSystem, RealFileSystem
+from ..libs.models import TracebackFrame, CallGraph
 import importlib.util
 import sys
 import os
@@ -101,7 +101,7 @@ def call_graph_to_traceback_frames(call_graph: CallGraph) -> TracebackFrame:
     return frames
 
 if __name__ == "__main__":
-    test_filepath = "/Users/natesesti/Desktop/basin/unit-test-experiments/autodebug/examples/python/tests/test_sum.py"
+    test_filepath = "/Users/natesesti/Desktop/basin/unit-test-experiments/extension/examples/python/tests/test_sum.py"
     test_fn_name = "test_sum"
 
     cov_results = trace_unit_test(test_fn_name, test_filepath)

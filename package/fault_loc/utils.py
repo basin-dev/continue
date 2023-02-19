@@ -1,6 +1,6 @@
 import ast
-from ..virtual_filesystem import FileSystem, VirtualFileSystem
-from ..models import RangeInFile, Range, Position
+from ..libs.virtual_filesystem import FileSystem, VirtualFileSystem
+from ..libs.models import RangeInFile, Range, Position
 from typing import Callable
 
 def find_fn_def_range(filepath: str, fn_name: str, filesystem: FileSystem=VirtualFileSystem({})) -> RangeInFile:

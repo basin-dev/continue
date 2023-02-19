@@ -1,0 +1,176 @@
+{
+  "name": "autodebug",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "displayName": "AutoDebug",
+  "description": "Reduce debugging time by 10x",
+  "version": "0.0.1",
+  "publisher": "Basin",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "AutoDebug",
+      "properties": {
+        "autodebug.automode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically find relevant code and suggest a fix whenever a traceback is found."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "autodebug.writeDocstring",
+        "category": "AutoDebug",
+        "title": "Write a docstring for the current function"
+      },
+      {
+        "command": "autodebug.openDebugPanel",
+        "category": "AutoDebug",
+        "title": "Open Debug Panel"
+      },
+      {
+        "command": "autodebug.askQuestionFromInput",
+        "Category": "AutoDebug",
+        "title": "Ask a question from input box"
+      },
+      {
+        "command": "autodebug.openCapturedTerminal",
+        "Category": "AutoDebug",
+        "title": "Open Captured Terminal"
+      },
+      {
+        "command": "autodebug.askQuestion",
+        "Category": "AutoDebug",
+        "title": "Ask a question from webview"
+      },
+      {
+        "command": "autodebug.createTerminal",
+        "category": "AutoDebug",
+        "title": "Create Terminal"
+      },
+      {
+        "command": "autodebug.debugTest",
+        "category": "AutoDebug",
+        "title": "Debug Test"
+      },
+      {
+        "command": "autodebug.suggestionDown",
+        "category": "AutoDebug",
+        "title": "Suggestion Down"
+      },
+      {
+        "command": "autodebug.suggestionUp",
+        "category": "AutoDebug",
+        "title": "Suggestion Up"
+      },
+      {
+        "command": "autodebug.acceptSuggestion",
+        "category": "AutoDebug",
+        "title": "Accept Suggestion"
+      },
+      {
+        "command": "autodebug.rejectSuggestion",
+        "category": "AutoDebug",
+        "title": "Reject Suggestion"
+      },
+      {
+        "command": "autodebug.writeUnitTest",
+        "title": "Write Unit Test",
+        "category": "AutoDebug"
+      },
+      {
+        "command": "autodebug.findSuspiciousCode",
+        "title": "Find Suspicious Code",
+        "category": "AutoDebug"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "autodebug.writeDocstring",
+        "key": "ctrl+alt+l",
+        "mac": "shift+cmd+l"
+      },
+      {
+        "command": "autodebug.writeUnitTest",
+        "key": "ctrl+alt+i",
+        "mac": "shift+cmd+i"
+      },
+      {
+        "command": "autodebug.askQuestionFromInput",
+        "key": "ctrl+alt+j",
+        "mac": "shift+cmd+j"
+      },
+      {
+        "command": "autodebug.suggestionDown",
+        "mac": "shift+ctrl+down",
+        "key": "shift+ctrl+down"
+      },
+      {
+        "command": "autodebug.suggestionUp",
+        "mac": "shift+ctrl+up",
+        "key": "shift+ctrl+up"
+      },
+      {
+        "command": "autodebug.acceptSuggestion",
+        "mac": "shift+ctrl+enter",
+        "key": "shift+ctrl+enter"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "autodebug.openDebugPanel",
+          "group": "navigation",
+          "when": "view == autodebug.debugView"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "rebuild": "electron-rebuild -v 19.1.8 node-pty",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "cp ./config/prod_config.json ./config/config.json && npm run compile && mkdir -p ./build && vsce package --out ./build && chmod 777 ./build/autodebug-0.0.1.vsix && cp ./config/dev_config.json ./config/config.json",
+    "install-extension": "code --install-extension ./build/autodebug-0.0.1.vsix",
+    "uninstall": "code --uninstall-extension Basin.autodebug",
+    "reinstall": "rm -rf ./build && npm run package && npm run uninstall && npm run install-extension"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.2.10",
+    "@types/glob": "^8.0.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "@vscode/test-electron": "^2.2.0",
+    "eslint": "^8.28.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.1.0",
+    "typescript": "^4.9.3",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "@segment/analytics-node": "^0.0.1-beta.16",
+    "axios": "^1.2.5",
+    "node-pty": "^0.10.1",
+    "octokit": "^2.0.11",
+    "vscode-languageclient": "^8.0.2"
+  }
+}

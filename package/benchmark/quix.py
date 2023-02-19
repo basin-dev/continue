@@ -4,9 +4,9 @@ from typing import Callable, List, Dict, Tuple
 import os
 import shutil
 import signal
-from ..debug import suggest_file_edits, find_sus_code, FindBody, DebugContext
-from ..virtual_filesystem import RealFileSystem
-from ..models import Traceback
+from ..server.debug import suggest_file_edits, find_sus_code, FindBody, DebugContext
+from ..libs.virtual_filesystem import RealFileSystem
+from ..libs.models import Traceback
 
 PATH_TO_QUIX_REPO = "/Users/natesesti/Desktop/basin/QuixBugs"
 
