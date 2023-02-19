@@ -93,6 +93,7 @@ class ProgrammingLangauge(str, Enum):
 class Traceback(BaseModel):
     frames: List[TracebackFrame]
     message: str
+    error_type: str
     language: ProgrammingLangauge
     full_traceback: str | None
 
@@ -109,6 +110,7 @@ class Traceback(BaseModel):
                 for frame in tbutil_parsed_exc.frames
             ],
             message=tbutil_parsed_exc.exc_msg,
+            error_type=tbutil_parsed_exc.exc_type,
             language=ProgrammingLangauge(ProgrammingLangauge.python),
             full_traceback=tbutil_parsed_exc.to_string(),
         )
@@ -117,3 +119,9 @@ class FileEdit(BaseModel):
     filepath: str
     range: Range
     replacement: str
+
+class CallGraph(BaseModel):
+    """A call graph of a function."""
+    function_name: str
+    function_range: RangeInFile
+    calls: List['CallGraph']

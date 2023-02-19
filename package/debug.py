@@ -2,15 +2,15 @@ import subprocess
 from typing import Dict, List
 from fastapi import APIRouter
 from pydantic import BaseModel
-import fault_loc_utils as fault_loc
+from .fault_loc.main import fl1, filter_ignored_traceback_frames, edit_context_ast, find_code_in_range, fl2, frame_to_code_range
 from boltons import tbutils
-from llm import OpenAI
-from prompts import SimplePrompter
+from .llm import OpenAI
+from .prompts import SimplePrompter
 import ast
 import os
-from models import RangeInFile, SerializedVirtualFileSystem, Traceback, FileEdit
-from virtual_filesystem import VirtualFileSystem, FileSystem
-from util import merge_ranges_in_files
+from .models import RangeInFile, SerializedVirtualFileSystem, Traceback, FileEdit
+from .virtual_filesystem import VirtualFileSystem, FileSystem
+from .util import merge_ranges_in_files
 
 llm = OpenAI()
 router = APIRouter(prefix="/debug", tags=["debug"])
@@ -36,8 +36,8 @@ def get_steps(traceback: str) -> str:
     traceback = parse_traceback(traceback)
     if len(traceback.frames) == 0:
         raise Exception("No frames found in traceback")
-    sus_frame = fault_loc.fl1(traceback)
-    relevant_frames = fault_loc.filter_ignored_traceback_frames(traceback.frames)
+    sus_frame = fl1(traceback)
+    relevant_frames = filter_ignored_traceback_frames(traceback.frames)
     traceback.frames = relevant_frames
 
     resp = fix_suggestion_prompter.complete(traceback)
@@ -87,9 +87,9 @@ attempt_edit_prompter2 = SimplePrompter(lambda x: attempt_prompt.replace("{code}
 def make_edit(stderr: str, steps: str):
     # Compile prompt, get response
     exc = parse_traceback(stderr)
-    sus_frame = fault_loc.fl1(exc)
+    sus_frame = fl1(exc)
 
-    new_ast = fault_loc.edit_context_ast(sus_frame, lambda code_to_change: 
+    new_ast = edit_context_ast(sus_frame, lambda code_to_change: 
         attempt_edit_prompter2.complete((code_to_change, exc.to_string(), steps))
     )
 
@@ -130,7 +130,7 @@ class InlineBody(BaseModel):
 
 @router.post("/inline")
 def inline(body: InlineBody):
-    code = fault_loc.find_code_in_range(body.filecontents, body.startline, body.endline)
+    code = find_code_in_range(body.filecontents, body.startline, body.endline)
     suggestion = attempt_edit_prompter1.complete((code, body.traceback))
     return {"completion": suggestion}
 
@@ -262,9 +262,9 @@ def find_sus_code(traceback: Traceback, filesystem: FileSystem, description: str
     if description is None or description == "":
         description = traceback.message
 
-    most_sus_frames = fault_loc.fl2(traceback, description, filesystem=filesystem)
+    most_sus_frames = fl2(traceback, description, filesystem=filesystem)
     range_in_files = [
-        fault_loc.frame_to_code_range(frame, filesystem=filesystem)
+        frame_to_code_range(frame, filesystem=filesystem)
         for frame in most_sus_frames
     ]
     range_in_files = merge_ranges_in_files(range_in_files)

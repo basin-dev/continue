@@ -3,13 +3,15 @@ from boltons import tbutils
 import ast
 import importlib
 from pydantic import BaseModel
-from .llm import OpenAI
+from ..llm import OpenAI
 import numpy as np
-from .tools_context.index import DEFAULT_GIT_IGNORE_PATTERNS
+from ..tools_context.index import DEFAULT_GIT_IGNORE_PATTERNS
 import pathspec
-from .virtual_filesystem import FileSystem, VirtualFileSystem
-from .models import RangeInFile, Range, Traceback, TracebackFrame, Position
+from ..virtual_filesystem import FileSystem, VirtualFileSystem
+from ..models import RangeInFile, Range, Traceback, TracebackFrame, Position, CallGraph
 import os
+from .dyn_call_graph import call_graph_to_traceback_frames, trace_unit_test, cov_results_to_call_graph, prune_call_graph
+from .utils import find_fn_def_range, find_last_node, get_ast_range
 
 gpt = OpenAI()
 
@@ -110,12 +112,6 @@ def fl_assert(tb: Traceback, filesystem: FileSystem=VirtualFileSystem({})) -> Li
     fn_tree = ast.parse(code)
     call_graph = create_call_graph(fn_tree, range_in_file, filesystem=filesystem)
     pass
-    
-class CallGraph(BaseModel):
-    """A call graph of a function."""
-    function_name: str
-    function_range: RangeInFile
-    calls: List['CallGraph']
 
 # TODO: Note that you're not handling attribute calls. If call.func is ast.Attribute, then this will have a value of the class and .attr of the function name
 # and you have to take this into account for the import resolution too
@@ -183,32 +179,6 @@ def goto_definition(fn_name: str, call_range: RangeInFile, filesystem: FileSyste
     
     return None
 
-def find_first_node(tree: ast.AST, criterion: Callable[[ast.AST], bool]) -> ast.AST | None:
-    for node in ast.walk(tree):
-        if criterion(node):
-            return node
-    return None
-
-def find_last_node(tree: ast.AST, criterion: Callable[[ast.AST], bool]) -> ast.AST | None:
-    result = None
-    for node in ast.walk(tree):
-        if criterion(node):
-            result = node
-    return result
-
-def find_fn_def_range(filepath: str, fn_name: str, filesystem: FileSystem=VirtualFileSystem({})) -> RangeInFile:
-    tree = ast.parse(filesystem.read(filepath))
-    
-    def fn_def_criterion(node: ast.AST) -> bool:
-        return isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef) and node.name == fn_name
-    
-    node = find_last_node(tree, fn_def_criterion)
-    
-    return RangeInFile(
-        filepath=filepath,
-        range=get_ast_range(node)
-    )
-
 def prune_call_graph(call_graph: CallGraph, filesystem: FileSystem=VirtualFileSystem({})) -> CallGraph:
     """A number of pruning strategies are used here:
         - Ignore files that are not ours
@@ -219,7 +189,14 @@ def prune_call_graph(call_graph: CallGraph, filesystem: FileSystem=VirtualFileSy
 
 def fl2(tb: Traceback, query: str, filesystem: FileSystem=VirtualFileSystem({}), n: int = 4) -> List[TracebackFrame]:
     """Return the most relevant frames in the traceback."""
-    filtered_frames = filter_ignored_traceback_frames(tb.frames)
+    frames = tb.frames
+    if len(tb.frames) == 1 and tb.error_type.startswith("AssertionError"):
+        cov_results = trace_unit_test(tb.frames[-1].function, tb.frames[-1].filepath)
+        call_graph = cov_results_to_call_graph(cov_results, tb.frames[-1].filepath, tb.frames[-1].function, filesystem=filesystem)
+        print(call_graph)
+        frames = call_graph_to_traceback_frames(call_graph)
+
+    filtered_frames = filter_ignored_traceback_frames(frames)
     filtered_frames = filter_test_traceback_frames(filtered_frames)
     if len(filtered_frames) <= n:
         return filtered_frames
@@ -236,30 +213,6 @@ def fl2(tb: Traceback, query: str, filesystem: FileSystem=VirtualFileSystem({}),
     top_n = indices_of_top_k(similarities, n)
 
     return [filtered_frames[i] for i in top_n]
-
-def get_ast_range(tree: ast.AST) -> Range:
-    """Get the start and end line numbers of the AST node."""
-    if isinstance(tree, ast.Module):
-        return Range(
-            start=Position(
-                line=tree.body[0].lineno - 1,
-                character=tree.body[0].col_offset,
-            ),
-            end=Position(  
-                line=tree.body[-1].end_lineno - 1,
-                character=tree.body[-1].end_col_offset,
-            ),
-        )
-    return Range(
-        start=Position(
-            line=tree.lineno - 1,
-            character=tree.col_offset,
-        ),
-        end=Position(
-            line=tree.end_lineno - 1,
-            character=tree.end_col_offset,
-        ),
-    )
 
 def frame_to_code_range(frame: TracebackFrame, filesystem: FileSystem=VirtualFileSystem({})) -> RangeInFile:
     """Get the CodeRange specified a traceback frame."""

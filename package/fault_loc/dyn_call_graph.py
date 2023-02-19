@@ -1,14 +1,11 @@
-
-import ast
 import trace
-from typing import List
-from ..fault_loc_utils import CallGraph, find_last_node, get_ast_range, find_fn_def_range
-from ..virtual_filesystem import FileSystem, VirtualFileSystem
-from ..models import RangeInFile
-import subprocess
-import importlib
+from typing import Callable, List
+from .utils import find_fn_def_range
+from ..virtual_filesystem import FileSystem, VirtualFileSystem, RealFileSystem
+from ..models import TracebackFrame, CallGraph
+import importlib.util
 import sys
-
+import os
 
 def sum(a, b):
     return a + b
@@ -20,9 +17,11 @@ def main():
 def b():
     return main()
 
-def trace_results(fn_call: str) -> trace.CoverageResults:
+def trace_results(fn: Callable) -> trace.CoverageResults:
     tracer = trace.Trace(count=1, trace=1, countfuncs=1, countcallers=1)
-    tracer.run(fn_call)
+    import __main__
+    __main__.__dict__['__test_function__'] = fn
+    tracer.run("__test_function__()")
     results = tracer.results()
     return results
 
@@ -33,7 +32,7 @@ def cov_results_to_call_graph(results: trace.CoverageResults, root_filepath: str
     for caller, callee in results.callers:
         if caller not in callers_to_callees:
             callers_to_callees[caller] = []
-        callers_to_callees[caller] = callee
+        callers_to_callees[caller].append(callee)
 
         if root_key is None and caller[0] == root_filepath and caller[2] == root_fn_name:
             root_key = caller
@@ -51,9 +50,11 @@ def cov_results_to_call_graph(results: trace.CoverageResults, root_filepath: str
 
         # Recurse into each callee (DFS)
         calls = []
-        for callee in callers_to_callees[caller_key]:
-            if call := key_to_call_graph(callee):
-                calls.append(call)
+        if caller_key in callers_to_callees:
+            for callee in callers_to_callees[caller_key]:
+                if call := key_to_call_graph(callee):
+                    calls.append(call)
+
         # Put together a CallGraph object
         caller_filepath = caller_key[0]
         caller_name = caller_key[2]
@@ -70,20 +71,40 @@ def prune_call_graph(call_graph: CallGraph) -> CallGraph:
     return call_graph
 
 def trace_unit_test(test_fn_name: str, test_filepath) -> trace.CoverageResults:
-    spec = importlib.util.spec_from_file_location(test_fn_name, test_filepath)
+    module_name = os.path.basename(test_filepath).split('.')[0]
+    spec = importlib.util.spec_from_file_location(module_name, test_filepath)
+    new_module_name = "python.tests." + module_name
+    spec.name = new_module_name
+    spec.loader.name = new_module_name
+    parent_dir = os.path.abspath(os.path.join(os.path.dirname(test_filepath), '..'))
+    sys.path.append(parent_dir)
     module = importlib.util.module_from_spec(spec)
-    sys.modules[test_fn_name] = sys
+    sys.modules[new_module_name] = module
     spec.loader.exec_module(module)
-    # Or should I find the module and run the test via fn_call string?
 
-    return trace_results(test_fn_name)
+    test_fn = module.__dict__[test_fn_name]
 
-test_filepath = "/Users/natesesti/Desktop/basin/unit-test-experiments/autodebug/examples/python/tests/test_sum.py"
-test_fn_name = "test_sum"
+    return trace_results(test_fn)
 
-cov_results = trace_unit_test(test_fn_name, test_filepath)
-print(cov_results)
+def call_graph_to_traceback_frames(call_graph: CallGraph) -> TracebackFrame:
+    frames = []
+    
+    def extract_from_cg(cg: CallGraph):
+        frames.append(TracebackFrame(
+            filepath=cg.function_range.filepath,
+            lineno=cg.function_range.range.start.line,
+            function=cg.function_name,
+        ))
+        for call in cg.calls:
+            extract_from_cg(call)
+    
+    return frames
 
-# r = trace_results("main()")
-# cg = cov_results_to_call_graph(r)
-# print(cg.__dict__)
+if __name__ == "__main__":
+    test_filepath = "/Users/natesesti/Desktop/basin/unit-test-experiments/autodebug/examples/python/tests/test_sum.py"
+    test_fn_name = "test_sum"
+
+    cov_results = trace_unit_test(test_fn_name, test_filepath)
+
+    cg = cov_results_to_call_graph(cov_results, test_filepath, test_fn_name, filesystem=RealFileSystem())
+    print(cg.__dict__)

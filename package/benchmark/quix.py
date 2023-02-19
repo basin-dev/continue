@@ -3,11 +3,10 @@ from boltons import tbutils
 from typing import Callable, List, Dict, Tuple
 import os
 import shutil
-import json
 import signal
-from debug import suggest_file_edits, find_sus_code, FindBody, DebugContext
-from virtual_filesystem import RealFileSystem
-from models import Traceback
+from ..debug import suggest_file_edits, find_sus_code, FindBody, DebugContext
+from ..virtual_filesystem import RealFileSystem
+from ..models import Traceback
 
 PATH_TO_QUIX_REPO = "/Users/natesesti/Desktop/basin/QuixBugs"
 
@@ -68,7 +67,7 @@ def main():
     local_filesystem = RealFileSystem()
     
     successes = []
-    options = list_options()
+    options = list_options()[2:3]
     for option in options:   
         print("Running", option)
         traceback = run_test(option, 2)
@@ -81,6 +80,7 @@ def main():
         code_snippets = find_sus_code(traceback, local_filesystem, "")
 
         print("Code Snippets: ", code_snippets.response)
+        continue
 
         try:
             edits = suggest_file_edits(DebugContext(

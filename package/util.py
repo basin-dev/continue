@@ -1,5 +1,5 @@
 from typing import Dict, List
-from models import RangeInFile, Range
+from .models import RangeInFile, Range
 
 def merge_ranges_in_files(ranges_in_files: List[RangeInFile]) -> List[RangeInFile]:
     """Merge overlapping ranges in the same file."""

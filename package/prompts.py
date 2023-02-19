@@ -12,7 +12,7 @@
 
 import ast
 from typing import Any, Callable, List, Tuple
-from llm import LLM, OpenAI
+from .llm import LLM, OpenAI
 
 # Helpers
 def cls_method_to_str(cls_name: str, init: str, method: str) -> str:
