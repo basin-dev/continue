@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple
 
 from pydantic import BaseModel
 
-from package.libs.pytest_parse import find_decorator, get_test_statuses, parse_cov_xml, run_coverage, uncovered_lines_for_ast
+from ..libs.pytest_parse import find_decorator, get_test_statuses, parse_cov_xml, run_coverage, uncovered_lines_for_ast
 from ..libs.language_models.llm import OpenAI, count_tokens
 import pytest
 from fastapi import APIRouter, HTTPException
