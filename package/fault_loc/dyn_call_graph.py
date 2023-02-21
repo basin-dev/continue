@@ -86,20 +86,6 @@ def trace_unit_test(test_fn_name: str, test_filepath) -> trace.CoverageResults:
 
     return trace_results(test_fn)
 
-def call_graph_to_traceback_frames(call_graph: CallGraph) -> TracebackFrame:
-    frames = []
-    
-    def extract_from_cg(cg: CallGraph):
-        frames.append(TracebackFrame(
-            filepath=cg.function_range.filepath,
-            lineno=cg.function_range.range.start.line,
-            function=cg.function_name,
-        ))
-        for call in cg.calls:
-            extract_from_cg(call)
-    
-    return frames
-
 if __name__ == "__main__":
     test_filepath = "/Users/natesesti/Desktop/basin/unit-test-experiments/extension/examples/python/tests/test_sum.py"
     test_fn_name = "test_sum"

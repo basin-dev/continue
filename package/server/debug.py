@@ -11,6 +11,7 @@ import os
 from ..libs.models import RangeInFile, SerializedVirtualFileSystem, Traceback, FileEdit
 from ..libs.virtual_filesystem import VirtualFileSystem, FileSystem
 from ..libs.util import merge_ranges_in_files
+from ..fault_loc.utils import is_test_file
 
 llm = OpenAI()
 router = APIRouter(prefix="/debug", tags=["debug"])
@@ -167,7 +168,7 @@ def ctx_prompt(ctx: DebugContext, final_instruction: str) -> str:
     if ctx.traceback is not None and ctx.traceback != '':
         prompt += f"I ran into this problem with my Python code:\n\n{ctx.traceback.full_traceback}\n\n"
     if len(ctx.ranges_in_files) > 0:
-        prompt += "This is the code I am trying to fix:\n\n"
+        prompt += "Below are the files that might need to be fixed:\n\n"
         i = 1
         for range_in_file in ctx.ranges_in_files:
             contents = ctx.filesystem.read_range_in_file(range_in_file)
@@ -228,13 +229,19 @@ def parse_multiple_file_completion(completion: str, ranges_in_files: List[RangeI
                 current_file_lines.append(line)
     return suggestions
 
-def suggest_file_edits(ctx: DebugContext) -> List[FileEdit]:
+def suggest_file_edits(ctx: DebugContext, edit_tests: bool=False) -> List[FileEdit]:
     """Suggest edits in the code to fix the problem."""
-    completion = edit_prompter.complete(ctx)
+    try:
+        completion = edit_prompter.complete(ctx)
+    except:
+        return []
     suggestions = parse_multiple_file_completion(completion, ctx.ranges_in_files)
 
     edits: List[FileEdit] = []
     for suggestion_filepath, suggestion in suggestions.items():
+        if not edit_tests:
+            if is_test_file(suggestion_filepath):
+                continue
         range_in_file = list(filter(lambda r: r.filepath == suggestion_filepath, ctx.ranges_in_files))[0]
         edits.append(FileEdit(range=range_in_file.range, filepath=range_in_file.filepath, replacement=suggestion))
 
@@ -258,18 +265,10 @@ class FindResp(BaseModel):
     response: List[RangeInFile]
 
 def find_sus_code(traceback: Traceback, filesystem: FileSystem, description: str | None) -> FindResp:
-    # Refactor this so it's inside of fl2
-    if description is None or description == "":
-        description = traceback.message
+    most_sus_ranges = fl2(traceback, description, filesystem=filesystem)
+    most_sus_ranges = merge_ranges_in_files(most_sus_ranges)
 
-    most_sus_frames = fl2(traceback, description, filesystem=filesystem)
-    range_in_files = [
-        frame_to_code_range(frame, filesystem=filesystem)
-        for frame in most_sus_frames
-    ]
-    range_in_files = merge_ranges_in_files(range_in_files)
-
-    return FindResp(**{"response": range_in_files})
+    return FindResp(**{"response": most_sus_ranges})
 
 @router.post("/find")
 def find_sus_code_endpoint(body: FindBody) -> FindResp:

@@ -1,4 +1,3 @@
-from gpt_index import GPTSimpleVectorIndex, SimpleDirectoryReader
 from typing import List
 import os
 import pathspec
@@ -56,11 +55,3 @@ def build_gitignore_spec(gitignore_paths: List[str]=None, custom_match_patterns:
             pass
 
     return pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, lines)
-
-if __name__ == "__main__":
-    documents = SimpleDirectoryReader('data').load_data()
-    index = GPTSimpleVectorIndex(documents)
-    index.save_to_disk('index.json')
-    # index = GPTSimpleVectorIndex.load_from_disk('index.json')
-    response = index.query("What is sestinj working on right now?")
-    print(response)

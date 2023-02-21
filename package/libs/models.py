@@ -31,6 +31,9 @@ class Position(BaseModel):
     line: int
     character: int
 
+    def __hash__(self):
+        return hash((self.line, self.character))
+
     def __le__(self, other: "Position") -> bool:
         return self < other or self == other
     
@@ -61,6 +64,9 @@ class Range(BaseModel):
     start: Position
     end: Position
 
+    def __hash__(self):
+        return hash((self.start, self.end))
+
     def union(self, other: "Range") -> "Range":
         return Range(
             start=min(self.start, other.start),
@@ -74,6 +80,9 @@ class RangeInFile(BaseModel):
     filepath: str
     range: Range
 
+    def __hash__(self):
+        return hash((self.filepath, self.range))
+
 # class SerializedVirtualFileSystem(CustomDictModel):
     # __root__: Dict[AbsoluteFilePath, str]
 
@@ -84,6 +93,9 @@ class TracebackFrame(BaseModel):
     lineno: int
     function: str
     code: str | None
+
+    def __eq__(self, other):
+        return self.filepath == other.filepath and self.lineno == other.lineno and self.function == other.function
 
 class ProgrammingLangauge(str, Enum):
     python = "python"
@@ -125,3 +137,9 @@ class CallGraph(BaseModel):
     function_name: str
     function_range: RangeInFile
     calls: List['CallGraph']
+
+    def get_all_ranges(self) -> List[RangeInFile]:
+        return list(set([self.function_range] + sum([call.get_all_ranges() for call in self.calls], [])))
+    
+    def pretty_print(self) -> str:
+        return self.function_name + "\n  " + "\n  ".join(list(map(lambda call: call.pretty_print(), self.calls)))

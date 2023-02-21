@@ -10,5 +10,4 @@ def sum(a, b):
 first = 1
 second = "two"
 
-# sum(first, second)
-sum(1, 2)
+sum(first, second)
