@@ -10,6 +10,7 @@ import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
 import { getExtensionUri, getNonce } from "./util/vscode";
+import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 
 export let debugPanelWebview: vscode.Webview | undefined = undefined;
 
@@ -55,6 +56,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
   panel.webview.onDidReceiveMessage(async (data) => {
     switch (data.type) {
       case "listTenThings": {
+        sendTelemetryEvent(TelemetryEvent.GenerateIdeas);
         let tenThings = await listTenThings(data.debugContext);
         panel.webview.postMessage({
           type: "listTenThings",
@@ -82,6 +84,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "explainCode": {
+        sendTelemetryEvent(TelemetryEvent.ExplainCode);
         let body = serializeDebugContext(data.debugContext);
         if (!body) break;
 
@@ -96,6 +99,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "makeEdit": {
+        sendTelemetryEvent(TelemetryEvent.SuggestFix);
         let debugContext = data.debugContext;
         let suggestedEdits = await makeEdit(debugContext);
 
@@ -120,6 +124,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
         break;
       }
       case "generateUnitTest": {
+        sendTelemetryEvent(TelemetryEvent.CreateTest);
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,

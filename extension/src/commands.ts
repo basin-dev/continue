@@ -23,7 +23,7 @@ import {
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { getLanguageLibrary } from "./languages";
 
-// COpy everything over from extension.ts
+// Copy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
   "autodebug.askQuestion": (data: any, webviewView: vscode.WebviewView) => {
     if (!vscode.workspace.workspaceFolders) {
@@ -93,13 +93,17 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
     );
   },
   "autodebug.debugTest": async (fileAndFunctionSpecifier: string) => {
+    sendTelemetryEvent(TelemetryEvent.AutoDebugThisTest);
     let { stdout } = await runPythonScript("run_unit_test.py", [
       fileAndFunctionSpecifier,
     ]);
     let traceback = getLanguageLibrary(
       fileAndFunctionSpecifier.split("::")[0]
     ).parseFirstStacktrace(stdout);
-    if (!traceback) return;
+    if (!traceback) {
+      vscode.window.showInformationMessage("The test passes!");
+      return;
+    }
     vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
       debugPanelWebview?.postMessage({
         type: "traceback",
@@ -126,6 +130,7 @@ const textEditorCommandsMap: { [command: string]: (...args: any) => {} } = {
     }
   },
   "autodebug.writeDocstring": async (editor: vscode.TextEditor, _) => {
+    sendTelemetryEvent(TelemetryEvent.GenerateDocstring);
     let gutterSpinnerKey = showGutterSpinner(
       editor,
       editor.selection.active.line
