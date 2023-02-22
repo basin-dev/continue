@@ -5,7 +5,7 @@
 - We use Segment to record telemetry about user actions
 - We record client-side and server-side events
 - This data is sent to a Google BigQuery data warehouse
-- On free version of Segment, data is only updated daily
+- Data is only updated daily on the free version of Segment
 - You can query this data using the Trevor.io tool
 
 ## What we track
