@@ -8,6 +8,9 @@ from ..libs.pytest_parse import find_decorator, get_test_statuses, parse_cov_xml
 from ..libs.language_models.llm import OpenAI, count_tokens
 import pytest
 from fastapi import APIRouter, HTTPException
+from telemetry import send_telemetry_event, TelemetryEvent
+import prompts
+import pytest_parse
 from ..libs.language_models.prompts import BasicCommentPrompter, FormatStringPrompter, MixedPrompter, SimplePrompter, cls_1, cls_method_to_str
 
 gpt = OpenAI()
@@ -358,7 +361,7 @@ class FilePosition(BaseModel):
     lineno: int
 
 @router.post("/forline")
-def forline(fp: FilePosition):
+def forline(userid: str, fp: FilePosition):
     """Write unit test for the function encapsulating the given line number."""
     functions, classes = get_code(fp.filecontents)
     ctx = None
@@ -385,6 +388,15 @@ def forline(fp: FilePosition):
     print("PROMPT: ", prompter._compile_prompt(ctx)[0])
 
     test = prompter.complete(ctx)
+
+    properties = {
+        "user_id": userid,
+        "selected_code": ctx,
+        "language": "python", # TODO: Make this dynamic
+        "test": test.strip()
+    }
+
+    send_telemetry_event(TelemetryEvent.TEST_CREATED, properties)
 
     return {"completion": test.strip() + "\n\n"}
 

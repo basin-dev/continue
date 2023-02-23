@@ -15,10 +15,6 @@ analytics.identify({
 
 // Enum of telemetry events
 export enum TelemetryEvent {
-  // User has started a debug session
-  DebugSessionStarted = "DebugSessionStarted",
-  // User has stopped a debug session
-  DebugSessionStopped = "DebugSessionStopped",
   // Extension has been activated
   ExtensionActivated = "ExtensionActivated",
   // Suggestion has been accepted
