@@ -1,0 +1,1 @@
+poetry run cd ../.. && uvicorn package.server.main:app --reload
