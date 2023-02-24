@@ -206,6 +206,7 @@ export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
         startline: codeSelection.range.start.line,
         endline: codeSelection.range.end.line,
         traceback: ctx.traceback,
+        userid: vscode.env.machineId,
       },
       method: "POST",
     });
@@ -239,6 +240,7 @@ export function serializeDebugContext(ctx: DebugContext): any {
     return undefined;
 
   return {
+    userid: vscode.env.machineId,
     traceback: ctx.traceback,
     description: ctx.description,
     filesystem: codeSelectionsToVirtualFileSystem(ctx.codeSelections),
@@ -326,6 +328,7 @@ export async function writeUnitTestForFunction(
         await vscode.workspace.fs.readFile(vscode.Uri.file(filename))
       ).toString(),
       lineno: position.line,
+      userid: vscode.env.machineId,
     },
   });
 

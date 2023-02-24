@@ -12,6 +12,7 @@ from ..libs.models import RangeInFile, SerializedVirtualFileSystem, Traceback, F
 from ..libs.virtual_filesystem import VirtualFileSystem, FileSystem
 from ..libs.util import merge_ranges_in_files
 from ..fault_loc.utils import is_test_file
+from package.server.telemetry import send_telemetry_event, TelemetryEvent
 
 llm = OpenAI()
 router = APIRouter(prefix="/debug", tags=["debug"])
@@ -188,6 +189,18 @@ n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potent
 @router.post("/list")
 def listten(body: DebugContextBody):
     n_things = n_things_prompter.complete(body.deserialize())
+
+    properties = {
+        "user_id": body.userid,
+        "selected_code": body.code,
+        "language": "python", # TODO: Make this dynamic
+        "bug_description": body.description,
+        "stack_trace": body.stacktrace,
+        "ideas": n_things
+    }
+
+    send_telemetry_event(TelemetryEvent.IDEAS_GENERATED, properties)
+
     return {"completion": n_things}
 
 explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
@@ -195,6 +208,18 @@ explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a th
 @router.post("/explain")
 def explain(body: DebugContextBody):
     explanation = explain_code_prompter.complete(body.deserialize())
+
+    properties = {
+        "user_id": body.userid,
+        "selected_code": body.code,
+        "language": "python", # TODO: Make this dynamic
+        "bug_description": body.description,
+        "stack_trace": body.stacktrace,
+        "explanation": explanation
+    }
+
+    send_telemetry_event(TelemetryEvent.CODE_EXPLAINED, properties)
+
     return {"completion": explanation}
 
 edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"))
@@ -253,6 +278,17 @@ class EditResp(BaseModel):
 @router.post("/edit")
 def edit_endpoint(body: DebugContextBody) -> EditResp:
     edits = suggest_file_edits(body.deserialize())
+
+    properties = {
+        "user_id": body.userid,
+        "selected_code": body.code,
+        "language": "python", # TODO: Make this dynamic
+        "bug_description": body.description,
+        "stack_trace": body.stacktrace,
+        "suggestion": edits
+    }
+
+    send_telemetry_event(TelemetryEvent.FIX_SUGGESTED, properties)
 
     return {"completion": edits}
 
