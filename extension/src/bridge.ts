@@ -35,12 +35,11 @@ export async function runPythonScript(
   scriptName: string,
   args: string[]
 ): Promise<any> {
-  const command = `cd ${path.join(
+  // TODO: Need to make sure that the path to poetry is in the PATH and that it is installed in the first place. Realistically also need to install npm in some cases.
+  const command = `export PATH="$PATH:/opt/homebrew/bin" && cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
-  )} && source env/bin/activate && python3 ${scriptName} ${listToCmdLineArgs(
-    args
-  )}`;
+  )} && poetry run python3 ${scriptName} ${listToCmdLineArgs(args)}`;
 
   const { stdout, stderr } = await exec(command);
   if (stderr) {

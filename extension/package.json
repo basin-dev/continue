@@ -167,6 +167,7 @@
     "vsce": "^2.15.0"
   },
   "dependencies": {
+    "@jest/globals": "^29.4.3",
     "@segment/analytics-node": "^0.0.1-beta.16",
     "axios": "^1.2.5",
     "node-pty": "^0.10.1",

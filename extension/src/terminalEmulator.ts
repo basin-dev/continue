@@ -67,7 +67,6 @@ abstract class CommandCaptureSnooper extends TerminalSnooper {
   }
 
   onWrite(data: string): void {
-    console.log({ data });
     if (CommandCaptureSnooper.CONTROL_KEYS.has(data)) {
       this.handleControlKey(data);
     } else {
