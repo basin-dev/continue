@@ -14,20 +14,35 @@ import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 
 export let debugPanelWebview: vscode.Webview | undefined = undefined;
 
-export function setupDebugPanel(panel: vscode.WebviewPanel): string {
+export function setupDebugPanel(
+  panel: vscode.WebviewPanel,
+  context: vscode.ExtensionContext | undefined
+): string {
   debugPanelWebview = panel.webview;
   panel.onDidDispose(() => {
     debugPanelWebview = undefined;
   });
 
   let extensionUri = getExtensionUri();
-  const scriptUri = debugPanelWebview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "react-app/dist/assets/index.js")
-  );
+  let scriptUri: string;
+  let styleMainUri: string;
 
-  const styleMainUri = debugPanelWebview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "react-app/dist/assets/index.css")
-  );
+  const isProduction = true; // context?.extensionMode === vscode.ExtensionMode.Development;
+  if (!isProduction) {
+    scriptUri = "http://localhost:5173/src/main.tsx";
+    styleMainUri = "http://localhost:5173/src/main.css";
+  } else {
+    scriptUri = debugPanelWebview
+      .asWebviewUri(
+        vscode.Uri.joinPath(extensionUri, "react-app/dist/assets/index.js")
+      )
+      .toString();
+    styleMainUri = debugPanelWebview
+      .asWebviewUri(
+        vscode.Uri.joinPath(extensionUri, "react-app/dist/assets/index.css")
+      )
+      .toString();
+  }
 
   const highlightJsUri = debugPanelWebview.asWebviewUri(
     vscode.Uri.joinPath(extensionUri, "media/highlight/highlight.min.js")
@@ -187,7 +202,7 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
       </head>
       <body>
         <div id="root"></div>
-        <script nonce="${nonce}" src="${scriptUri}"></script>
+        <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
       </body>
     </html>`;
 }

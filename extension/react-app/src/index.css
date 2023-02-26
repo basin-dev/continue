@@ -1,69 +1,190 @@
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
+@layer base {
+  :root {
+    --secondary-dark: 37 37 38;
+    --vsc-background: 30 30 30;
+    --button-color: #711c3b;
+    --button-color-hover: #711c3baa;
+    --def-border-radius: 5px;
+  }
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+/* Set variables */
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  background-color: var(--vsc-background);
+  padding: 0;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+.gradient {
+  background: linear-gradient(
+    101.79deg,
+    #12887a 0%,
+    #87245c 37.64%,
+    #e12637 65.98%,
+    #ffb215 110.45%
+  );
+  padding: 10px;
+  margin: 0;
+  height: 100%;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  border-radius: var(--def-border-radius);
+  border: 2px solid gray;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  padding: 10px 12px;
+  margin: 8px 0;
+  border-radius: var(--def-border-radius);
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+
+  border: none;
+  color: white;
+  background-color: var(--button-color);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+button:disabled {
+  color: gray;
+}
+
+button:hover:enabled {
+  background-color: var(--button-color-hover);
+}
+
+h1,
+h3 {
+  border-radius: var(--def-border-radius);
+  background-color: var(--secondary-dark);
+  padding: 4px 8px;
+  width: fit-content;
+}
+
+.loader {
+  border: 8px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 8px solid #3498db;
+  width: 60px;
+  height: 60px;
+  -webkit-animation: spin 2s linear infinite;
+  animation: spin 2s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  0% {
+    -webkit-transform: rotate(0deg);
   }
-  a:hover {
-    color: #747bff;
+  100% {
+    -webkit-transform: rotate(360deg);
   }
-  button {
-    background-color: #f9f9f9;
-  }
+}
+
+textarea {
+  width: 100%;
+  border-radius: var(--def-border-radius);
+  border: none;
+  background-color: var(--secondary-dark);
+  resize: vertical;
+
+  padding: 4px;
+  caret-color: white;
+  color: white;
+}
+
+textarea:focus {
+  outline: 1px solid var(--button-color);
+}
+
+.answer {
+  width: 100%;
+  border-radius: var(--def-border-radius);
+  border: none;
+  background-color: var(--secondary-dark);
+
+  padding: 8px;
+}
+
+pre {
+  border-radius: var(--def-border-radius);
+  padding: 4px;
+  max-height: 150px;
+  overflow: scroll;
+  margin: 0;
+  background-color: var(--secondary-dark);
+
+  /* text wrapping */
+  white-space: pre-wrap; /* Since CSS 2.1 */
+  white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  word-wrap: break-word; /* Internet Explorer 5.5+ */
+}
+
+.multiselectOption {
+  border: 1px solid gray;
+  border-radius: var(--def-border-radius);
+  padding-top: 4px;
+  cursor: pointer;
+  background-color: var(--secondary-dark);
+}
+
+.multiselectOptionSelected {
+  border: 1px solid var(--button-color);
+}
+
+.multiselectContainer {
+  border-radius: var(--def-border-radius);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.delSelectedRangeButton {
+  align-self: right;
+  padding: 0px;
+  margin-top: 0;
+  margin-right: 2px;
+  border: none;
+  aspect-ratio: 1/1;
+  width: 20px;
+  border-radius: var(--def-border-radius);
+}
+
+.delSelectedRangeButton:hover:enabled {
+  border: none;
+}
+
+.multiselectOptionTopDiv {
+  display: flex;
+  justify-content: space-between;
+  align-items: left;
+}
+
+.addAnotherButton {
+  margin-left: 20px;
+  order: 1;
+  width: fit-content;
+}
+
+.buttonDiv {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  margin: 4px;
+  flex-wrap: wrap;
+}
+
+.buttonDiv button {
+  flex-grow: 1;
 }

@@ -58,7 +58,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   "autodebug.suggestionUp": suggestionUpCommand,
   "autodebug.acceptSuggestion": acceptSuggestionCommand,
   "autodebug.rejectSuggestion": rejectSuggestionCommand,
-  "autodebug.openDebugPanel": () => {
+  "autodebug.openDebugPanel": (context: vscode.ExtensionContext) => {
     let column = getRightViewColumn();
     const panel = vscode.window.createWebviewPanel(
       "autodebug.debugPanelView",
@@ -70,7 +70,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
     );
 
     // And set its HTML content
-    panel.webview.html = setupDebugPanel(panel);
+    panel.webview.html = setupDebugPanel(panel, context);
   },
   "autodebug.openCapturedTerminal": () => {
     // Happens in webview resolution function
