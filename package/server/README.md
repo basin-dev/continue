@@ -7,7 +7,7 @@ Run the server:
 3. Install everything else: `poetry install`
 4. Make sure there is a `.env` file with the following:
    - OPENAI_API_KEY
-5. From the `continue` folder run `poetry shell` then `uvicorn pacakge.server.main:app`, with the `--reload` tag if you are developing and want automatic updates upon file saves.
+5. From the `continue` folder run `poetry shell` then `uvicorn package.server.main:app`, with the `--reload` tag if you are developing and want automatic updates upon file saves.
 
 Setup NGINX:
 
