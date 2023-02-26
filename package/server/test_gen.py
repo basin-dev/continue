@@ -8,9 +8,7 @@ from ..libs.pytest_parse import find_decorator, get_test_statuses, parse_cov_xml
 from ..libs.language_models.llm import OpenAI, count_tokens
 import pytest
 from fastapi import APIRouter, HTTPException
-from telemetry import send_telemetry_event, TelemetryEvent
-import prompts
-import pytest_parse
+from package.server.telemetry import send_telemetry_event, TelemetryEvent
 from ..libs.language_models.prompts import BasicCommentPrompter, FormatStringPrompter, MixedPrompter, SimplePrompter, cls_1, cls_method_to_str
 
 gpt = OpenAI()

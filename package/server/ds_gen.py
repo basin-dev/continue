@@ -2,10 +2,9 @@ import os
 import ast
 import docstring_parser
 from fastapi import APIRouter, HTTPException
-from llm import OpenAI
-from prompts import SimplePrompter
-import fault_loc
-from telemetry import send_telemetry_event, TelemetryEvent
+from ..libs.language_models.llm import OpenAI
+from ..libs.language_models.prompts import SimplePrompter
+from package.server.telemetry import send_telemetry_event, TelemetryEvent
 from ..libs.language_models.llm import OpenAI
 from ..libs.language_models.prompts import SimplePrompter
 from ..fault_loc.utils import find_most_specific_context
