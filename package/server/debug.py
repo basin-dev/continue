@@ -142,6 +142,7 @@ def suggestion(traceback: str):
     return {"completion": suggestion}
  
 class DebugContextBody(BaseModel):
+    userid: str
     traceback: str
     ranges_in_files: List[RangeInFile]
     filesystem: SerializedVirtualFileSystem
@@ -192,10 +193,11 @@ def listten(body: DebugContextBody):
 
     properties = {
         "user_id": body.userid,
-        "selected_code": body.code,
+        "ranges_in_files": body.ranges_in_files,
+        "file_system": body.filesystem,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "stack_trace": body.stacktrace,
+        "traceback": body.traceback,
         "ideas": n_things
     }
 
@@ -211,10 +213,11 @@ def explain(body: DebugContextBody):
 
     properties = {
         "user_id": body.userid,
-        "selected_code": body.code,
+        "ranges_in_files": body.ranges_in_files,
+        "file_system": body.filesystem,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "stack_trace": body.stacktrace,
+        "traceback": body.traceback,
         "explanation": explanation
     }
 
@@ -281,10 +284,11 @@ def edit_endpoint(body: DebugContextBody) -> EditResp:
 
     properties = {
         "user_id": body.userid,
-        "selected_code": body.code,
+        "ranges_in_files": body.ranges_in_files,
+        "file_system": body.filesystem,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "stack_trace": body.stacktrace,
+        "traceback": body.traceback,
         "suggestion": edits
     }
 
