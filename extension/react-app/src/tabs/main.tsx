@@ -1,32 +1,57 @@
-import React from "react";
+import React, { useState } from "react";
+import { H3, TextArea, Button, Pre, Loader } from "../components";
+import styled from "styled-components";
+import { createVscListener, useVscMessageValue } from "../vscode";
+
+const ButtonDiv = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  margin: 4px;
+  flex-wrap: wrap;
+
+  & button {
+    flex-grow: 1;
+  }
+`;
 
 function MainTab() {
+  const [responseLoading, setResponseLoading] = useState(false);
+  const [suggestion, setSuggestion] = useVscMessageValue(
+    ["suggestFix", "explainCode", "listTenThings"],
+    ""
+  );
+  createVscListener("makeEdit", (event) => {
+    setResponseLoading(false);
+  });
+
   return (
     <>
       <h1>Debug Panel</h1>
 
-      <h3>Code Sections</h3>
+      <H3>Code Sections</H3>
       <div className="multiselectContainer"></div>
 
-      <h3>Bug Description</h3>
-      <textarea
+      <H3>Bug Description</H3>
+      <TextArea
         id="bugDescription"
         name="bugDescription"
         className="bugDescription"
         rows={4}
         cols={50}
         placeholder="Describe your bug..."
-      ></textarea>
+      ></TextArea>
 
-      <h3>Stack Trace</h3>
-      <textarea
+      <H3>Stack Trace</H3>
+      <TextArea
         id="traceback"
         className="traceback"
         name="traceback"
         rows={4}
         cols={50}
         placeholder="Paste stack trace here"
-      ></textarea>
+      ></TextArea>
 
       <select
         hidden
@@ -35,19 +60,17 @@ function MainTab() {
         name="relevantVars"
       ></select>
 
-      <div className="buttonDiv">
-        <button className="explainCodeButton">Explain Code</button>
-        <button className="listTenThingsButton">Generate Ideas</button>
-        <button disabled className="makeEditButton">
-          Suggest Fix
-        </button>
-        <button disabled className="generateUnitTestButton">
-          Create Test
-        </button>
-      </div>
-      <div className="loader makeEditLoader" hidden></div>
+      <ButtonDiv>
+        <Button>Explain Code</Button>
+        <Button>Generate Ideas</Button>
+        <Button disabled>Suggest Fix</Button>
+        <Button disabled>Create Test</Button>
+      </ButtonDiv>
+      <Loader hidden={!responseLoading}></Loader>
 
-      <pre className="fixSuggestion answer" hidden></pre>
+      <Pre className="fixSuggestion" hidden>
+        {suggestion}
+      </Pre>
 
       <br></br>
     </>
