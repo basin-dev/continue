@@ -168,10 +168,12 @@
   },
   "dependencies": {
     "@jest/globals": "^29.4.3",
+    "@reduxjs/toolkit": "^1.9.3",
     "@segment/analytics-node": "^0.0.1-beta.16",
     "axios": "^1.2.5",
     "node-pty": "^0.10.1",
     "octokit": "^2.0.11",
+    "react-redux": "^8.0.5",
     "vscode-languageclient": "^8.0.2"
   }
 }

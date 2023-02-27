@@ -1,10 +1,10 @@
 import styled, { keyframes } from "styled-components";
 
-const defaultBorderRadius = "5px";
-const secondaryDark = "rgb(37 37 38)";
-const vscBackground = "rgb(30 30 30)";
-const buttonColor = "rgb(113 28 59)";
-const buttonColorHover = "rgb(113 28 59 0.67)";
+export const defaultBorderRadius = "5px";
+export const secondaryDark = "rgb(37 37 38)";
+export const vscBackground = "rgb(30 30 30)";
+export const buttonColor = "rgb(113 28 59)";
+export const buttonColorHover = "rgb(113 28 59 0.67)";
 
 export const Button = styled.button`
   padding: 10px 12px;

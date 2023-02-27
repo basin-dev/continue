@@ -10,8 +10,6 @@
   --def-border-radius: 5px;
 }
 
-/* Set variables */
-
 body {
   background-color: var(--vsc-background);
   padding: 0;
@@ -19,51 +17,4 @@ body {
   font-family: "Arial", sans-serif;
   padding: 0px;
   margin: 0px;
-}
-
-.multiselectOption {
-  border: 1px solid gray;
-  border-radius: var(--def-border-radius);
-  padding-top: 4px;
-  cursor: pointer;
-  background-color: var(--secondary-dark);
-}
-
-.multiselectOptionSelected {
-  border: 1px solid var(--button-color);
-}
-
-.multiselectContainer {
-  border-radius: var(--def-border-radius);
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.delSelectedRangeButton {
-  align-self: right;
-  padding: 0px;
-  margin-top: 0;
-  margin-right: 2px;
-  border: none;
-  aspect-ratio: 1/1;
-  width: 20px;
-  border-radius: var(--def-border-radius);
-}
-
-.delSelectedRangeButton:hover:enabled {
-  border: none;
-}
-
-.multiselectOptionTopDiv {
-  display: flex;
-  justify-content: space-between;
-  align-items: left;
-}
-
-.addAnotherButton {
-  margin-left: 20px;
-  order: 1;
-  width: fit-content;
 }
