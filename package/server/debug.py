@@ -31,8 +31,11 @@ def parse_traceback(stderr: str) -> Traceback:
     # Sometimes paths are not quoted, but they need to be
     if "File \"" not in stderr:
         stderr = stderr.replace("File ", "File \"").replace(", line ", "\", line ")
-    tbutil_parsed_exc = tbutils.ParsedException.from_string(stderr)
-    return Traceback.from_tbutil_parsed_exc(tbutil_parsed_exc)
+    try:
+        tbutil_parsed_exc = tbutils.ParsedException.from_string(stderr)
+        return Traceback.from_tbutil_parsed_exc(tbutil_parsed_exc)
+    except:
+        return None
 
 def get_steps(traceback: str) -> str:
     traceback = parse_traceback(traceback)
@@ -157,7 +160,7 @@ class DebugContextBody(BaseModel):
         )
 
 class DebugContext(BaseModel):
-    traceback: Traceback
+    traceback: Traceback | None
     ranges_in_files: List[RangeInFile]
     filesystem: FileSystem
     description: str
