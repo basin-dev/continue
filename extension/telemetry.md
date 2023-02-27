@@ -98,9 +98,10 @@ Location: Server
 Properties
 - user_id
 - language
-- stack_trace
+- traceback
 - bug_description
-- selected_code
+- ranges_in_files
+- filesystem
 - explanation
 
 #### IdeasGenerated
@@ -110,9 +111,10 @@ Location: Server
 Properties
 - user_id
 - language
-- stack_trace
+- traceback
 - bug_description
-- selected_code
+- ranges_in_files
+- filesystem
 - ideas
 
 #### FixSuggested
@@ -122,9 +124,10 @@ Location: Server
 Properties
 - user_id
 - language
-- stack_trace
+- traceback
 - bug_description
-- selected_code
+- ranges_in_files
+- filesystem
 - suggestion
 
 #### TestCreated
@@ -134,7 +137,8 @@ Location: Server
 Properties
 - user_id
 - language
-- selected_code
+- ranges_in_files
+- filesystem
 - generated_test
 
 #### DocstringGenerated
@@ -144,7 +148,8 @@ Location: Server
 Properties
 - user_id
 - language
-- selected_code
+- ranges_in_files
+- filesystem
 - docstring
 - line_num
 

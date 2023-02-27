@@ -31,8 +31,11 @@ def parse_traceback(stderr: str) -> Traceback:
     # Sometimes paths are not quoted, but they need to be
     if "File \"" not in stderr:
         stderr = stderr.replace("File ", "File \"").replace(", line ", "\", line ")
-    tbutil_parsed_exc = tbutils.ParsedException.from_string(stderr)
-    return Traceback.from_tbutil_parsed_exc(tbutil_parsed_exc)
+    try:
+        tbutil_parsed_exc = tbutils.ParsedException.from_string(stderr)
+        return Traceback.from_tbutil_parsed_exc(tbutil_parsed_exc)
+    except:
+        return None
 
 def get_steps(traceback: str) -> str:
     traceback = parse_traceback(traceback)
@@ -142,6 +145,7 @@ def suggestion(traceback: str):
     return {"completion": suggestion}
  
 class DebugContextBody(BaseModel):
+    userid: str
     traceback: str
     ranges_in_files: List[RangeInFile]
     filesystem: SerializedVirtualFileSystem
@@ -156,7 +160,7 @@ class DebugContextBody(BaseModel):
         )
 
 class DebugContext(BaseModel):
-    traceback: Traceback
+    traceback: Traceback | None
     ranges_in_files: List[RangeInFile]
     filesystem: FileSystem
     description: str
@@ -192,10 +196,11 @@ def listten(body: DebugContextBody):
 
     properties = {
         "user_id": body.userid,
-        "selected_code": body.code,
+        "ranges_in_files": body.ranges_in_files,
+        "file_system": body.filesystem,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "stack_trace": body.stacktrace,
+        "traceback": body.traceback,
         "ideas": n_things
     }
 
@@ -211,10 +216,11 @@ def explain(body: DebugContextBody):
 
     properties = {
         "user_id": body.userid,
-        "selected_code": body.code,
+        "ranges_in_files": body.ranges_in_files,
+        "file_system": body.filesystem,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "stack_trace": body.stacktrace,
+        "traceback": body.traceback,
         "explanation": explanation
     }
 
@@ -281,10 +287,11 @@ def edit_endpoint(body: DebugContextBody) -> EditResp:
 
     properties = {
         "user_id": body.userid,
-        "selected_code": body.code,
+        "ranges_in_files": body.ranges_in_files,
+        "file_system": body.filesystem,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "stack_trace": body.stacktrace,
+        "traceback": body.traceback,
         "suggestion": edits
     }
 
