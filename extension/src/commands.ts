@@ -66,6 +66,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       column,
       {
         enableScripts: true,
+        retainContextWhenHidden: true,
       }
     );
 

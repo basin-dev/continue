@@ -1,0 +1,95 @@
+import styled, { keyframes } from "styled-components";
+
+const defaultBorderRadius = "5px";
+const secondaryDark = "rgb(37 37 38)";
+const vscBackground = "rgb(30 30 30)";
+const buttonColor = "rgb(113 28 59)";
+const buttonColorHover = "rgb(113 28 59 0.67)";
+
+export const Button = styled.button`
+  padding: 10px 12px;
+  margin: 8px 0;
+  border-radius: ${defaultBorderRadius};
+  cursor: pointer;
+
+  border: none;
+  color: white;
+  background-color: ${buttonColor};
+
+  &:disabled {
+    color: gray;
+  }
+
+  &:hover:enabled {
+    background-color: ${buttonColorHover};
+  }
+`;
+
+export const TextArea = styled.textarea`
+  width: 100%;
+  border-radius: ${defaultBorderRadius};
+  border: none;
+  background-color: ${secondaryDark};
+  resize: vertical;
+
+  padding: 4px;
+  caret-color: white;
+  color: white;
+
+  &:focus {
+    outline: 1px solid ${buttonColor};
+  }
+`;
+
+export const Pre = styled.pre`
+  border-radius: ${defaultBorderRadius};
+  padding: 8px;
+  max-height: 150px;
+  overflow: scroll;
+  margin: 0;
+  background-color: ${secondaryDark};
+  border: none;
+
+  /* text wrapping */
+  white-space: pre-wrap; /* Since CSS 2.1 */
+  white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  word-wrap: break-word; /* Internet Explorer 5.5+ */
+`;
+
+export const H3 = styled.h3`
+  background-color: ${secondaryDark};
+  border-radius: ${defaultBorderRadius};
+  padding: 4px 8px;
+  width: fit-content;
+`;
+
+export const TextInput = styled.input.attrs({ type: "text" })`
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  border-radius: ${defaultBorderRadius};
+  border: 2px solid gray;
+`;
+
+const spin = keyframes`
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+  }
+`;
+
+export const Loader = styled.div`
+  border: 8px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 8px solid #3498db;
+  width: 60px;
+  height: 60px;
+  -webkit-animation: ${spin} 2s linear infinite;
+  animation: spin 2s linear infinite;
+  margin: auto;
+`;

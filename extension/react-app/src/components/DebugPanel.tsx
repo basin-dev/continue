@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import styled from "styled-components";
 interface DebugPanelProps {
   tabs: {
     element: React.ReactElement;
@@ -6,11 +7,23 @@ interface DebugPanelProps {
   }[];
 }
 
+const GradientContainer = styled.div`
+  background: linear-gradient(
+    101.79deg,
+    #12887a 0%,
+    #87245c 37.64%,
+    #e12637 65.98%,
+    #ffb215 110.45%
+  );
+  padding: 10px;
+  margin: 0;
+  height: 100%;
+`;
+
 function DebugPanel(props: DebugPanelProps) {
   const [currentTab, setCurrentTab] = useState(0);
   return (
-    <div className="gradient">
-      <h1 className="bg-red-500">Title</h1>
+    <GradientContainer>
       <div className="h-full rounded-md overflow-hidden bg-vsc-background">
         <div>
           <div
@@ -25,6 +38,7 @@ function DebugPanel(props: DebugPanelProps) {
                       ? "bg-secondary-dark"
                       : "bg-vsc-background"
                   }`}
+                  onClick={() => setCurrentTab(index)}
                 >
                   {tab.title}
                 </div>
@@ -44,7 +58,7 @@ function DebugPanel(props: DebugPanelProps) {
           })}
         </div>
       </div>
-    </div>
+    </GradientContainer>
   );
 }
 

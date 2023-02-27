@@ -1,4 +1,4 @@
-import DebugPanel from "../components/DebugPanel";
+import DebugPanel from "./components/DebugPanel";
 import MainTab from "./tabs/main";
 import AdditionalContextTab from "./tabs/additionalContext";
 

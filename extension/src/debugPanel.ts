@@ -75,7 +75,7 @@ export function setupDebugPanel(
         let tenThings = await listTenThings(data.debugContext);
         panel.webview.postMessage({
           type: "listTenThings",
-          tenThings,
+          value: tenThings,
         });
         break;
       }
@@ -83,7 +83,7 @@ export function setupDebugPanel(
         let ctx = await getSuggestion(data.debugContext);
         panel.webview.postMessage({
           type: "suggestFix",
-          fixSuggestion: ctx.suggestion,
+          value: ctx.suggestion,
         });
         break;
       }
@@ -109,7 +109,7 @@ export function setupDebugPanel(
         });
         panel.webview.postMessage({
           type: "explainCode",
-          completion: resp.completion,
+          value: resp.completion,
         });
         break;
       }

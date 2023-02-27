@@ -26,24 +26,6 @@
   );
   const tabBar = document.querySelector(".tabBar");
   const tabs = document.getElementsByClassName("tab");
-  function setTab(index) {
-    let contentContainers = document.getElementsByClassName("contentContainer");
-    for (let j = 0; j < Math.min(contentContainers.length, tabs.length); j++) {
-      if (index === j) {
-        contentContainers[j].hidden = false;
-        tabs[j].className = "tab selectedTab";
-      } else {
-        contentContainers[j].hidden = true;
-        tabs[j].className = "tab unselectedTab";
-      }
-    }
-    updateState({ currentTab: index });
-  }
-  for (let i = 0; i < tabs.length; i++) {
-    tabs[i].addEventListener("click", (e) => {
-      setTab(i);
-    });
-  }
 
   let selectedRanges = []; // Elements are { filename, range, code }
   let canUpdateLast = true;
