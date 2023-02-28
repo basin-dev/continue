@@ -6,6 +6,8 @@ import { useDebugContextValue } from "../../redux/hooks";
 import CodeMultiselect from "../components/CodeMultiselect";
 import { useSelector } from "react-redux";
 import { selectDebugContext } from "../../redux/selectors/debugContextSelectors";
+import { useDispatch } from "react-redux";
+import { setWorkspacePath } from "../../redux/slices/debugContexSlice";
 
 const ButtonDiv = styled.div`
   display: flex;
@@ -20,35 +22,9 @@ const ButtonDiv = styled.div`
   }
 `;
 
-const filenameToLanguage = {
-  py: "python",
-  js: "javascript",
-  ts: "typescript",
-  html: "html",
-  css: "css",
-  java: "java",
-  c: "c",
-  cpp: "cpp",
-  cs: "csharp",
-  go: "go",
-  rb: "ruby",
-  rs: "rust",
-  swift: "swift",
-  php: "php",
-  scala: "scala",
-  kt: "kotlin",
-  dart: "dart",
-  hs: "haskell",
-  lua: "lua",
-  pl: "perl",
-  r: "r",
-  sql: "sql",
-  vb: "vb",
-  xml: "xml",
-  yaml: "yaml",
-};
+function MainTab(props: any) {
+  const dispatch = useDispatch();
 
-function MainTab() {
   const [suggestion, setSuggestion] = useDebugContextValue("suggestion", "");
   const [traceback, setTraceback] = useDebugContextValue("traceback", "");
   const [selectedRanges, setSelectedRanges] = useDebugContextValue(
@@ -59,25 +35,10 @@ function MainTab() {
   const [responseLoading, setResponseLoading] = useState(false);
   const tracebackTextAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
-  const [highlightLocked, setHighlightLocked] = useState(false);
-  const [workspacePath, setWorkspacePath] = useState<string | undefined>(
-    undefined
-  );
+  let debugContext = useSelector(selectDebugContext);
 
   function postVscMessageWithDebugContext(type: string) {
-    let debugContext = useSelector(selectDebugContext);
     postVscMessage(type, { debugContext });
-  }
-
-  const [canUpdateLast, setCanUpdateLast] = useState(true);
-
-  function addMultiselectOption(filename: string, range: any, code: string) {
-    let ext = filename.split(".").pop();
-    if (ext in filenameToLanguage) {
-      codeElement.className = "language-" + filenameToLanguage[ext];
-    }
-
-    hljs.highlightElement(codeElement);
   }
 
   useEffect(() => {
@@ -99,38 +60,8 @@ function MainTab() {
             postVscMessageWithDebugContext("findSuspiciousCode");
           }
           break;
-        case "highlightedCode":
-          let message = event.data;
-          setWorkspacePath(message.workspacePath);
-          if (!highlightLocked) {
-            addMultiselectOption(message.filename, message.range, message.code);
-          }
-          break;
-        case "findSuspiciousCode":
-          clearMultiselectOptions();
-          for (let codeLocation of message.codeLocations) {
-            canUpdateLast = false;
-            // It's serialized to be an array [startPos, endPos]
-            let range = {
-              start: {
-                line: codeLocation.range[0].line,
-                character: codeLocation.range[0].character,
-              },
-              end: {
-                line: codeLocation.range[1].line,
-                character: codeLocation.range[1].character,
-              },
-            };
-
-            addMultiselectOption(
-              codeLocation.filename,
-              range,
-              codeLocation.code
-            );
-          }
-          canUpdateLast = true;
-          setResponseLoading(true);
-          postVscMessageWithDebugContext("listTenThings");
+        case "workspacePath":
+          dispatch(setWorkspacePath(event.data.value));
           break;
       }
     });

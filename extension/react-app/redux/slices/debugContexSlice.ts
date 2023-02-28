@@ -10,8 +10,11 @@ export const debugContextSlice = createSlice({
     ) => {
       state[action.payload.key] = action.payload.value;
     },
+    setWorkspacePath: (state, action: { type: string; payload: string }) => {
+      state.workspacePath = action.payload;
+    },
   },
 });
 
-export const { updateValue } = debugContextSlice.actions;
+export const { updateValue, setWorkspacePath } = debugContextSlice.actions;
 export default debugContextSlice.reducer;

@@ -1,16 +1,13 @@
 import { useEffect, useState } from "react";
 import "vscode-webview";
 
-const vscode = acquireVsCodeApi();
+declare const vscode: any;
 
-export function createVscListener(
-  callback: (event: { data: any } & any) => void
-) {
-  useEffect(() => {
-    window.addEventListener("message", (event) => {
-      callback(event);
-    });
-  }, []);
+export function createVscListener(callback: (event: MessageEvent) => void) {
+  window.addEventListener("message", (event) => {
+    console.log("Event received", event.data);
+    callback(event);
+  });
 }
 
 export function postVscMessage(type: string, data: any) {

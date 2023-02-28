@@ -44,14 +44,6 @@ export function setupDebugPanel(
       .toString();
   }
 
-  const highlightJsUri = debugPanelWebview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "media/highlight/highlight.min.js")
-  );
-
-  const highlightJsStylesUri = debugPanelWebview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "media/highlight/styles/dark.min.css")
-  );
-
   const nonce = getNonce();
 
   vscode.window.onDidChangeTextEditorSelection((e) => {
@@ -64,7 +56,11 @@ export function setupDebugPanel(
       code: e.textEditor.document.getText(e.selections[0]),
       filename: e.textEditor.document.fileName,
       range: e.selections[0],
-      workspacePath: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
+    });
+
+    panel.webview.postMessage({
+      type: "workspacePath",
+      value: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
     });
   });
 
@@ -193,10 +189,8 @@ export function setupDebugPanel(
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script>const vscode = acquireVsCodeApi();</script>
         <link href="${styleMainUri}" rel="stylesheet">
-        
-        <link href="${highlightJsStylesUri}" rel="stylesheet">
-        <script src="${highlightJsUri}"></script>
         
         <title>AutoDebug</title>
       </head>
