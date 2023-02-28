@@ -5,11 +5,12 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+export type RangeInFile = RangeInFile1;
 export type Filepath = string;
 export type Line = number;
 export type Character = number;
 
-export interface RangeInFile {
+export interface RangeInFile1 {
   filepath: Filepath;
   range: Range;
 }

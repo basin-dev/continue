@@ -2,7 +2,7 @@ import importlib
 from typing import List, Tuple
 import pathspec
 from package.fault_loc.utils import find_last_node, frame_to_code_range, get_ast_range, find_all_nodes, ast_in_range
-from package.libs.models import CallGraph, Position, RangeInFile, TracebackFrame, Range
+from package.libs.models.main import CallGraph, Position, RangeInFile, TracebackFrame, Range
 from package.libs.virtual_filesystem import FileSystem, RealFileSystem, VirtualFileSystem
 from package.libs.filesystem.main import DEFAULT_GIT_IGNORE_PATTERNS, upward_search_in_filetree
 import ast

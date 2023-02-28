@@ -1,6 +1,6 @@
 {
-  "title": "CallGraph",
-  "$ref": "#/definitions/package__libs__models__main__CallGraph",
+  "title": "DebugContext",
+  "$ref": "#/definitions/SerializedDebugContext",
   "definitions": {
     "Position": {
       "title": "Position",
@@ -57,32 +57,39 @@
       ],
       "additionalProperties": false
     },
-    "package__libs__models__main__CallGraph": {
-      "title": "CallGraph",
-      "description": "A call graph of a function.",
+    "SerializedDebugContext": {
+      "title": "SerializedDebugContext",
       "type": "object",
       "properties": {
-        "function_name": {
-          "title": "Function Name",
+        "traceback": {
+          "title": "Traceback",
           "type": "string"
         },
-        "function_range": {
-          "$ref": "#/definitions/RangeInFile"
-        },
-        "calls": {
-          "title": "Calls",
+        "ranges_in_files": {
+          "title": "Ranges In Files",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/package__libs__models__main__CallGraph"
+            "$ref": "#/definitions/RangeInFile"
           }
+        },
+        "filesystem": {
+          "title": "Filesystem",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
         }
       },
       "required": [
-        "function_name",
-        "function_range",
-        "calls"
-      ],
-      "additionalProperties": false
+        "traceback",
+        "ranges_in_files",
+        "filesystem",
+        "description"
+      ]
     }
   }
 }

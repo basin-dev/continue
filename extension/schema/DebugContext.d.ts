@@ -5,16 +5,24 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type FileEdit = FileEdit1;
+export type DebugContext = SerializedDebugContext;
+export type Traceback = string;
 export type Filepath = string;
 export type Line = number;
 export type Character = number;
-export type Replacement = string;
+export type RangesInFiles = RangeInFile[];
+export type Description = string;
 
-export interface FileEdit1 {
+export interface SerializedDebugContext {
+  traceback: Traceback;
+  ranges_in_files: RangesInFiles;
+  filesystem: Filesystem;
+  description: Description;
+  [k: string]: unknown;
+}
+export interface RangeInFile {
   filepath: Filepath;
   range: Range;
-  replacement: Replacement;
 }
 /**
  * A range in a file. 0-indexed.
@@ -26,4 +34,7 @@ export interface Range {
 export interface Position {
   line: Line;
   character: Character;
+}
+export interface Filesystem {
+  [k: string]: string;
 }

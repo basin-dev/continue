@@ -6,7 +6,7 @@ import shutil
 import signal
 from ..server.debug import suggest_file_edits, find_sus_code, FindBody, DebugContext
 from ..libs.virtual_filesystem import RealFileSystem
-from ..libs.models import Traceback
+from ..libs.models.main import Traceback
 from multiprocessing import Pool
 
 PATH_TO_QUIX_REPO = "/Users/natesesti/Desktop/basin/QuixBugs"

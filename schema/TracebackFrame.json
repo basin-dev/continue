@@ -1,28 +1,34 @@
 {
   "title": "TracebackFrame",
-  "type": "object",
-  "properties": {
-    "filepath": {
-      "title": "Filepath",
-      "type": "string"
-    },
-    "lineno": {
-      "title": "Lineno",
-      "type": "integer"
-    },
-    "function": {
-      "title": "Function",
-      "type": "string"
-    },
-    "code": {
-      "title": "Code",
-      "type": "string"
+  "$ref": "#/definitions/package__libs__models__main__TracebackFrame",
+  "definitions": {
+    "package__libs__models__main__TracebackFrame": {
+      "title": "TracebackFrame",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        },
+        "lineno": {
+          "title": "Lineno",
+          "type": "integer"
+        },
+        "function": {
+          "title": "Function",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filepath",
+        "lineno",
+        "function"
+      ],
+      "additionalProperties": false
     }
-  },
-  "required": [
-    "filepath",
-    "lineno",
-    "function"
-  ],
-  "additionalProperties": false
+  }
 }

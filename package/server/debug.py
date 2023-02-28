@@ -8,9 +8,10 @@ from ..libs.language_models.llm import OpenAI
 from ..libs.language_models.prompts import SimplePrompter
 import ast
 import os
-from ..libs.models import RangeInFile, SerializedVirtualFileSystem, Traceback, FileEdit
+from ..libs.models.main import RangeInFile, SerializedVirtualFileSystem, Traceback, FileEdit
+from ..libs.models.debug_context import DebugContext, SerializedDebugContext
 from ..libs.virtual_filesystem import VirtualFileSystem, FileSystem
-from ..libs.util import merge_ranges_in_files
+from ..libs.util import merge_ranges_in_files, parse_traceback
 from ..fault_loc.utils import is_test_file
 from package.server.telemetry import send_telemetry_event, TelemetryEvent
 
@@ -25,14 +26,6 @@ Instructions to fix:
 
 '''
 fix_suggestion_prompter = SimplePrompter(lambda stderr: prompt.replace("{traceback}", stderr))
-
-
-def parse_traceback(stderr: str) -> Traceback:
-    # Sometimes paths are not quoted, but they need to be
-    if "File \"" not in stderr:
-        stderr = stderr.replace("File ", "File \"").replace(", line ", "\", line ")
-    tbutil_parsed_exc = tbutils.ParsedException.from_string(stderr)
-    return Traceback.from_tbutil_parsed_exc(tbutil_parsed_exc)
 
 def get_steps(traceback: str) -> str:
     traceback = parse_traceback(traceback)
@@ -140,29 +133,6 @@ def inline(body: InlineBody):
 def suggestion(traceback: str):
     suggestion = get_steps(traceback)
     return {"completion": suggestion}
- 
-class DebugContextBody(BaseModel):
-    traceback: str
-    ranges_in_files: List[RangeInFile]
-    filesystem: SerializedVirtualFileSystem
-    description: str
-
-    def deserialize(self):
-        return DebugContext(
-            traceback=parse_traceback(self.traceback),
-            ranges_in_files=self.ranges_in_files,
-            filesystem=VirtualFileSystem(self.filesystem),
-            description=self.description
-        )
-
-class DebugContext(BaseModel):
-    traceback: Traceback
-    ranges_in_files: List[RangeInFile]
-    filesystem: FileSystem
-    description: str
-
-    class Config:
-        arbitrary_types_allowed = True
 
 def ctx_prompt(ctx: DebugContext, final_instruction: str) -> str:
     prompt = ''
@@ -187,7 +157,7 @@ n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potent
 
 
 @router.post("/list")
-def listten(body: DebugContextBody):
+def listten(body: SerializedDebugContext):
     n_things = n_things_prompter.complete(body.deserialize())
 
     properties = {
@@ -206,7 +176,7 @@ def listten(body: DebugContextBody):
 explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
 
 @router.post("/explain")
-def explain(body: DebugContextBody):
+def explain(body: SerializedDebugContext):
     explanation = explain_code_prompter.complete(body.deserialize())
 
     properties = {
@@ -276,7 +246,7 @@ class EditResp(BaseModel):
     completion: List[FileEdit]
 
 @router.post("/edit")
-def edit_endpoint(body: DebugContextBody) -> EditResp:
+def edit_endpoint(body: SerializedDebugContext) -> EditResp:
     edits = suggest_file_edits(body.deserialize())
 
     properties = {

@@ -5,6 +5,7 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+export type Traceback = Traceback1;
 export type Filepath = string;
 export type Lineno = number;
 export type Function = string;
@@ -18,7 +19,7 @@ export type ErrorType = string;
 export type ProgrammingLangauge = "python" | "javascript" | "typescript";
 export type FullTraceback = string;
 
-export interface Traceback {
+export interface Traceback1 {
   frames: Frames;
   message: Message;
   error_type: ErrorType;

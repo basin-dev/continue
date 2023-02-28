@@ -1,25 +1,6 @@
 {
   "title": "FileEdit",
-  "type": "object",
-  "properties": {
-    "filepath": {
-      "title": "Filepath",
-      "type": "string"
-    },
-    "range": {
-      "$ref": "#/definitions/Range"
-    },
-    "replacement": {
-      "title": "Replacement",
-      "type": "string"
-    }
-  },
-  "required": [
-    "filepath",
-    "range",
-    "replacement"
-  ],
-  "additionalProperties": false,
+  "$ref": "#/definitions/package__libs__models__main__FileEdit",
   "definitions": {
     "Position": {
       "title": "Position",
@@ -55,6 +36,29 @@
       "required": [
         "start",
         "end"
+      ],
+      "additionalProperties": false
+    },
+    "package__libs__models__main__FileEdit": {
+      "title": "FileEdit",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/definitions/Range"
+        },
+        "replacement": {
+          "title": "Replacement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filepath",
+        "range",
+        "replacement"
       ],
       "additionalProperties": false
     }

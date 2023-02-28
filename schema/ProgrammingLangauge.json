@@ -1,0 +1,16 @@
+{
+  "title": "ProgrammingLangauge",
+  "$ref": "#/definitions/package__libs__models__main__ProgrammingLangauge",
+  "definitions": {
+    "package__libs__models__main__ProgrammingLangauge": {
+      "title": "ProgrammingLangauge",
+      "description": "An enumeration.",
+      "enum": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "type": "string"
+    }
+  }
+}

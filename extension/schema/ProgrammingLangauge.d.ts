@@ -5,11 +5,8 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Position = Position1;
-export type Line = number;
-export type Character = number;
-
-export interface Position1 {
-  line: Line;
-  character: Character;
-}
+export type ProgrammingLangauge = ProgrammingLangauge1;
+/**
+ * An enumeration.
+ */
+export type ProgrammingLangauge1 = "python" | "javascript" | "typescript";

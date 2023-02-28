@@ -2,9 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const { compile } = require("json-schema-to-typescript");
 
-function generateTypesForFile(schemaPath) {
-  let schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
-  let name = (schemaPath.split("/").pop() || schemaPath).split(".")[0];
+function generateTypesForFile(inputPath, outputPath) {
+  let schema = JSON.parse(fs.readFileSync(inputPath, "utf8"));
+  let name = (inputPath.split("/").pop() || inputPath).split(".")[0];
   // This is to solve the issue of json-schema-to-typescript not supporting $ref at the top-level, which is what Pydantic generates for recursive types
   if ("$ref" in schema) {
     let temp = schema["$ref"];
@@ -12,22 +12,41 @@ function generateTypesForFile(schemaPath) {
     schema["allOf"] = [{ $ref: temp }];
   }
 
-  compile(schema, name).then((ts) => {
-    fs.writeFileSync("schema/" + name + ".d.ts", ts);
-  });
+  compile(schema, name)
+    .then((ts) => {
+      fs.writeFileSync(path.join(outputPath, name + ".d.ts"), ts);
+    })
+    .catch((e) => {
+      console.log("Error generating types for " + name);
+      throw e;
+    });
 }
 
-function generateAllSchemas(rootFolder) {
+function generateAllSchemas(inputDir, outputDir) {
   try {
-    fs.readdirSync(rootFolder).forEach((file) => {
-      generateTypesForFile(path.join(rootFolder, file));
+    fs.readdirSync(inputDir).forEach((file) => {
+      if (file.endsWith(".json")) {
+        generateTypesForFile(path.join(inputDir, file), outputDir);
+      }
     });
   } catch (e) {
     console.log(
-      "You are probably running this from a different directory, try running it from extensions/."
+      "Make sure you are running this script from the extension/ directory."
     );
     throw e;
   }
 }
 
-generateAllSchemas("../schema/");
+function deleteAllInDir(dir) {
+  fs.readdirSync(dir).forEach((file) => {
+    if (file.endsWith(".d.ts")) {
+      fs.unlinkSync(path.join(dir, file));
+    }
+  });
+}
+
+OUTPUT_DIR = "schema";
+INPUT_DIR = "../schema";
+
+deleteAllInDir(OUTPUT_DIR);
+generateAllSchemas(INPUT_DIR, OUTPUT_DIR);

@@ -1,19 +1,25 @@
 {
   "title": "Position",
-  "type": "object",
-  "properties": {
-    "line": {
-      "title": "Line",
-      "type": "integer"
-    },
-    "character": {
-      "title": "Character",
-      "type": "integer"
+  "$ref": "#/definitions/package__libs__models__main__Position",
+  "definitions": {
+    "package__libs__models__main__Position": {
+      "title": "Position",
+      "type": "object",
+      "properties": {
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "character": {
+          "title": "Character",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "character"
+      ],
+      "additionalProperties": false
     }
-  },
-  "required": [
-    "line",
-    "character"
-  ],
-  "additionalProperties": false
+  }
 }

@@ -1,20 +1,6 @@
 {
   "title": "RangeInFile",
-  "type": "object",
-  "properties": {
-    "filepath": {
-      "title": "Filepath",
-      "type": "string"
-    },
-    "range": {
-      "$ref": "#/definitions/Range"
-    }
-  },
-  "required": [
-    "filepath",
-    "range"
-  ],
-  "additionalProperties": false,
+  "$ref": "#/definitions/package__libs__models__main__RangeInFile",
   "definitions": {
     "Position": {
       "title": "Position",
@@ -50,6 +36,24 @@
       "required": [
         "start",
         "end"
+      ],
+      "additionalProperties": false
+    },
+    "package__libs__models__main__RangeInFile": {
+      "title": "RangeInFile",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/definitions/Range"
+        }
+      },
+      "required": [
+        "filepath",
+        "range"
       ],
       "additionalProperties": false
     }
