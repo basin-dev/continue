@@ -8,19 +8,19 @@
 
 3. Run `npm install`
 
-4. Open `src/extension.ts` file
+4. Open `src/activate.ts` file
 
 5. Press `F5` on your keyboard to start `Run and Debug` mode
 
-6. Open a second VS Code window with `continue`
+6. Open a second VS Code window with the `continue` repo
 
-7. Start a virtual environment in this workspace `source env/bin/activate`
+7. Start the FastAPI server by following instructions outlined in `package/server/README.md`
 
-8. Start the FastAPI server by running `uvicorn package.server.main:app --reload` from the `unit-test-experiments` directory
+8. `cmd+shift+p` to look at developer console and select AutoDebug commands
 
-9. `cmd+shift+p` to look at Developer console / AutoDebug commands
+9. Every time you make changes to the code, you need to run `npm run compile`
 
-10. Every time you make changes to the code, you need to run `npm run compile`
+10. If you run into a "command not found" error, try running `npm run rebuild` and then `npm run compile`
 
 ## Alternative: Install a packaged version
 
