@@ -2,7 +2,7 @@
 
 ## How to get started with development
 
-1. Clone the `unit-test-experiments` repo
+1. Clone the `continue` repo
 
 2. Open the `extension` sub-directory of the repo in VS Code
 
@@ -12,7 +12,7 @@
 
 5. Press `F5` on your keyboard to start `Run and Debug` mode
 
-6. Open a second VS Code window with `unit-test-experiments`
+6. Open a second VS Code window with `continue`
 
 7. Start a virtual environment in this workspace `source env/bin/activate`
 
