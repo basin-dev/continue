@@ -1,0 +1,87 @@
+{
+  "$ref": "#/definitions/CallGraph",
+  "definitions": {
+    "Position": {
+      "title": "Position",
+      "type": "object",
+      "properties": {
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "character": {
+          "title": "Character",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "character"
+      ],
+      "additionalProperties": false
+    },
+    "Range": {
+      "title": "Range",
+      "description": "A range in a file. 0-indexed.",
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/Position"
+        },
+        "end": {
+          "$ref": "#/definitions/Position"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    },
+    "RangeInFile": {
+      "title": "RangeInFile",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/definitions/Range"
+        }
+      },
+      "required": [
+        "filepath",
+        "range"
+      ],
+      "additionalProperties": false
+    },
+    "CallGraph": {
+      "title": "CallGraph",
+      "description": "A call graph of a function.",
+      "type": "object",
+      "properties": {
+        "function_name": {
+          "title": "Function Name",
+          "type": "string"
+        },
+        "function_range": {
+          "$ref": "#/definitions/RangeInFile"
+        },
+        "calls": {
+          "title": "Calls",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CallGraph"
+          }
+        }
+      },
+      "required": [
+        "function_name",
+        "function_range",
+        "calls"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,33 +1,9 @@
 from typing import Dict, List
-from pydantic import BaseModel, validator
-import os
+from pydantic import BaseModel
 from enum import Enum
+from .primitives import StrictBaseModel
 
-class CustomStringModel(BaseModel):
-    __root__: str
-
-    def __hash__(self):
-        return hash(self.__root__)
-    
-    def __eq__(self, other):
-        return self.__root__ == other
-    
-class CustomDictModel(BaseModel):
-    __root__: Dict
-
-    def __getitem__(self, key):
-        return self.__root__[key]
-
-# class AbsoluteFilePath(CustomStringModel):
-#     __root__: str
-
-    @validator("__root__")
-    def validate_path(cls, v):
-        if not os.path.isabs(v):
-            raise ValueError("Path must be absolute")
-        return v
-
-class Position(BaseModel):
+class Position(StrictBaseModel):
     line: int
     character: int
 
@@ -59,7 +35,7 @@ class Position(BaseModel):
         else:
             return False
 
-class Range(BaseModel):
+class Range(StrictBaseModel):
     """A range in a file. 0-indexed."""
     start: Position
     end: Position
@@ -76,7 +52,7 @@ class Range(BaseModel):
     def overlaps_with(self, other: "Range") -> bool:
         return not (self.end < other.start or self.start > other.end)
 
-class RangeInFile(BaseModel):
+class RangeInFile(StrictBaseModel):
     filepath: str
     range: Range
 
@@ -88,7 +64,7 @@ class RangeInFile(BaseModel):
 
 SerializedVirtualFileSystem = Dict[str, str]
 
-class TracebackFrame(BaseModel):
+class TracebackFrame(StrictBaseModel):
     filepath: str
     lineno: int
     function: str
@@ -102,7 +78,7 @@ class ProgrammingLangauge(str, Enum):
     javascript = "javascript"
     typescript = "typescript"
 
-class Traceback(BaseModel):
+class Traceback(StrictBaseModel):
     frames: List[TracebackFrame]
     message: str
     error_type: str
@@ -127,12 +103,12 @@ class Traceback(BaseModel):
             full_traceback=tbutil_parsed_exc.to_string(),
         )
     
-class FileEdit(BaseModel):
+class FileEdit(StrictBaseModel):
     filepath: str
     range: Range
     replacement: str
 
-class CallGraph(BaseModel):
+class CallGraph(StrictBaseModel):
     """A call graph of a function."""
     function_name: str
     function_range: RangeInFile
