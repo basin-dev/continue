@@ -11,7 +11,7 @@ RENAMES = {
     "SerializedDebugContext": "DebugContext"
 }
 
-SCHEMA_DIR = "schema"
+SCHEMA_DIR = "schema/json"
 
 def clear_schemas():
     for filename in os.listdir(SCHEMA_DIR):

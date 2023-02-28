@@ -46,7 +46,7 @@ function deleteAllInDir(dir) {
 }
 
 OUTPUT_DIR = "schema";
-INPUT_DIR = "../schema";
+INPUT_DIR = "../schema/json";
 
 deleteAllInDir(OUTPUT_DIR);
 generateAllSchemas(INPUT_DIR, OUTPUT_DIR);

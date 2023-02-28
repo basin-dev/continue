@@ -139,6 +139,7 @@
     }
   },
   "scripts": {
+    "clientgen": "npx @openapitools/openapi-generator-cli generate -i ../schema/openapi.json -g typescript-fetch -o src/client/",
     "typegen": "node scripts/typegen.js",
     "vscode:prepublish": "npm run compile",
     "rebuild": "electron-rebuild -v 19.1.8 node-pty",
@@ -154,6 +155,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^3.2.10",
+    "@openapitools/openapi-generator-cli": "^2.5.2",
     "@types/glob": "^8.0.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
@@ -172,6 +174,7 @@
     "@reduxjs/toolkit": "^1.9.3",
     "@segment/analytics-node": "^0.0.1-beta.16",
     "axios": "^1.2.5",
+    "highlight.js": "^11.7.0",
     "json-schema-to-typescript": "^12.0.0",
     "node-pty": "^0.10.1",
     "octokit": "^2.0.11",
