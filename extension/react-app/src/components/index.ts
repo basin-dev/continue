@@ -90,6 +90,6 @@ export const Loader = styled.div`
   width: 60px;
   height: 60px;
   -webkit-animation: ${spin} 2s linear infinite;
-  animation: spin 2s linear infinite;
+  animation: ${spin} 2s linear infinite;
   margin: auto;
 `;

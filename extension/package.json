@@ -139,7 +139,7 @@
     }
   },
   "scripts": {
-    "clientgen": "npx @openapitools/openapi-generator-cli generate -i ../schema/openapi.json -g typescript-fetch -o src/client/",
+    "clientgen": "rm -rf src/client/ && npx @openapitools/openapi-generator-cli generate -i ../schema/openapi.json -g typescript-fetch -o src/client/ --additional-properties=supportsES6=true,npmVersion=8.19.2,typescriptThreePlus=true",
     "typegen": "node scripts/typegen.js",
     "vscode:prepublish": "npm run compile",
     "rebuild": "electron-rebuild -v 19.1.8 node-pty",
@@ -157,7 +157,7 @@
     "@electron/rebuild": "^3.2.10",
     "@openapitools/openapi-generator-cli": "^2.5.2",
     "@types/glob": "^8.0.0",
-    "@types/mocha": "^10.0.1",
+    "@types/jest": "^29.4.0",
     "@types/node": "16.x",
     "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^5.45.0",

@@ -1,18 +1,14 @@
 import * as vscode from "vscode";
-import {
-  listTenThings,
-  getSuggestion,
-  makeEdit,
-  apiRequest,
-  serializeDebugContext,
-} from "./bridge";
+import { getSuggestion, makeEdit, apiRequest, debugApi } from "./bridge";
 import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
 import { getExtensionUri, getNonce } from "./util/vscode";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
+import { RangeInFile, SerializedDebugContext } from "./client";
+import { addFileSystemToDebugContext } from "./util/util";
 
-export let debugPanelWebview: vscode.Webview | undefined = undefined;
+export let debugPanelWebview: vscode.Webview | undefined;
 
 export function setupDebugPanel(
   panel: vscode.WebviewPanel,
@@ -51,11 +47,14 @@ export function setupDebugPanel(
       return;
     }
 
+    let rangeInFile: RangeInFile & { code: string } = {
+      range: e.selections[0],
+      filepath: e.textEditor.document.fileName,
+      code: e.textEditor.document.getText(e.selections[0]),
+    };
     panel.webview.postMessage({
       type: "highlightedCode",
-      code: e.textEditor.document.getText(e.selections[0]),
-      filename: e.textEditor.document.fileName,
-      range: e.selections[0],
+      rangeInFile,
     });
 
     panel.webview.postMessage({
@@ -68,18 +67,20 @@ export function setupDebugPanel(
     switch (data.type) {
       case "listTenThings": {
         sendTelemetryEvent(TelemetryEvent.GenerateIdeas);
-        let tenThings = await listTenThings(data.debugContext);
+        let resp = await debugApi.listtenDebugListPost({
+          serializedDebugContext: data.debugContext,
+        });
         panel.webview.postMessage({
           type: "listTenThings",
-          value: tenThings,
+          value: resp.completion,
         });
         break;
       }
       case "suggestFix": {
-        let ctx = await getSuggestion(data.debugContext);
+        let suggestion = await getSuggestion(data.debugContext);
         panel.webview.postMessage({
           type: "suggestFix",
-          value: ctx.suggestion,
+          value: suggestion,
         });
         break;
       }
@@ -96,12 +97,11 @@ export function setupDebugPanel(
       }
       case "explainCode": {
         sendTelemetryEvent(TelemetryEvent.ExplainCode);
-        let body = serializeDebugContext(data.debugContext);
-        if (!body) break;
-
-        let resp = await apiRequest("debug/explain", {
-          body,
-          method: "POST",
+        let debugContext: SerializedDebugContext = addFileSystemToDebugContext(
+          data.debugContext
+        );
+        let resp = await debugApi.explainDebugExplainPost({
+          serializedDebugContext: debugContext,
         });
         panel.webview.postMessage({
           type: "explainCode",

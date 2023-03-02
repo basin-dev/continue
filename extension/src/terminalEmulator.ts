@@ -123,7 +123,7 @@ class PythonTracebackSnooper extends TerminalSnooper {
         if (debugPanelWebview) {
           debugPanelWebview.postMessage({
             type: "traceback",
-            traceback: wholeTraceback,
+            value: wholeTraceback,
           });
         } else {
           vscode.commands
@@ -131,7 +131,7 @@ class PythonTracebackSnooper extends TerminalSnooper {
             .then(() => {
               debugPanelWebview?.postMessage({
                 type: "traceback",
-                traceback: wholeTraceback,
+                value: wholeTraceback,
               });
             });
         }

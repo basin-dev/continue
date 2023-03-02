@@ -22,6 +22,8 @@ import {
 } from "./bridge";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { getLanguageLibrary } from "./languages";
+import { SerializedDebugContext } from "./client";
+import { readRangeInFile } from "./util/util";
 
 // Copy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
@@ -77,7 +79,9 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
     // Happens in webview resolution function
     openCapturedTerminal();
   },
-  "autodebug.findSuspiciousCode": async (debugContext: bridge.DebugContext) => {
+  "autodebug.findSuspiciousCode": async (
+    debugContext: SerializedDebugContext
+  ) => {
     vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -86,9 +90,17 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       },
       async (progress, token) => {
         let suspiciousCode = await findSuspiciousCode(debugContext);
+        let rangeInFiles = await Promise.all(
+          suspiciousCode.map(async (sc) => {
+            return {
+              ...sc,
+              code: await readRangeInFile(sc),
+            };
+          })
+        );
         debugPanelWebview?.postMessage({
           type: "findSuspiciousCode",
-          codeLocations: suspiciousCode,
+          codeLocations: rangeInFiles,
         });
       }
     );

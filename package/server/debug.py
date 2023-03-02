@@ -1,7 +1,9 @@
 import subprocess
 from typing import Dict, List
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
+from package.server.dependencies import userid
 from ..fault_loc.main import fl1, filter_ignored_traceback_frames, edit_context_ast, find_code_in_range, fl2, frame_to_code_range
 from boltons import tbutils
 from ..libs.language_models.llm import OpenAI
@@ -14,6 +16,7 @@ from ..libs.virtual_filesystem import VirtualFileSystem, FileSystem
 from ..libs.util import merge_ranges_in_files, parse_traceback
 from ..fault_loc.utils import is_test_file
 from package.server.telemetry import send_telemetry_event, TelemetryEvent
+from .utils import CompletionResponse
 
 llm = OpenAI()
 router = APIRouter(prefix="/debug", tags=["debug"])
@@ -124,13 +127,13 @@ class InlineBody(BaseModel):
     traceback: str = ""
 
 @router.post("/inline")
-def inline(body: InlineBody):
+def inline(body: InlineBody) -> CompletionResponse:
     code = find_code_in_range(body.filecontents, body.startline, body.endline)
     suggestion = attempt_edit_prompter1.complete((code, body.traceback))
     return {"completion": suggestion}
 
 @router.get("/suggestion")
-def suggestion(traceback: str):
+def suggestion(traceback: str) -> CompletionResponse:
     suggestion = get_steps(traceback)
     return {"completion": suggestion}
 
@@ -155,40 +158,40 @@ def ctx_prompt(ctx: DebugContext, final_instruction: str) -> str:
 n = 3
 n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potential solutions to the problem or causes. They should be precise and useful:"))
 
-
 @router.post("/list")
-def listten(body: SerializedDebugContext):
+def listten(body: SerializedDebugContext, userid=Depends(userid)) -> CompletionResponse:
     n_things = n_things_prompter.complete(body.deserialize())
 
     properties = {
-        "user_id": body.userid,
-        "selected_code": body.code,
+        "selected_code": body.ranges_in_files,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "stack_trace": body.stacktrace,
+        "stack_trace": body.traceback,
         "ideas": n_things
     }
 
-    send_telemetry_event(TelemetryEvent.IDEAS_GENERATED, properties)
+    send_telemetry_event(TelemetryEvent.IDEAS_GENERATED, userid, properties)
 
     return {"completion": n_things}
 
 explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
 
+class ExplainResponse(BaseModel):
+    completion: str
+
 @router.post("/explain")
-def explain(body: SerializedDebugContext):
+def explain(body: SerializedDebugContext, userid=Depends(userid)) -> ExplainResponse:
     explanation = explain_code_prompter.complete(body.deserialize())
 
     properties = {
-        "user_id": body.userid,
-        "selected_code": body.code,
+        "selected_code": body.ranges_in_files,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "stack_trace": body.stacktrace,
+        "stack_trace": body.traceback,
         "explanation": explanation
     }
 
-    send_telemetry_event(TelemetryEvent.CODE_EXPLAINED, properties)
+    send_telemetry_event(TelemetryEvent.CODE_EXPLAINED, userid, properties)
 
     return {"completion": explanation}
 
@@ -246,19 +249,18 @@ class EditResp(BaseModel):
     completion: List[FileEdit]
 
 @router.post("/edit")
-def edit_endpoint(body: SerializedDebugContext) -> EditResp:
+def edit_endpoint(body: SerializedDebugContext, userid=Depends(userid)) -> EditResp:
     edits = suggest_file_edits(body.deserialize())
 
     properties = {
-        "user_id": body.userid,
         "selected_code": body.code,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "stack_trace": body.stacktrace,
+        "stack_trace": body.traceback,
         "suggestion": edits
     }
 
-    send_telemetry_event(TelemetryEvent.FIX_SUGGESTED, properties)
+    send_telemetry_event(TelemetryEvent.FIX_SUGGESTED, userid, properties)
 
     return {"completion": edits}
 

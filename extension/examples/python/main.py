@@ -4,9 +4,6 @@
 
 from sum import sum
 
-def sum(a, b):
-    return a + b
-
 first = 1
 second = "two"
 

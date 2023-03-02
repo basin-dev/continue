@@ -6,6 +6,27 @@ import { convertSingleToDoubleQuoteJSON } from "./util/util";
 import { readFileSync } from "fs";
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
+import { RangeInFile, SerializedDebugContext } from "./client";
+import { Configuration, DebugApi } from "./client";
+
+const configuration = new Configuration({
+  basePath: get_api_url(),
+  middleware: [
+    {
+      pre: async (context) => {
+        // If there is a SerializedDebugContext in the body, add the files for the filesystem
+        context.init.body;
+
+        // Add the VS Code Machine Code Header
+        context.init.headers = {
+          ...context.init.headers,
+          "x-vsc-machine-code": vscode.env.machineId,
+        };
+      },
+    },
+  ],
+});
+export const debugApi = new DebugApi(configuration);
 
 function get_python_path() {
   return path.join(getExtensionUri().fsPath, "..");
@@ -122,12 +143,22 @@ export async function apiRequest(
   options = Object.assign(defaults, options); // Second takes over first
   if (endpoint.startsWith("/")) endpoint = endpoint.substring(1);
   console.log("API request: ", options.body);
-  let resp = await axios({
-    method: options.method,
-    url: `${API_URL}/${endpoint}`,
-    data: options.body,
-    params: options.query,
-  });
+
+  let resp;
+  try {
+    resp = await axios({
+      method: options.method,
+      url: `${API_URL}/${endpoint}`,
+      data: options.body,
+      params: options.query,
+      headers: {
+        "x-vsc-machine-id": vscode.env.machineId,
+      },
+    });
+  } catch (err) {
+    console.log("Error: ", err);
+    throw err;
+  }
 
   return resp.data;
 }
@@ -155,58 +186,23 @@ export async function writeDocstringForFunction(
   }
 }
 
-// Should be "suggest fix given a line number and a file"
-// and also "find sus line number and file given a problem"
-// basically need to be able to go from any amount of information
-// Even no stack trace, just description of problem -> sus lines of code -> fix
-// Should have a series of functions that "enrich" the context, learning increasingly
-// more about the bug
-
-// Can be undefined because should be fine to just specify (filename, range & filename, code, code & filename, all three)
-// Really don't want just range, that doesn't help (having range without filename is useless)
-export interface CodeSelection {
-  filename?: string;
-  range?: vscode.Range;
-  code?: string;
-}
-export interface CompleteCodeSelection {
-  filename: string;
-  range: vscode.Range;
-  code: string;
-}
-export interface DebugContext {
-  traceback?: string;
-  description?: string;
-  suggestion?: string;
-  codeSelections?: CodeSelection[];
-}
-
-function completeCodeSelectionTypeguard(
-  codeSelection: CodeSelection
-): codeSelection is CompleteCodeSelection {
-  return (
-    codeSelection.filename !== undefined &&
-    codeSelection.range !== undefined &&
-    codeSelection.code !== undefined
-  );
-}
-
-export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
-  let codeSelection = ctx.codeSelections?.at(0);
+export async function getSuggestion(
+  ctx: SerializedDebugContext
+): Promise<string> {
+  let codeSelection = ctx.rangesInFiles.at(0);
   let resp: any;
-  if (codeSelection && completeCodeSelectionTypeguard(codeSelection)) {
+  if (codeSelection) {
     // Can utilize the fact that we know right where the bug is
     resp = await apiRequest("debug/inline", {
       body: {
         filecontents: (
           await vscode.workspace.fs.readFile(
-            vscode.Uri.file(codeSelection.filename)
+            vscode.Uri.file(codeSelection.filepath)
           )
         ).toString(),
         startline: codeSelection.range.start.line,
         endline: codeSelection.range.end.line,
         traceback: ctx.traceback,
-        userid: vscode.env.machineId,
       },
       method: "POST",
     });
@@ -218,103 +214,34 @@ export async function getSuggestion(ctx: DebugContext): Promise<DebugContext> {
     });
   }
 
-  ctx.suggestion = resp.completion;
-  return ctx;
-}
-
-function codeSelectionsToVirtualFileSystem(codeSelections: CodeSelection[]): {
-  [filepath: string]: string;
-} {
-  let virtualFileSystem: { [filepath: string]: string } = {};
-  for (let cs of codeSelections) {
-    if (!cs.filename) continue;
-    if (cs.filename in virtualFileSystem) continue;
-    let content = readFileSync(cs.filename, "utf8");
-    virtualFileSystem[cs.filename] = content;
-  }
-  return virtualFileSystem;
-}
-
-export function serializeDebugContext(ctx: DebugContext): any {
-  if (!ctx.codeSelections?.filter((cs) => cs.code !== undefined))
-    return undefined;
-
-  return {
-    userid: vscode.env.machineId,
-    traceback: ctx.traceback,
-    description: ctx.description,
-    filesystem: codeSelectionsToVirtualFileSystem(ctx.codeSelections),
-    ranges_in_files: ctx.codeSelections.map((cs) => {
-      return {
-        filepath: cs.filename,
-        range: cs.range,
-      };
-    }),
-  };
-}
-
-export async function listTenThings(ctx: DebugContext): Promise<string> {
-  let body = serializeDebugContext(ctx);
-  if (!body) return "";
-
-  let resp = await apiRequest("debug/list", {
-    body,
-    method: "POST",
-  });
-
   return resp.completion;
 }
 
-export async function makeEdit(ctx: DebugContext): Promise<any[]> {
-  let body = serializeDebugContext(ctx);
-  if (!body) return [];
-
+export async function makeEdit(ctx: SerializedDebugContext): Promise<any[]> {
   let resp = await apiRequest("debug/edit", {
-    body,
+    body: ctx,
     method: "POST",
   });
 
   return resp.completion;
-}
-
-export interface CodeLocation {
-  filename: string;
-  range: vscode.Range;
-  codee?: string;
 }
 
 export async function findSuspiciousCode(
-  ctx: DebugContext
-): Promise<CodeLocation[]> {
+  ctx: SerializedDebugContext
+): Promise<RangeInFile[]> {
   if (!ctx.traceback) return [];
   let files = await getFileContents(
     getFilenamesFromPythonStacktrace(ctx.traceback)
   );
-  let resp = await apiRequest("debug/find", {
-    body: {
+  let resp = await debugApi.findSusCodeEndpointDebugFindPost({
+    findBody: {
       traceback: ctx.traceback,
       description: ctx.description,
       filesystem: files,
     },
-    method: "POST",
   });
 
-  return await Promise.all(
-    resp.response.map(async (loc: any) => {
-      let range = new vscode.Range(
-        loc.range.start.line,
-        loc.range.start.character,
-        loc.range.end.line,
-        loc.range.end.character
-      );
-      let code = await readFileAtRange(range, loc.filepath);
-      return {
-        filename: loc.filepath,
-        range,
-        code,
-      };
-    })
-  );
+  return resp.response;
 }
 
 export async function writeUnitTestForFunction(
@@ -334,11 +261,6 @@ export async function writeUnitTestForFunction(
 
   return resp.completion;
 }
-
-// TODO: This whole file shouldn't really exist, nor its functions. Should just be api calls made throughout the codebase
-// UNLESS: You always pass the entire DebugContext object into all these functions so they have the same interface from the VSCode extensions,
-// but then you strip out unecessary information here when you upgrade your backend capabilities. Then only have to edit that in a single spot,
-// and a lot easier to keep track of.
 
 async function getFileContents(
   files: string[]

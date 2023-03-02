@@ -79,7 +79,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionResponse"
+                }
               }
             }
           },
@@ -119,7 +121,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionResponse"
+                }
               }
             }
           },
@@ -143,6 +147,18 @@
         ],
         "summary": "Listten",
         "operationId": "listten_debug_list_post",
+        "parameters": [
+          {
+            "required": false,
+            "schema": {
+              "title": "X-Vsc-Machine-Id",
+              "type": "string",
+              "default": "anonymous"
+            },
+            "name": "x-vsc-machine-id",
+            "in": "header"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -158,7 +174,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionResponse"
+                }
               }
             }
           },
@@ -182,6 +200,18 @@
         ],
         "summary": "Explain",
         "operationId": "explain_debug_explain_post",
+        "parameters": [
+          {
+            "required": false,
+            "schema": {
+              "title": "X-Vsc-Machine-Id",
+              "type": "string",
+              "default": "anonymous"
+            },
+            "name": "x-vsc-machine-id",
+            "in": "header"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -197,7 +227,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ExplainResponse"
+                }
               }
             }
           },
@@ -221,6 +253,18 @@
         ],
         "summary": "Edit Endpoint",
         "operationId": "edit_endpoint_debug_edit_post",
+        "parameters": [
+          {
+            "required": false,
+            "schema": {
+              "title": "X-Vsc-Machine-Id",
+              "type": "string",
+              "default": "anonymous"
+            },
+            "name": "x-vsc-machine-id",
+            "in": "header"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -308,15 +352,6 @@
           {
             "required": true,
             "schema": {
-              "title": "Userid",
-              "type": "string"
-            },
-            "name": "userid",
-            "in": "query"
-          },
-          {
-            "required": true,
-            "schema": {
               "title": "Filecontents",
               "type": "string"
             },
@@ -341,6 +376,16 @@
             },
             "name": "format",
             "in": "query"
+          },
+          {
+            "required": false,
+            "schema": {
+              "title": "X-Vsc-Machine-Id",
+              "type": "string",
+              "default": "anonymous"
+            },
+            "name": "x-vsc-machine-id",
+            "in": "header"
           }
         ],
         "responses": {
@@ -375,13 +420,14 @@
         "operationId": "forline_unittest_forline_post",
         "parameters": [
           {
-            "required": true,
+            "required": false,
             "schema": {
-              "title": "Userid",
-              "type": "string"
+              "title": "X-Vsc-Machine-Id",
+              "type": "string",
+              "default": "anonymous"
             },
-            "name": "userid",
-            "in": "query"
+            "name": "x-vsc-machine-id",
+            "in": "header"
           }
         ],
         "requestBody": {
@@ -399,7 +445,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionResponse"
+                }
               }
             }
           },
@@ -439,7 +487,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionResponse"
+                }
               }
             }
           },
@@ -475,6 +525,19 @@
   },
   "components": {
     "schemas": {
+      "CompletionResponse": {
+        "title": "CompletionResponse",
+        "required": [
+          "completion"
+        ],
+        "type": "object",
+        "properties": {
+          "completion": {
+            "title": "Completion",
+            "type": "string"
+          }
+        }
+      },
       "EditResp": {
         "title": "EditResp",
         "required": [
@@ -488,6 +551,19 @@
             "items": {
               "$ref": "#/components/schemas/FileEdit"
             }
+          }
+        }
+      },
+      "ExplainResponse": {
+        "title": "ExplainResponse",
+        "required": [
+          "completion"
+        ],
+        "type": "object",
+        "properties": {
+          "completion": {
+            "title": "Completion",
+            "type": "string"
           }
         }
       },
@@ -691,10 +767,8 @@
       "SerializedDebugContext": {
         "title": "SerializedDebugContext",
         "required": [
-          "traceback",
           "ranges_in_files",
-          "filesystem",
-          "description"
+          "filesystem"
         ],
         "type": "object",
         "properties": {

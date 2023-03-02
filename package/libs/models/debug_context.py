@@ -8,23 +8,28 @@ from .main import RangeInFile, SerializedVirtualFileSystem, Traceback
 from ..virtual_filesystem import FileSystem, VirtualFileSystem
 
 class DebugContext(BaseModel):
-    traceback: Traceback
+    traceback: Traceback | None
     ranges_in_files: List[RangeInFile]
     filesystem: FileSystem
-    description: str
+    description: str | None
 
     class Config:
         arbitrary_types_allowed = True
 
 class SerializedDebugContext(BaseModel):
-    traceback: str
+    traceback: str | None
     ranges_in_files: List[RangeInFile]
     filesystem: SerializedVirtualFileSystem
-    description: str
+    description: str | None
 
     def deserialize(self):
+        traceback = None
+        try:
+            traceback = parse_traceback(self.traceback)
+        except Exception as e:
+            print("Unable to parse traceback: ", self.traceback)
         return DebugContext(
-            traceback=parse_traceback(self.traceback),
+            traceback=traceback,
             ranges_in_files=self.ranges_in_files,
             filesystem=VirtualFileSystem(self.filesystem),
             description=self.description

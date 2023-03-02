@@ -3,22 +3,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootStore } from "./store";
 import { selectDebugContextValue } from "./selectors/debugContextSelectors";
 import { updateValue } from "./slices/debugContexSlice";
-
-function useReduxState(
-  selector: (state: RootStore, ...args: any[]) => any,
-  action: any
-): [any, (value: any) => void] {
-  const dispatch = useDispatch();
-  const state = useSelector(selector);
-  const boundAction = useCallback(
-    (...args: any[]) => dispatch(action(...args)),
-    [dispatch, action]
-  );
-  return [state, boundAction];
-}
+import { SerializedDebugContext } from "../../src/client";
 
 export function useDebugContextValue(
-  key: string,
+  key: keyof SerializedDebugContext,
   defaultValue: any
 ): [any, (value: any) => void] {
   const dispatch = useDispatch();

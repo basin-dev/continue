@@ -10,13 +10,9 @@ class TelemetryEvent(str, Enum):
     TEST_CREATED = "TestCreated"
     DOCSTRING_GENERATED = "DocstringGenerated"
 
-def send_telemetry_event(event, properties=None):
-
-    if properties["vscode.env.isTelemetryEnabled"]:
-        return
-
+def send_telemetry_event(event, userid: str, properties=None):
     analytics.track(
         event=event,
-        userId=properties["vscode.env.machineId"],
+        user_id=userid,
         properties=properties
     )

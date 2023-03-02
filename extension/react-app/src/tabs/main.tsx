@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { H3, TextArea, Button, Pre, Loader } from "../components";
 import styled from "styled-components";
-import { createVscListener, postVscMessage } from "../vscode";
+import { postVscMessage } from "../vscode";
 import { useDebugContextValue } from "../../redux/hooks";
 import CodeMultiselect from "../components/CodeMultiselect";
 import { useSelector } from "react-redux";
 import { selectDebugContext } from "../../redux/selectors/debugContextSelectors";
 import { useDispatch } from "react-redux";
-import { setWorkspacePath } from "../../redux/slices/debugContexSlice";
+import {
+  setWorkspacePath,
+  updateValue,
+} from "../../redux/slices/debugContexSlice";
+import { SerializedDebugContext } from "../../../src/client";
 
 const ButtonDiv = styled.div`
   display: flex;
@@ -25,47 +29,61 @@ const ButtonDiv = styled.div`
 function MainTab(props: any) {
   const dispatch = useDispatch();
 
-  const [suggestion, setSuggestion] = useDebugContextValue("suggestion", "");
+  const [suggestion, setSuggestion] = useState("");
   const [traceback, setTraceback] = useDebugContextValue("traceback", "");
   const [selectedRanges, setSelectedRanges] = useDebugContextValue(
-    "selectedRanges",
+    "rangesInFiles",
     []
   );
 
   const [responseLoading, setResponseLoading] = useState(false);
-  const tracebackTextAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
   let debugContext = useSelector(selectDebugContext);
 
-  function postVscMessageWithDebugContext(type: string) {
-    postVscMessage(type, { debugContext });
+  function postVscMessageWithDebugContext(
+    type: string,
+    overrideDebugContext: SerializedDebugContext | null = null
+  ) {
+    postVscMessage(type, {
+      debugContext: overrideDebugContext || debugContext,
+    });
   }
 
   useEffect(() => {
-    createVscListener((event) => {
+    const eventListener = (event: any) => {
       switch (event.data.type) {
         case "suggestFix":
         case "explainCode":
         case "listTenThings":
           setSuggestion(event.data.value);
+          setResponseLoading(false);
           break;
         case "makeEdit":
           setResponseLoading(false);
           break;
         case "traceback":
-          if (tracebackTextAreaRef.current) {
-            tracebackTextAreaRef.current.value = event.data.value;
-          }
+          setTraceback(event.data.value);
           if (selectedRanges.length === 0) {
-            postVscMessageWithDebugContext("findSuspiciousCode");
+            // setTraceback's effects don't occur immediately, so we have to add it to the debug context manually
+            let updatedDebugContext = {
+              ...debugContext,
+              traceback: event.data.value,
+            };
+            postVscMessageWithDebugContext(
+              "findSuspiciousCode",
+              updatedDebugContext
+            );
           }
           break;
         case "workspacePath":
           dispatch(setWorkspacePath(event.data.value));
           break;
       }
-    });
-  });
+    };
+    window.addEventListener("message", eventListener);
+
+    return () => window.removeEventListener("message", eventListener);
+  }, [debugContext, selectedRanges]);
 
   return (
     <>
@@ -86,7 +104,6 @@ function MainTab(props: any) {
 
       <H3>Stack Trace</H3>
       <TextArea
-        ref={tracebackTextAreaRef}
         id="traceback"
         className="traceback"
         name="traceback"
@@ -95,8 +112,10 @@ function MainTab(props: any) {
         placeholder="Paste stack trace here"
         onChange={(e) => {
           setTraceback(e.target.value);
-          postVscMessageWithDebugContext("findSuspiciousCode");
+          dispatch(updateValue({ key: "traceback", value: e.target.value }));
+          // postVscMessageWithDebugContext("findSuspiciousCode");
         }}
+        value={traceback}
       ></TextArea>
 
       <select
@@ -143,7 +162,10 @@ function MainTab(props: any) {
       </ButtonDiv>
       <Loader hidden={!responseLoading}></Loader>
 
-      <Pre className="fixSuggestion" hidden>
+      <Pre
+        className="fixSuggestion"
+        hidden={!(typeof suggestion === "string" && suggestion.length > 0)}
+      >
         {suggestion}
       </Pre>
 
