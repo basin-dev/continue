@@ -15,7 +15,15 @@ function useArrayState<T>(initialValue: T[]) {
     setValue((prev) => editFn(prev));
   }
 
-  return { value, add, remove, edit };
+  function replace(atIndex: number, withItem: T) {
+    setValue((prev) => {
+      let updated = [...prev];
+      updated[atIndex] = withItem;
+      return updated;
+    });
+  }
+
+  return { value, add, remove, edit, replace };
 }
 
 export default useArrayState;

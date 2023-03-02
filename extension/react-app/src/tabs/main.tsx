@@ -143,7 +143,7 @@ function MainTab(props: any) {
           Generate Ideas
         </Button>
         <Button
-          disabled
+          disabled={selectedRanges.length === 0}
           onClick={() => {
             postVscMessageWithDebugContext("makeEdit");
             setResponseLoading(true);
@@ -152,7 +152,7 @@ function MainTab(props: any) {
           Suggest Fix
         </Button>
         <Button
-          disabled
+          disabled={selectedRanges.length === 0}
           onClick={() => {
             postVscMessageWithDebugContext("generateUnitTest");
           }}

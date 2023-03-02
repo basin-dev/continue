@@ -31,14 +31,14 @@ Instructions to fix:
 fix_suggestion_prompter = SimplePrompter(lambda stderr: prompt.replace("{traceback}", stderr))
 
 def get_steps(traceback: str) -> str:
-    traceback = parse_traceback(traceback)
-    if len(traceback.frames) == 0:
+    parsed_traceback = parse_traceback(traceback)
+    if len(parsed_traceback.frames) == 0:
         raise Exception("No frames found in traceback")
-    sus_frame = fl1(traceback)
-    relevant_frames = filter_ignored_traceback_frames(traceback.frames)
-    traceback.frames = relevant_frames
+    sus_frame = fl1(parsed_traceback)
+    relevant_frames = filter_ignored_traceback_frames(parsed_traceback.frames)
+    parsed_traceback.frames = relevant_frames
 
-    resp = fix_suggestion_prompter.complete(traceback)
+    resp = fix_suggestion_prompter.complete(parsed_traceback.full_traceback)
     return resp
 
 def suggest_fix(stderr: str) -> str:
@@ -134,6 +134,7 @@ def inline(body: InlineBody) -> CompletionResponse:
 
 @router.get("/suggestion")
 def suggestion(traceback: str) -> CompletionResponse:
+    print("traceback: ", traceback)
     suggestion = get_steps(traceback)
     return {"completion": suggestion}
 
