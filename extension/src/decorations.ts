@@ -285,7 +285,6 @@ export async function writeAndShowUnitTest(
           })
           .then((success) => {
             if (!success) reject("Failed to insert test");
-            editor.document.save();
             let key = highlightCode(editor, testRange);
             resolve(key);
           });
