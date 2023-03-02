@@ -153,7 +153,7 @@ function CodeMultiselect(props: {
   //#region Update Functions
   function filterSelectedRanges(selectedRanges: RangeInFile[]) {
     return selectedRanges.filter((range: RangeInFile, index: number) => {
-      return selectedMask.value[index];
+      return selectedMask.value[index] === false;
     });
   }
 
@@ -187,17 +187,20 @@ function CodeMultiselect(props: {
     range: RangeInFileWithCode,
     updateLast: boolean = false
   ) {
-    if (
-      updateLast &&
-      selectedRanges.value.length > 0 &&
-      range.filepath ===
-        selectedRanges.value[selectedRanges.value.length - 1].filepath
-    ) {
-      selectedRanges.replace(selectedRanges.value.length - 1, range);
-    } else {
-      selectedRanges.add(range);
-      selectedMask.add(true);
-    }
+    selectedRanges.edit((prev) => {
+      if (
+        updateLast &&
+        prev.length > 0 &&
+        range.filepath === prev[prev.length - 1].filepath
+      ) {
+        prev[prev.length - 1] = range;
+      } else {
+        prev.push(range);
+      }
+      return prev;
+    });
+    // selectedMask.add(true);
+    selectedMask.replace(selectedMask.value.length - 1, true);
     onChangeUpdate();
   }
 
@@ -217,7 +220,6 @@ function CodeMultiselect(props: {
           break;
         case "findSuspiciousCode":
           for (let c of event.data.codeLocations) {
-            console.log("NEW RANGE: ", c);
             addSelectedRange(c);
           }
 

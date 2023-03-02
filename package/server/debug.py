@@ -202,7 +202,7 @@ def parse_multiple_file_completion(completion: str, ranges_in_files: List[RangeI
     # Should do a better job of ensuring the ``` format, but for now the issue is mostly just on single file inputs:
     if not '```' in completion:
         completion = "```\n" + completion + "\n```"
-    elif completion.splitlines()[0].strip() == '```':
+    if completion.splitlines()[0].strip() == '```':
         first_filepath = ranges_in_files[0].filepath
         completion = f"File ({first_filepath})\n" + completion
 
@@ -233,6 +233,7 @@ def suggest_file_edits(ctx: DebugContext, edit_tests: bool=False) -> List[FileEd
     try:
         completion = edit_prompter.complete(ctx)
     except:
+        print("Error completing edit")
         return []
     suggestions = parse_multiple_file_completion(completion, ctx.ranges_in_files)
 
@@ -254,7 +255,7 @@ def edit_endpoint(body: SerializedDebugContext, userid=Depends(userid)) -> EditR
     edits = suggest_file_edits(body.deserialize())
 
     properties = {
-        "selected_code": body.code,
+        "selected_code": body.ranges_in_files,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
         "stack_trace": body.traceback,

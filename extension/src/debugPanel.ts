@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { getSuggestion, makeEdit, apiRequest, debugApi } from "./bridge";
+import { debugApi, unittestApi } from "./bridge";
 import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
@@ -77,10 +77,33 @@ export function setupDebugPanel(
         break;
       }
       case "suggestFix": {
-        let suggestion = await getSuggestion(data.debugContext);
+        let completion: string;
+        let codeSelection = data.debugContext.rangesInFiles?.at(0);
+        if (codeSelection) {
+          completion = (
+            await debugApi.inlineDebugInlinePost({
+              inlineBody: {
+                filecontents: await vscode.workspace.fs
+                  .readFile(vscode.Uri.file(codeSelection.filepath))
+                  .toString(),
+                startline: codeSelection.range.start.line,
+                endline: codeSelection.range.end.line,
+                traceback: data.debugContext.traceback,
+              },
+            })
+          ).completion;
+        } else if (data.debugContext.traceback) {
+          completion = (
+            await debugApi.suggestionDebugSuggestionGet({
+              traceback: data.debugContext.traceback,
+            })
+          ).completion;
+        } else {
+          break;
+        }
         panel.webview.postMessage({
           type: "suggestFix",
-          value: suggestion,
+          value: completion,
         });
         break;
       }
@@ -111,8 +134,12 @@ export function setupDebugPanel(
       }
       case "makeEdit": {
         sendTelemetryEvent(TelemetryEvent.SuggestFix);
-        let debugContext = data.debugContext;
-        let suggestedEdits = await makeEdit(debugContext);
+        let debugContext = addFileSystemToDebugContext(data.debugContext);
+        let suggestedEdits = (
+          await debugApi.editEndpointDebugEditPost({
+            serializedDebugContext: debugContext,
+          })
+        ).completion;
 
         for (let i = 0; i < suggestedEdits.length; i++) {
           let edit = suggestedEdits[i];
@@ -143,32 +170,33 @@ export function setupDebugPanel(
             cancellable: false,
           },
           async () => {
-            for (let i = 0; i < data.debugContext.codeSelections?.length; i++) {
-              let codeSelection = data.debugContext.codeSelections?.at(i);
+            for (let i = 0; i < data.debugContext.rangesInFiles?.length; i++) {
+              let codeSelection = data.debugContext.rangesInFiles?.at(i);
               if (
                 codeSelection &&
-                codeSelection.filename &&
+                codeSelection.filepath &&
                 codeSelection.range
               ) {
                 try {
-                  let resp = await apiRequest("/unittest/failingtest", {
-                    method: "POST",
-                    body: {
-                      fp: {
-                        filecontents: (
-                          await vscode.workspace.fs.readFile(
-                            vscode.Uri.file(codeSelection.filename)
-                          )
-                        ).toString(),
-                        lineno: codeSelection.range.end.line,
+                  let filecontents = (
+                    await vscode.workspace.fs.readFile(
+                      vscode.Uri.file(codeSelection.filepath)
+                    )
+                  ).toString();
+                  let resp =
+                    await unittestApi.failingtestUnittestFailingtestPost({
+                      failingTestBody: {
+                        fp: {
+                          filecontents,
+                          lineno: codeSelection.range.end.line,
+                        },
+                        description: data.debugContext.description || "",
                       },
-                      description: data.debugContext.description,
-                    },
-                  });
+                    });
 
                   if (resp.completion) {
                     let decorationKey = await writeAndShowUnitTest(
-                      codeSelection.filename,
+                      codeSelection.filepath,
                       resp.completion
                     );
                     break;

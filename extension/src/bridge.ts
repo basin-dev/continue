@@ -1,13 +1,12 @@
 import * as vscode from "vscode";
 import * as path from "path";
 const axios = require("axios").default;
-import { getExtensionUri, readFileAtRange } from "./util/vscode";
+import { getExtensionUri } from "./util/vscode";
 import { convertSingleToDoubleQuoteJSON } from "./util/util";
-import { readFileSync } from "fs";
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 import { RangeInFile, SerializedDebugContext } from "./client";
-import { Configuration, DebugApi } from "./client";
+import { Configuration, DebugApi, UnittestApi } from "./client";
 
 const configuration = new Configuration({
   basePath: get_api_url(),
@@ -27,6 +26,7 @@ const configuration = new Configuration({
   ],
 });
 export const debugApi = new DebugApi(configuration);
+export const unittestApi = new UnittestApi(configuration);
 
 function get_python_path() {
   return path.join(getExtensionUri().fsPath, "..");
@@ -184,46 +184,6 @@ export async function writeDocstringForFunction(
   } else {
     throw new Error("Error: No docstring returned");
   }
-}
-
-export async function getSuggestion(
-  ctx: SerializedDebugContext
-): Promise<string> {
-  let codeSelection = ctx.rangesInFiles.at(0);
-  let resp: any;
-  if (codeSelection) {
-    // Can utilize the fact that we know right where the bug is
-    resp = await apiRequest("debug/inline", {
-      body: {
-        filecontents: (
-          await vscode.workspace.fs.readFile(
-            vscode.Uri.file(codeSelection.filepath)
-          )
-        ).toString(),
-        startline: codeSelection.range.start.line,
-        endline: codeSelection.range.end.line,
-        traceback: ctx.traceback,
-      },
-      method: "POST",
-    });
-  } else {
-    resp = await apiRequest("debug/suggestion", {
-      query: {
-        traceback: ctx.traceback,
-      },
-    });
-  }
-
-  return resp.completion;
-}
-
-export async function makeEdit(ctx: SerializedDebugContext): Promise<any[]> {
-  let resp = await apiRequest("debug/edit", {
-    body: ctx,
-    method: "POST",
-  });
-
-  return resp.completion;
 }
 
 export async function findSuspiciousCode(

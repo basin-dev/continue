@@ -1,8 +1,8 @@
 import DebugPanel from "./components/DebugPanel";
 import MainTab from "./tabs/main";
-import AdditionalContextTab from "./tabs/additionalContext";
 import { Provider } from "react-redux";
 import store from "../redux/store";
+import WelcomeTab from "./tabs/welcome";
 
 function App() {
   return (
@@ -11,7 +11,7 @@ function App() {
         <DebugPanel
           tabs={[
             { element: <MainTab />, title: "Debug Panel" },
-            { element: <AdditionalContextTab />, title: "Additional Context" },
+            { element: <WelcomeTab />, title: "Welcome to Continue" },
           ]}
         ></DebugPanel>
       </Provider>
