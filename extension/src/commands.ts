@@ -22,6 +22,8 @@ import {
 } from "./bridge";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { getLanguageLibrary } from "./languages";
+import { SerializedDebugContext } from "./client";
+import { readRangeInFile } from "./util/util";
 
 // Copy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
@@ -58,7 +60,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   "autodebug.suggestionUp": suggestionUpCommand,
   "autodebug.acceptSuggestion": acceptSuggestionCommand,
   "autodebug.rejectSuggestion": rejectSuggestionCommand,
-  "autodebug.openDebugPanel": () => {
+  "autodebug.openDebugPanel": (context: vscode.ExtensionContext) => {
     let column = getRightViewColumn();
     const panel = vscode.window.createWebviewPanel(
       "autodebug.debugPanelView",
@@ -66,17 +68,20 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       column,
       {
         enableScripts: true,
+        retainContextWhenHidden: true,
       }
     );
 
     // And set its HTML content
-    panel.webview.html = setupDebugPanel(panel);
+    panel.webview.html = setupDebugPanel(panel, context);
   },
   "autodebug.openCapturedTerminal": () => {
     // Happens in webview resolution function
     openCapturedTerminal();
   },
-  "autodebug.findSuspiciousCode": async (debugContext: bridge.DebugContext) => {
+  "autodebug.findSuspiciousCode": async (
+    debugContext: SerializedDebugContext
+  ) => {
     vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -85,9 +90,17 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       },
       async (progress, token) => {
         let suspiciousCode = await findSuspiciousCode(debugContext);
+        let rangeInFiles = await Promise.all(
+          suspiciousCode.map(async (sc) => {
+            return {
+              ...sc,
+              code: await readRangeInFile(sc),
+            };
+          })
+        );
         debugPanelWebview?.postMessage({
           type: "findSuspiciousCode",
-          codeLocations: suspiciousCode,
+          codeLocations: rangeInFiles,
         });
       }
     );
@@ -109,7 +122,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
     vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
       debugPanelWebview?.postMessage({
         type: "traceback",
-        traceback: traceback,
+        value: traceback,
       });
     });
   },

@@ -4,12 +4,15 @@ from typing import Any, Dict, List, Tuple
 
 from pydantic import BaseModel
 
+from package.server.dependencies import userid
+
 from ..libs.pytest_parse import find_decorator, get_test_statuses, parse_cov_xml, run_coverage, uncovered_lines_for_ast
 from ..libs.language_models.llm import OpenAI, count_tokens
 import pytest
-from fastapi import APIRouter, HTTPException
-from package.server.telemetry import send_telemetry_event, TelemetryEvent
+from fastapi import APIRouter, Depends, HTTPException
+from .telemetry import send_telemetry_event, TelemetryEvent
 from ..libs.language_models.prompts import BasicCommentPrompter, FormatStringPrompter, MixedPrompter, SimplePrompter, cls_1, cls_method_to_str
+from .utils import CompletionResponse
 
 gpt = OpenAI()
 router = APIRouter(prefix="/unittest", tags=["unittest"])
@@ -359,7 +362,7 @@ class FilePosition(BaseModel):
     lineno: int
 
 @router.post("/forline")
-def forline(userid: str, fp: FilePosition):
+def forline(fp: FilePosition, userid=Depends(userid)) -> CompletionResponse:
     """Write unit test for the function encapsulating the given line number."""
     functions, classes = get_code(fp.filecontents)
     ctx = None
@@ -388,13 +391,12 @@ def forline(userid: str, fp: FilePosition):
     test = prompter.complete(ctx)
 
     properties = {
-        "user_id": userid,
         "selected_code": ctx,
         "language": "python", # TODO: Make this dynamic
         "test": test.strip()
     }
 
-    send_telemetry_event(TelemetryEvent.TEST_CREATED, properties)
+    send_telemetry_event(TelemetryEvent.TEST_CREATED, userid, properties)
 
     return {"completion": test.strip() + "\n\n"}
 
@@ -430,7 +432,7 @@ class FailingTestBody(BaseModel):
     fp: FilePosition
 
 @router.post("/failingtest")
-def failingtest(body: FailingTestBody):
+def failingtest(body: FailingTestBody) -> CompletionResponse:
     """Write a failing test for the function encapsulating the given line number."""
     code = file_position_to_code_str(body.fp)
     if code is None:

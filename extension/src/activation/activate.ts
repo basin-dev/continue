@@ -6,6 +6,8 @@ import { getExtensionUri } from "../util/vscode";
 import * as path from "path";
 import { openCapturedTerminal } from "../terminalEmulator";
 
+export let extensionContext: vscode.ExtensionContext | undefined = undefined;
+
 export function activateExtension(
   context: vscode.ExtensionContext,
   showTutorial: boolean
@@ -46,7 +48,11 @@ export function activateExtension(
       );
   }
 
-  vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
-    openCapturedTerminal();
-  });
+  vscode.commands
+    .executeCommand("autodebug.openDebugPanel", context)
+    .then(() => {
+      openCapturedTerminal();
+    });
+
+  extensionContext = context;
 }

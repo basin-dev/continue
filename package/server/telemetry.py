@@ -10,9 +10,9 @@ class TelemetryEvent(str, Enum):
     TEST_CREATED = "TestCreated"
     DOCSTRING_GENERATED = "DocstringGenerated"
 
-def send_telemetry_event(event, properties=None):
+def send_telemetry_event(event, userid: str, properties=None):
     analytics.track(
         event=event,
-        user_id=properties["user_id"],
+        user_id=userid,
         properties=properties
     )

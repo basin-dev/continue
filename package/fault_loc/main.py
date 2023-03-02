@@ -7,7 +7,7 @@ import numpy as np
 from ..libs.filesystem.main import DEFAULT_GIT_IGNORE_PATTERNS
 import pathspec
 from ..libs.virtual_filesystem import FileSystem, VirtualFileSystem
-from ..libs.models import RangeInFile, Range, Traceback, TracebackFrame, Position, CallGraph
+from ..libs.models.main import RangeInFile, Range, Traceback, TracebackFrame, Position, CallGraph
 import os
 from .dyn_call_graph import prune_call_graph
 from .utils import frame_to_code_range, is_valid_context, shorten_traceback

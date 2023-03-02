@@ -1,18 +1,22 @@
 import subprocess
 from typing import Dict, List
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
+from package.server.dependencies import userid
 from ..fault_loc.main import fl1, filter_ignored_traceback_frames, edit_context_ast, find_code_in_range, fl2, frame_to_code_range
 from boltons import tbutils
 from ..libs.language_models.llm import OpenAI
 from ..libs.language_models.prompts import SimplePrompter
 import ast
 import os
-from ..libs.models import RangeInFile, SerializedVirtualFileSystem, Traceback, FileEdit
+from ..libs.models.main import RangeInFile, SerializedVirtualFileSystem, Traceback, FileEdit
+from ..libs.models.debug_context import DebugContext, SerializedDebugContext
 from ..libs.virtual_filesystem import VirtualFileSystem, FileSystem
-from ..libs.util import merge_ranges_in_files
+from ..libs.util import merge_ranges_in_files, parse_traceback
 from ..fault_loc.utils import is_test_file
 from package.server.telemetry import send_telemetry_event, TelemetryEvent
+from .utils import CompletionResponse
 
 llm = OpenAI()
 router = APIRouter(prefix="/debug", tags=["debug"])
@@ -26,26 +30,15 @@ Instructions to fix:
 '''
 fix_suggestion_prompter = SimplePrompter(lambda stderr: prompt.replace("{traceback}", stderr))
 
-
-def parse_traceback(stderr: str) -> Traceback:
-    # Sometimes paths are not quoted, but they need to be
-    if "File \"" not in stderr:
-        stderr = stderr.replace("File ", "File \"").replace(", line ", "\", line ")
-    try:
-        tbutil_parsed_exc = tbutils.ParsedException.from_string(stderr)
-        return Traceback.from_tbutil_parsed_exc(tbutil_parsed_exc)
-    except:
-        return None
-
 def get_steps(traceback: str) -> str:
-    traceback = parse_traceback(traceback)
-    if len(traceback.frames) == 0:
+    parsed_traceback = parse_traceback(traceback)
+    if len(parsed_traceback.frames) == 0:
         raise Exception("No frames found in traceback")
-    sus_frame = fl1(traceback)
-    relevant_frames = filter_ignored_traceback_frames(traceback.frames)
-    traceback.frames = relevant_frames
+    sus_frame = fl1(parsed_traceback)
+    relevant_frames = filter_ignored_traceback_frames(parsed_traceback.frames)
+    parsed_traceback.frames = relevant_frames
 
-    resp = fix_suggestion_prompter.complete(traceback)
+    resp = fix_suggestion_prompter.complete(parsed_traceback.full_traceback)
     return resp
 
 def suggest_fix(stderr: str) -> str:
@@ -134,39 +127,16 @@ class InlineBody(BaseModel):
     traceback: str = ""
 
 @router.post("/inline")
-def inline(body: InlineBody):
+def inline(body: InlineBody) -> CompletionResponse:
     code = find_code_in_range(body.filecontents, body.startline, body.endline)
     suggestion = attempt_edit_prompter1.complete((code, body.traceback))
     return {"completion": suggestion}
 
 @router.get("/suggestion")
-def suggestion(traceback: str):
+def suggestion(traceback: str) -> CompletionResponse:
+    print("traceback: ", traceback)
     suggestion = get_steps(traceback)
     return {"completion": suggestion}
- 
-class DebugContextBody(BaseModel):
-    userid: str
-    traceback: str
-    ranges_in_files: List[RangeInFile]
-    filesystem: SerializedVirtualFileSystem
-    description: str
-
-    def deserialize(self):
-        return DebugContext(
-            traceback=parse_traceback(self.traceback),
-            ranges_in_files=self.ranges_in_files,
-            filesystem=VirtualFileSystem(self.filesystem),
-            description=self.description
-        )
-
-class DebugContext(BaseModel):
-    traceback: Traceback | None
-    ranges_in_files: List[RangeInFile]
-    filesystem: FileSystem
-    description: str
-
-    class Config:
-        arbitrary_types_allowed = True
 
 def ctx_prompt(ctx: DebugContext, final_instruction: str) -> str:
     prompt = ''
@@ -189,42 +159,40 @@ def ctx_prompt(ctx: DebugContext, final_instruction: str) -> str:
 n = 3
 n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potential solutions to the problem or causes. They should be precise and useful:"))
 
-
 @router.post("/list")
-def listten(body: DebugContextBody):
+def listten(body: SerializedDebugContext, userid=Depends(userid)) -> CompletionResponse:
     n_things = n_things_prompter.complete(body.deserialize())
 
     properties = {
-        "user_id": body.userid,
-        "ranges_in_files": body.ranges_in_files,
-        "file_system": body.filesystem,
+        "selected_code": body.ranges_in_files,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "traceback": body.traceback,
+        "stack_trace": body.traceback,
         "ideas": n_things
     }
 
-    send_telemetry_event(TelemetryEvent.IDEAS_GENERATED, properties)
+    send_telemetry_event(TelemetryEvent.IDEAS_GENERATED, userid, properties)
 
     return {"completion": n_things}
 
 explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
 
+class ExplainResponse(BaseModel):
+    completion: str
+
 @router.post("/explain")
-def explain(body: DebugContextBody):
+def explain(body: SerializedDebugContext, userid=Depends(userid)) -> ExplainResponse:
     explanation = explain_code_prompter.complete(body.deserialize())
 
     properties = {
-        "user_id": body.userid,
-        "ranges_in_files": body.ranges_in_files,
-        "file_system": body.filesystem,
+        "selected_code": body.ranges_in_files,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "traceback": body.traceback,
+        "stack_trace": body.traceback,
         "explanation": explanation
     }
 
-    send_telemetry_event(TelemetryEvent.CODE_EXPLAINED, properties)
+    send_telemetry_event(TelemetryEvent.CODE_EXPLAINED, userid, properties)
 
     return {"completion": explanation}
 
@@ -234,7 +202,7 @@ def parse_multiple_file_completion(completion: str, ranges_in_files: List[RangeI
     # Should do a better job of ensuring the ``` format, but for now the issue is mostly just on single file inputs:
     if not '```' in completion:
         completion = "```\n" + completion + "\n```"
-    elif completion.splitlines()[0].strip() == '```':
+    if completion.splitlines()[0].strip() == '```':
         first_filepath = ranges_in_files[0].filepath
         completion = f"File ({first_filepath})\n" + completion
 
@@ -265,6 +233,7 @@ def suggest_file_edits(ctx: DebugContext, edit_tests: bool=False) -> List[FileEd
     try:
         completion = edit_prompter.complete(ctx)
     except:
+        print("Error completing edit")
         return []
     suggestions = parse_multiple_file_completion(completion, ctx.ranges_in_files)
 
@@ -282,20 +251,18 @@ class EditResp(BaseModel):
     completion: List[FileEdit]
 
 @router.post("/edit")
-def edit_endpoint(body: DebugContextBody) -> EditResp:
+def edit_endpoint(body: SerializedDebugContext, userid=Depends(userid)) -> EditResp:
     edits = suggest_file_edits(body.deserialize())
 
     properties = {
-        "user_id": body.userid,
-        "ranges_in_files": body.ranges_in_files,
-        "file_system": body.filesystem,
+        "selected_code": body.ranges_in_files,
         "language": "python", # TODO: Make this dynamic
         "bug_description": body.description,
-        "traceback": body.traceback,
+        "stack_trace": body.traceback,
         "suggestion": edits
     }
 
-    send_telemetry_event(TelemetryEvent.FIX_SUGGESTED, properties)
+    send_telemetry_event(TelemetryEvent.FIX_SUGGESTED, userid, properties)
 
     return {"completion": edits}
 

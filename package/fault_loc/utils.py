@@ -1,6 +1,6 @@
 import ast
 from ..libs.virtual_filesystem import FileSystem, VirtualFileSystem
-from ..libs.models import RangeInFile, Range, Position, Traceback, TracebackFrame
+from ..libs.models.main import RangeInFile, Range, Position, Traceback, TracebackFrame
 from typing import Callable, List
 import os.path
 

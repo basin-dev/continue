@@ -2,7 +2,7 @@ import trace
 from typing import Callable, List
 from .utils import find_fn_def_range
 from ..libs.virtual_filesystem import FileSystem, VirtualFileSystem, RealFileSystem
-from ..libs.models import TracebackFrame, CallGraph
+from ..libs.models.main import TracebackFrame, CallGraph
 import importlib.util
 import sys
 import os

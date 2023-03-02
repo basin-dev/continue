@@ -1,6 +1,7 @@
 /* Terminal emulator */
 
 import * as vscode from "vscode";
+import { extensionContext } from "./activation/activate";
 const pty = require("node-pty");
 const os = require("os");
 import { debugPanelWebview } from "./debugPanel"; // Need to consider having multiple panels, where to store this state.
@@ -122,15 +123,15 @@ class PythonTracebackSnooper extends TerminalSnooper {
         if (debugPanelWebview) {
           debugPanelWebview.postMessage({
             type: "traceback",
-            traceback: wholeTraceback,
+            value: wholeTraceback,
           });
         } else {
           vscode.commands
-            .executeCommand("autodebug.openDebugPanel")
+            .executeCommand("autodebug.openDebugPanel", extensionContext)
             .then(() => {
               debugPanelWebview?.postMessage({
                 type: "traceback",
-                traceback: wholeTraceback,
+                value: wholeTraceback,
               });
             });
         }

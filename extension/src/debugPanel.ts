@@ -1,41 +1,44 @@
 import * as vscode from "vscode";
-import {
-  listTenThings,
-  getSuggestion,
-  makeEdit,
-  apiRequest,
-  serializeDebugContext,
-} from "./bridge";
+import { debugApi, unittestApi } from "./bridge";
 import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
 import { getExtensionUri, getNonce } from "./util/vscode";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
+import { RangeInFile, SerializedDebugContext } from "./client";
+import { addFileSystemToDebugContext } from "./util/util";
 
-export let debugPanelWebview: vscode.Webview | undefined = undefined;
+export let debugPanelWebview: vscode.Webview | undefined;
 
-export function setupDebugPanel(panel: vscode.WebviewPanel): string {
+export function setupDebugPanel(
+  panel: vscode.WebviewPanel,
+  context: vscode.ExtensionContext | undefined
+): string {
   debugPanelWebview = panel.webview;
   panel.onDidDispose(() => {
     debugPanelWebview = undefined;
   });
 
   let extensionUri = getExtensionUri();
-  const scriptUri = debugPanelWebview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "media", "debugPanel.js")
-  );
+  let scriptUri: string;
+  let styleMainUri: string;
 
-  const styleMainUri = debugPanelWebview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "media", "main.css")
-  );
-
-  const highlightJsUri = debugPanelWebview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "media/highlight/highlight.min.js")
-  );
-
-  const highlightJsStylesUri = debugPanelWebview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "media/highlight/styles/dark.min.css")
-  );
+  const isProduction = true; // context?.extensionMode === vscode.ExtensionMode.Development;
+  if (!isProduction) {
+    scriptUri = "http://localhost:5173/src/main.tsx";
+    styleMainUri = "http://localhost:5173/src/main.css";
+  } else {
+    scriptUri = debugPanelWebview
+      .asWebviewUri(
+        vscode.Uri.joinPath(extensionUri, "react-app/dist/assets/index.js")
+      )
+      .toString();
+    styleMainUri = debugPanelWebview
+      .asWebviewUri(
+        vscode.Uri.joinPath(extensionUri, "react-app/dist/assets/index.css")
+      )
+      .toString();
+  }
 
   const nonce = getNonce();
 
@@ -44,12 +47,19 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
       return;
     }
 
+    let rangeInFile: RangeInFile & { code: string } = {
+      range: e.selections[0],
+      filepath: e.textEditor.document.fileName,
+      code: e.textEditor.document.getText(e.selections[0]),
+    };
     panel.webview.postMessage({
       type: "highlightedCode",
-      code: e.textEditor.document.getText(e.selections[0]),
-      filename: e.textEditor.document.fileName,
-      range: e.selections[0],
-      workspacePath: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
+      rangeInFile,
+    });
+
+    panel.webview.postMessage({
+      type: "workspacePath",
+      value: vscode.workspace.workspaceFolders?.[0].uri.fsPath,
     });
   });
 
@@ -57,18 +67,43 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
     switch (data.type) {
       case "listTenThings": {
         sendTelemetryEvent(TelemetryEvent.GenerateIdeas);
-        let tenThings = await listTenThings(data.debugContext);
+        let resp = await debugApi.listtenDebugListPost({
+          serializedDebugContext: data.debugContext,
+        });
         panel.webview.postMessage({
           type: "listTenThings",
-          tenThings,
+          value: resp.completion,
         });
         break;
       }
       case "suggestFix": {
-        let ctx = await getSuggestion(data.debugContext);
+        let completion: string;
+        let codeSelection = data.debugContext.rangesInFiles?.at(0);
+        if (codeSelection) {
+          completion = (
+            await debugApi.inlineDebugInlinePost({
+              inlineBody: {
+                filecontents: await vscode.workspace.fs
+                  .readFile(vscode.Uri.file(codeSelection.filepath))
+                  .toString(),
+                startline: codeSelection.range.start.line,
+                endline: codeSelection.range.end.line,
+                traceback: data.debugContext.traceback,
+              },
+            })
+          ).completion;
+        } else if (data.debugContext.traceback) {
+          completion = (
+            await debugApi.suggestionDebugSuggestionGet({
+              traceback: data.debugContext.traceback,
+            })
+          ).completion;
+        } else {
+          break;
+        }
         panel.webview.postMessage({
           type: "suggestFix",
-          fixSuggestion: ctx.suggestion,
+          value: completion,
         });
         break;
       }
@@ -85,23 +120,26 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
       }
       case "explainCode": {
         sendTelemetryEvent(TelemetryEvent.ExplainCode);
-        let body = serializeDebugContext(data.debugContext);
-        if (!body) break;
-
-        let resp = await apiRequest("debug/explain", {
-          body,
-          method: "POST",
+        let debugContext: SerializedDebugContext = addFileSystemToDebugContext(
+          data.debugContext
+        );
+        let resp = await debugApi.explainDebugExplainPost({
+          serializedDebugContext: debugContext,
         });
         panel.webview.postMessage({
           type: "explainCode",
-          completion: resp.completion,
+          value: resp.completion,
         });
         break;
       }
       case "makeEdit": {
         sendTelemetryEvent(TelemetryEvent.SuggestFix);
-        let debugContext = data.debugContext;
-        let suggestedEdits = await makeEdit(debugContext);
+        let debugContext = addFileSystemToDebugContext(data.debugContext);
+        let suggestedEdits = (
+          await debugApi.editEndpointDebugEditPost({
+            serializedDebugContext: debugContext,
+          })
+        ).completion;
 
         for (let i = 0; i < suggestedEdits.length; i++) {
           let edit = suggestedEdits[i];
@@ -132,32 +170,33 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
             cancellable: false,
           },
           async () => {
-            for (let i = 0; i < data.debugContext.codeSelections?.length; i++) {
-              let codeSelection = data.debugContext.codeSelections?.at(i);
+            for (let i = 0; i < data.debugContext.rangesInFiles?.length; i++) {
+              let codeSelection = data.debugContext.rangesInFiles?.at(i);
               if (
                 codeSelection &&
-                codeSelection.filename &&
+                codeSelection.filepath &&
                 codeSelection.range
               ) {
                 try {
-                  let resp = await apiRequest("/unittest/failingtest", {
-                    method: "POST",
-                    body: {
-                      fp: {
-                        filecontents: (
-                          await vscode.workspace.fs.readFile(
-                            vscode.Uri.file(codeSelection.filename)
-                          )
-                        ).toString(),
-                        lineno: codeSelection.range.end.line,
+                  let filecontents = (
+                    await vscode.workspace.fs.readFile(
+                      vscode.Uri.file(codeSelection.filepath)
+                    )
+                  ).toString();
+                  let resp =
+                    await unittestApi.failingtestUnittestFailingtestPost({
+                      failingTestBody: {
+                        fp: {
+                          filecontents,
+                          lineno: codeSelection.range.end.line,
+                        },
+                        description: data.debugContext.description || "",
                       },
-                      description: data.debugContext.description,
-                    },
-                  });
+                    });
 
                   if (resp.completion) {
                     let decorationKey = await writeAndShowUnitTest(
-                      codeSelection.filename,
+                      codeSelection.filepath,
                       resp.completion
                     );
                     break;
@@ -175,60 +214,17 @@ export function setupDebugPanel(panel: vscode.WebviewPanel): string {
 
   return `<!DOCTYPE html>
     <html lang="en">
-    <head>
+      <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script>const vscode = acquireVsCodeApi();</script>
         <link href="${styleMainUri}" rel="stylesheet">
-
-        <link href="${highlightJsStylesUri}" rel="stylesheet">
-        <script src="${highlightJsUri}"></script>
-                
+        
         <title>AutoDebug</title>
       </head>
       <body>
-        <div class="gradient">
-          <div class="container">
-            <div class="tabContainer">
-              <div class="tabBar">
-                <div class="tab selectedTab">Debug Panel</div>
-              </div>
-              <div class="contentContainer">
-                <h1>Debug Panel</h1>
-            
-                <h3>Code Sections</h3>
-                <div class="multiselectContainer"></div>
-                
-                <h3>Bug Description</h3>
-                <textarea id="bugDescription" name="bugDescription" class="bugDescription" rows="4" cols="50" placeholder="Describe your bug..."></textarea>
-                
-                <h3>Stack Trace</h3>
-                <textarea id="traceback" class="traceback" name="traceback" rows="4" cols="50" placeholder="Paste stack trace here"></textarea>
-                
-                <select hidden id="relevantVars" class="relevantVars" name="relevantVars"></select>
-                
-                <div class="buttonDiv">
-                  <button class="explainCodeButton">Explain Code</button>
-                  <button class="listTenThingsButton">Generate Ideas</button>
-                  <button disabled class="makeEditButton">Suggest Fix</button>
-                  <button disabled class="generateUnitTestButton">Create Test</button>
-                </div>
-                <div class="loader makeEditLoader" hidden></div>
-                
-                <pre class="fixSuggestion answer" hidden></pre>
-    
-                <br></br>
-              </div>
-              <div class="contentContainer" hidden>
-                <h3>Additional Context</h3>
-                <textarea rows="8" placeholder="Copy and paste information related to the bug from GitHub Issues, Slack threads, or other notes here." class="additionalContextTextarea"></textarea>
-                <br></br>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <script nonce="${nonce}" src="${scriptUri}"></script>
+        <div id="root"></div>
+        <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
       </body>
     </html>`;
 }

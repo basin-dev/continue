@@ -1,5 +1,6 @@
 from typing import Dict, List
-from .models import RangeInFile, Range
+from .models.main import RangeInFile, Traceback
+from boltons import tbutils
 
 def merge_ranges_in_files(ranges_in_files: List[RangeInFile]) -> List[RangeInFile]:
     """Merge overlapping ranges in the same file."""
@@ -23,3 +24,9 @@ def merge_ranges_in_files(ranges_in_files: List[RangeInFile]) -> List[RangeInFil
     
     return merged
     
+def parse_traceback(stderr: str) -> Traceback:
+    # Sometimes paths are not quoted, but they need to be
+    if "File \"" not in stderr:
+        stderr = stderr.replace("File ", "File \"").replace(", line ", "\", line ")
+    tbutil_parsed_exc = tbutils.ParsedException.from_string(stderr)
+    return Traceback.from_tbutil_parsed_exc(tbutil_parsed_exc)
