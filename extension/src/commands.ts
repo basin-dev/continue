@@ -107,6 +107,8 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   },
   "autodebug.debugTest": async (fileAndFunctionSpecifier: string) => {
     sendTelemetryEvent(TelemetryEvent.AutoDebugThisTest);
+    let editor = vscode.window.activeTextEditor;
+    if (editor) editor.document.save();
     let { stdout } = await runPythonScript("run_unit_test.py", [
       fileAndFunctionSpecifier,
     ]);

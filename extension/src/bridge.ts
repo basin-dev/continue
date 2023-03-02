@@ -60,7 +60,7 @@ export async function runPythonScript(
   const command = `export PATH="$PATH:/opt/homebrew/bin" && cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
-  )} && poetry run python3 ${scriptName} ${listToCmdLineArgs(args)}`;
+  )} && source env/bin/activate && python3 ${scriptName} ${listToCmdLineArgs(args)}`;
 
   const { stdout, stderr } = await exec(command);
   if (stderr) {
