@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { SerializedDebugContext } from "../../../src/client";
+import { RangeInFile, SerializedDebugContext } from "../../../src/client";
 import { RootStore } from "../store";
 
 export const debugContextSlice = createSlice({
@@ -12,6 +12,7 @@ export const debugContextSlice = createSlice({
       description: undefined,
     },
     workspacePath: undefined,
+    rangesMask: [],
   } as RootStore,
   reducers: {
     updateValue: (
@@ -27,6 +28,83 @@ export const debugContextSlice = createSlice({
           ...state.debugContext,
           [action.payload.key]: action.payload.value,
         },
+      };
+    },
+    addRangeInFile: (
+      state: RootStore,
+      action: {
+        type: string;
+        payload: {
+          rangeInFile: RangeInFile;
+          canUpdateLast: boolean;
+        };
+      }
+    ) => {
+      let rangesInFiles = state.debugContext.rangesInFiles;
+      if (
+        action.payload.canUpdateLast &&
+        rangesInFiles.length > 0 &&
+        rangesInFiles[rangesInFiles.length - 1].filepath ===
+          action.payload.rangeInFile.filepath
+      ) {
+        return {
+          ...state,
+          debugContext: {
+            ...state.debugContext,
+            rangesInFiles: [
+              ...rangesInFiles.slice(0, rangesInFiles.length - 1),
+              action.payload.rangeInFile,
+            ],
+          },
+        };
+      } else {
+        return {
+          ...state,
+          debugContext: {
+            ...state.debugContext,
+            rangesInFiles: [
+              ...state.debugContext.rangesInFiles,
+              action.payload.rangeInFile,
+            ],
+          },
+          rangesMask: [...state.rangesMask, true],
+        };
+      }
+    },
+    deleteRangeInFileAt: (
+      state: RootStore,
+      action: {
+        type: string;
+        payload: number;
+      }
+    ) => {
+      return {
+        ...state,
+        debugContext: {
+          ...state.debugContext,
+          rangesInFiles: state.debugContext.rangesInFiles.filter(
+            (_, index) => index !== action.payload
+          ),
+        },
+        rangesMask: state.rangesMask.filter(
+          (_, index) => index !== action.payload
+        ),
+      };
+    },
+    toggleSelectionAt: (
+      state: RootStore,
+      action: {
+        type: string;
+        payload: number;
+      }
+    ) => {
+      return {
+        ...state,
+        rangesMask: state.rangesMask.map((_, index) =>
+          index === action.payload
+            ? !state.rangesMask[index]
+            : state.rangesMask[index]
+        ),
       };
     },
     updateFileSystem: (
@@ -59,6 +137,12 @@ export const debugContextSlice = createSlice({
   },
 });
 
-export const { updateValue, setWorkspacePath, updateFileSystem } =
-  debugContextSlice.actions;
+export const {
+  updateValue,
+  setWorkspacePath,
+  updateFileSystem,
+  addRangeInFile,
+  deleteRangeInFileAt,
+  toggleSelectionAt,
+} = debugContextSlice.actions;
 export default debugContextSlice.reducer;
