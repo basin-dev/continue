@@ -129,10 +129,13 @@ class PythonTracebackSnooper extends TerminalSnooper {
           vscode.commands
             .executeCommand("autodebug.openDebugPanel", extensionContext)
             .then(() => {
-              debugPanelWebview?.postMessage({
-                type: "traceback",
-                value: wholeTraceback,
-              });
+              // TODO: Waiting for the webview to load, but should add a hook to the onLoad message event. Same thing in autodebugTest command in commands.ts
+              setTimeout(() => {
+                debugPanelWebview?.postMessage({
+                  type: "traceback",
+                  value: wholeTraceback,
+                });
+              }, 500);
             });
         }
       }

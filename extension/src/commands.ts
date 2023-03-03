@@ -115,10 +115,12 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       return;
     }
     vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
-      debugPanelWebview?.postMessage({
-        type: "traceback",
-        value: traceback,
-      });
+      setTimeout(() => {
+        debugPanelWebview?.postMessage({
+          type: "traceback",
+          value: traceback,
+        });
+      }, 500);
     });
   },
 };
