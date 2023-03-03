@@ -6,6 +6,8 @@ export interface RootStore {
   debugContext: SerializedDebugContext;
   workspacePath: string | undefined;
   rangesMask: boolean[];
+  apiUrl: string | undefined;
+  vscMachineId: string | undefined;
 }
 
 const store = configureStore({

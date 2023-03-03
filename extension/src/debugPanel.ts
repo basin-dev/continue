@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { debugApi, unittestApi } from "./bridge";
+import { debugApi, get_api_url, unittestApi } from "./bridge";
 import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
@@ -7,11 +7,8 @@ import { getExtensionUri, getNonce } from "./util/vscode";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { RangeInFile, SerializedDebugContext } from "./client";
 import { addFileSystemToDebugContext } from "./util/util";
-import { EditCache } from "./util/editCache";
 
 export let debugPanelWebview: vscode.Webview | undefined;
-let editCache = new EditCache();
-
 export function setupDebugPanel(
   panel: vscode.WebviewPanel,
   context: vscode.ExtensionContext | undefined
@@ -70,6 +67,14 @@ export function setupDebugPanel(
 
   panel.webview.onDidReceiveMessage(async (data) => {
     switch (data.type) {
+      case "onLoad": {
+        panel.webview.postMessage({
+          type: "onLoad",
+          vscMachineId: vscode.env.machineId,
+          apiUrl: get_api_url(),
+        });
+        break;
+      }
       case "listTenThings": {
         sendTelemetryEvent(TelemetryEvent.GenerateIdeas);
         let resp = await debugApi.listtenDebugListPost({
@@ -137,10 +142,6 @@ export function setupDebugPanel(
         });
         break;
       }
-      case "preloadEdit": {
-        await editCache.preloadEdit(data.debugContext);
-        break;
-      }
       case "makeEdit": {
         vscode.window.withProgress(
           {
@@ -150,7 +151,17 @@ export function setupDebugPanel(
           },
           async () => {
             sendTelemetryEvent(TelemetryEvent.SuggestFix);
-            let suggestedEdits = await editCache.getEdit(data.debugContext);
+            let suggestedEdits = data.edits;
+
+            if (
+              typeof suggestedEdits === "undefined" ||
+              suggestedEdits.length === 0
+            ) {
+              vscode.window.showInformationMessage(
+                "Autodebug couldn't find a fix for this error."
+              );
+              return;
+            }
 
             for (let i = 0; i < suggestedEdits.length; i++) {
               let edit = suggestedEdits[i];

@@ -1,5 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+import { postVscMessage } from "../vscode";
+import { useDispatch } from "react-redux";
+import {
+  setApiUrl,
+  setVscMachineId,
+} from "../../redux/slices/debugContexSlice";
 interface DebugPanelProps {
   tabs: {
     element: React.ReactElement;
@@ -21,6 +27,19 @@ const GradientContainer = styled.div`
 `;
 
 function DebugPanel(props: DebugPanelProps) {
+  const dispatch = useDispatch();
+  useEffect(() => {
+    const eventListener = (event: any) => {
+      if (event.data.type === "onLoad") {
+        dispatch(setApiUrl(event.data.apiUrl));
+        dispatch(setVscMachineId(event.data.vscMachineId));
+      }
+    };
+    window.addEventListener("message", eventListener);
+    postVscMessage("onLoad", {});
+    return () => window.removeEventListener("message", eventListener);
+  }, []);
+
   const [currentTab, setCurrentTab] = useState(0);
   return (
     <GradientContainer>

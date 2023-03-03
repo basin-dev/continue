@@ -32,7 +32,7 @@ function get_python_path() {
   return path.join(getExtensionUri().fsPath, "..");
 }
 
-function get_api_url() {
+export function get_api_url() {
   let extensionUri = getExtensionUri();
   let configFile = path.join(extensionUri.fsPath, "config/config.json");
   let config = require(configFile);
@@ -60,7 +60,9 @@ export async function runPythonScript(
   const command = `export PATH="$PATH:/opt/homebrew/bin" && cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
-  )} && source env/bin/activate && python3 ${scriptName} ${listToCmdLineArgs(args)}`;
+  )} && source env/bin/activate && python3 ${scriptName} ${listToCmdLineArgs(
+    args
+  )}`;
 
   const { stdout, stderr } = await exec(command);
   if (stderr) {

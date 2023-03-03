@@ -12,6 +12,7 @@ import {
   updateValue,
 } from "../../redux/slices/debugContexSlice";
 import { SerializedDebugContext } from "../../../src/client";
+import { useEditCache } from "../util/editCache";
 
 const ButtonDiv = styled.div`
   display: flex;
@@ -36,9 +37,15 @@ function MainTab(props: any) {
     []
   );
 
+  const editCache = useEditCache();
+
   const [responseLoading, setResponseLoading] = useState(false);
 
   let debugContext = useSelector(selectDebugContext);
+
+  useEffect(() => {
+    editCache.preloadEdit(debugContext);
+  }, [debugContext]);
 
   function postVscMessageWithDebugContext(
     type: string,
@@ -142,8 +149,9 @@ function MainTab(props: any) {
         </Button>
         <Button
           disabled={selectedRanges.length === 0}
-          onClick={() => {
-            postVscMessageWithDebugContext("makeEdit");
+          onClick={async () => {
+            let edits = await editCache.getEdit(debugContext);
+            postVscMessage("makeEdit", { edits });
           }}
         >
           Suggest Fix

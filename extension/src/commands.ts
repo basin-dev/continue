@@ -90,6 +90,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       },
       async (progress, token) => {
         let suspiciousCode = await findSuspiciousCode(debugContext);
+        debugContext.rangesInFiles = suspiciousCode;
         let { filesystem } = addFileSystemToDebugContext(debugContext);
         debugPanelWebview?.postMessage({
           type: "findSuspiciousCode",

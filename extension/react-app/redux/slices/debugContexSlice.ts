@@ -13,6 +13,8 @@ export const debugContextSlice = createSlice({
     },
     workspacePath: undefined,
     rangesMask: [],
+    vscMachineId: undefined,
+    apiUrl: undefined,
   } as RootStore,
   reducers: {
     updateValue: (
@@ -134,6 +136,20 @@ export const debugContextSlice = createSlice({
         workspacePath: action.payload,
       };
     },
+    setApiUrl: (
+      state: RootStore,
+      action: { type: string; payload: string }
+    ) => ({
+      ...state,
+      apiUrl: action.payload,
+    }),
+    setVscMachineId: (
+      state: RootStore,
+      action: { type: string; payload: string }
+    ) => ({
+      ...state,
+      vscMachineId: action.payload,
+    }),
   },
 });
 
@@ -144,5 +160,7 @@ export const {
   addRangeInFile,
   deleteRangeInFileAt,
   toggleSelectionAt,
+  setApiUrl,
+  setVscMachineId,
 } = debugContextSlice.actions;
 export default debugContextSlice.reducer;

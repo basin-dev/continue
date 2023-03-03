@@ -171,11 +171,10 @@ function CodeMultiselect(props: {}) {
           break;
         case "findSuspiciousCode":
           for (let c of event.data.codeLocations) {
-            dispatch(addRangeInFile(c));
+            dispatch(addRangeInFile({ rangeInFile: c, canUpdateLast: false }));
           }
           dispatch(updateFileSystem(event.data.filesystem));
           postVscMessage("listTenThings", { debugContext });
-          postVscMessage("preloadEdit", { debugContext: debugContext });
           break;
       }
     };
