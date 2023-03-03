@@ -23,7 +23,7 @@ import {
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { getLanguageLibrary } from "./languages";
 import { SerializedDebugContext } from "./client";
-import { readRangeInFile } from "./util/util";
+import { addFileSystemToDebugContext } from "./util/util";
 
 // Copy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
@@ -90,17 +90,11 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       },
       async (progress, token) => {
         let suspiciousCode = await findSuspiciousCode(debugContext);
-        let rangeInFiles = await Promise.all(
-          suspiciousCode.map(async (sc) => {
-            return {
-              ...sc,
-              code: await readRangeInFile(sc),
-            };
-          })
-        );
+        let { filesystem } = addFileSystemToDebugContext(debugContext);
         debugPanelWebview?.postMessage({
           type: "findSuspiciousCode",
-          codeLocations: rangeInFiles,
+          codeLocations: suspiciousCode,
+          filesystem,
         });
       }
     );

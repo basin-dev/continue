@@ -7,8 +7,10 @@ import { getExtensionUri, getNonce } from "./util/vscode";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { RangeInFile, SerializedDebugContext } from "./client";
 import { addFileSystemToDebugContext } from "./util/util";
+import { EditCache } from "./util/editCache";
 
 export let debugPanelWebview: vscode.Webview | undefined;
+let editCache = new EditCache();
 
 export function setupDebugPanel(
   panel: vscode.WebviewPanel,
@@ -47,14 +49,17 @@ export function setupDebugPanel(
       return;
     }
 
-    let rangeInFile: RangeInFile & { code: string } = {
+    let rangeInFile: RangeInFile = {
       range: e.selections[0],
       filepath: e.textEditor.document.fileName,
-      code: e.textEditor.document.getText(e.selections[0]),
+    };
+    let filesystem = {
+      [rangeInFile.filepath]: e.textEditor.document.getText(),
     };
     panel.webview.postMessage({
       type: "highlightedCode",
       rangeInFile,
+      filesystem,
     });
 
     panel.webview.postMessage({
@@ -132,33 +137,36 @@ export function setupDebugPanel(
         });
         break;
       }
+      case "preloadEdit": {
+        await editCache.preloadEdit(data.debugContext);
+        break;
+      }
       case "makeEdit": {
-        sendTelemetryEvent(TelemetryEvent.SuggestFix);
-        let debugContext = addFileSystemToDebugContext(data.debugContext);
-        let suggestedEdits = (
-          await debugApi.editEndpointDebugEditPost({
-            serializedDebugContext: debugContext,
-          })
-        ).completion;
+        vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: "Generating Fix",
+            cancellable: false,
+          },
+          async () => {
+            sendTelemetryEvent(TelemetryEvent.SuggestFix);
+            let suggestedEdits = await editCache.getEdit(data.debugContext);
 
-        for (let i = 0; i < suggestedEdits.length; i++) {
-          let edit = suggestedEdits[i];
-          await showSuggestion(
-            edit.filepath,
-            new vscode.Range(
-              edit.range.start.line,
-              edit.range.start.character,
-              edit.range.end.line,
-              edit.range.end.character
-            ),
-            edit.replacement
-          );
-        }
-
-        // To tell it to stop displaying the loader
-        panel.webview.postMessage({
-          type: "makeEdit",
-        });
+            for (let i = 0; i < suggestedEdits.length; i++) {
+              let edit = suggestedEdits[i];
+              await showSuggestion(
+                edit.filepath,
+                new vscode.Range(
+                  edit.range.start.line,
+                  edit.range.start.character,
+                  edit.range.end.line,
+                  edit.range.end.character
+                ),
+                edit.replacement
+              );
+            }
+          }
+        );
         break;
       }
       case "generateUnitTest": {

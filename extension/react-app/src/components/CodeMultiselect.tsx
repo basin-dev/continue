@@ -8,9 +8,13 @@ import hljs from "highlight.js";
 import { postVscMessage } from "../vscode";
 import { RootStore } from "../../redux/store";
 import { useDispatch } from "react-redux";
-import { updateValue } from "../../redux/slices/debugContexSlice";
+import {
+  updateFileSystem,
+  updateValue,
+} from "../../redux/slices/debugContexSlice";
 import { RangeInFile } from "../../../src/client";
 import useArrayState from "../../hooks/useArrayState";
+import { readRangeInVirtualFileSystem } from "../util";
 
 //#region Styled Components
 
@@ -131,13 +135,11 @@ function formatFileRange(
 
 //#endregion
 
-type RangeInFileWithCode = RangeInFile & { code: string };
-
 function CodeMultiselect(props: {
   onChange?: (selectedRanges: RangeInFile[]) => void;
 }) {
   // State
-  const selectedRanges = useArrayState<RangeInFileWithCode>([]);
+  const selectedRanges = useArrayState<RangeInFile>([]);
   const selectedMask = useArrayState<boolean>([]);
   const [highlightLocked, setHighlightLocked] = useState(false);
   const workspacePath = useSelector((state: RootStore) => state.workspacePath);
@@ -174,6 +176,7 @@ function CodeMultiselect(props: {
           value: filterSelectedRanges(selectedRanges.value),
         })
       );
+      postVscMessage("preloadEdit", { debugContext: debugContext });
     }, 200);
   }
 
@@ -183,10 +186,7 @@ function CodeMultiselect(props: {
     onChangeUpdate();
   }
 
-  function addSelectedRange(
-    range: RangeInFileWithCode,
-    updateLast: boolean = false
-  ) {
+  function addSelectedRange(range: RangeInFile, updateLast: boolean = false) {
     selectedRanges.edit((prev) => {
       if (
         updateLast &&
@@ -216,12 +216,14 @@ function CodeMultiselect(props: {
         case "highlightedCode":
           if (!highlightLocked) {
             addSelectedRange(event.data.rangeInFile, true);
+            dispatch(updateFileSystem(event.data.fileystem));
           }
           break;
         case "findSuspiciousCode":
           for (let c of event.data.codeLocations) {
             addSelectedRange(c);
           }
+          dispatch(updateFileSystem(event.data.fileystem));
 
           // It's serialized to be an array [startPos, endPos]
           // let range = {
@@ -236,6 +238,7 @@ function CodeMultiselect(props: {
           // };
           // setResponseLoading(true);
           postVscMessage("listTenThings", { debugContext });
+          postVscMessage("preloadEdit", { debugContext: debugContext });
           break;
       }
     };
@@ -249,7 +252,7 @@ function CodeMultiselect(props: {
 
   return (
     <MultiSelectContainer>
-      {selectedRanges.value.map((range: RangeInFileWithCode, index: number) => {
+      {selectedRanges.value.map((range: RangeInFile, index: number) => {
         return (
           <MultiSelectOption
             key={index}
@@ -277,7 +280,7 @@ function CodeMultiselect(props: {
               <code
                 className={"language-" + filenameToLanguage(range.filepath)}
               >
-                {range.code}
+                {readRangeInVirtualFileSystem(range, debugContext.filesystem)}
               </code>
             </pre>
           </MultiSelectOption>

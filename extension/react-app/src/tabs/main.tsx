@@ -58,9 +58,6 @@ function MainTab(props: any) {
           setSuggestion(event.data.value);
           setResponseLoading(false);
           break;
-        case "makeEdit":
-          setResponseLoading(false);
-          break;
         case "traceback":
           setTraceback(event.data.value);
           if (selectedRanges.length === 0) {
@@ -73,6 +70,7 @@ function MainTab(props: any) {
               "findSuspiciousCode",
               updatedDebugContext
             );
+            postVscMessageWithDebugContext("preloadEdit", updatedDebugContext);
           }
           break;
         case "workspacePath":
@@ -146,7 +144,6 @@ function MainTab(props: any) {
           disabled={selectedRanges.length === 0}
           onClick={() => {
             postVscMessageWithDebugContext("makeEdit");
-            setResponseLoading(true);
           }}
         >
           Suggest Fix

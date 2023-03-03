@@ -29,6 +29,24 @@ export const debugContextSlice = createSlice({
         },
       };
     },
+    updateFileSystem: (
+      state: RootStore,
+      action: {
+        type: string;
+        payload: { [filepath: string]: string };
+      }
+    ) => {
+      return {
+        ...state,
+        debugContext: {
+          ...state.debugContext,
+          filesystem: {
+            ...state.debugContext.filesystem,
+            ...action.payload,
+          },
+        },
+      };
+    },
     setWorkspacePath: (
       state: RootStore,
       action: { type: string; payload: string }
@@ -41,5 +59,6 @@ export const debugContextSlice = createSlice({
   },
 });
 
-export const { updateValue, setWorkspacePath } = debugContextSlice.actions;
+export const { updateValue, setWorkspacePath, updateFileSystem } =
+  debugContextSlice.actions;
 export default debugContextSlice.reducer;
