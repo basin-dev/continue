@@ -67,10 +67,14 @@ class HuggingFace(LLM):
 
 class OpenAI(LLM):
     completion_count: int = 0
+    default_model: str
+
+    def __init__(self, model: str="text-davinci-003"):
+        self.default_model = model
 
     def complete(self, prompt: str, **kwargs) -> str:
         self.completion_count += 1
-        args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
+        args = { "model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
         return openai.Completion.create(
             prompt=prompt,
             **args,
@@ -125,7 +129,7 @@ class OpenAI(LLM):
 
     def parallel_complete(self, prompts: list[str], suffixes: list[str]| None=None, **kwargs) -> list[str]:
         self.completion_count += len(prompts)
-        args = { "model": "text-davinci-003", "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 } | kwargs
+        args = { "model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 } | kwargs
         async def fn():
             async with aiohttp.ClientSession() as session:
                 tasks = []
