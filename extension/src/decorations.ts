@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { getRightViewColumn, getTestFile } from "./util/vscode";
 import * as path from "path";
+import { getLanguageLibrary } from "./languages";
 
 export function showAnswerInTextEditor(
   filename: string,
@@ -257,7 +258,6 @@ export async function writeAndShowUnitTest(
   return new Promise((resolve, reject) => {
     let testFilename = getTestFile(filename, true);
     vscode.workspace.openTextDocument(testFilename).then((doc) => {
-      let column = getRightViewColumn();
       let fileContent = doc.getText();
       let fileEmpty = fileContent.trim() === "";
       let existingImportLines = getImportsFromFileString(
@@ -267,28 +267,38 @@ export async function writeAndShowUnitTest(
 
       // Remove redundant imports, make sure pytest is there
       test = removeRedundantLinesFrom(test, existingImportLines);
-      test = (fileEmpty ? "import pytest\n\n" : "\n\n") + test.trim();
+      test =
+        (fileEmpty
+          ? `${getLanguageLibrary(".py").writeImport(
+              testFilename,
+              filename
+            )}\nimport pytest\n\n`
+          : "\n\n") +
+        test.trim() +
+        "\n";
 
-      vscode.window.showTextDocument(doc, column).then((editor) => {
-        let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-        let testRange = new vscode.Range(
-          lastLine.range.end,
-          new vscode.Position(
-            test.split("\n").length + lastLine.range.end.line,
-            0
-          )
-        );
-        editor
-          .edit((edit) => {
-            edit.insert(lastLine.range.end, test);
-            return true;
-          })
-          .then((success) => {
-            if (!success) reject("Failed to insert test");
-            let key = highlightCode(editor, testRange);
-            resolve(key);
-          });
-      });
+      vscode.window
+        .showTextDocument(doc, getRightViewColumn())
+        .then((editor) => {
+          let lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+          let testRange = new vscode.Range(
+            lastLine.range.end,
+            new vscode.Position(
+              test.split("\n").length + lastLine.range.end.line,
+              0
+            )
+          );
+          editor
+            .edit((edit) => {
+              edit.insert(lastLine.range.end, test);
+              return true;
+            })
+            .then((success) => {
+              if (!success) reject("Failed to insert test");
+              let key = highlightCode(editor, testRange);
+              resolve(key);
+            });
+        });
     });
   });
 }

@@ -1,3 +1,4 @@
+import path = require("path");
 import { LanguageLibrary } from "../index.d";
 
 const tracebackStart = "Traceback (most recent call last):";
@@ -37,6 +38,29 @@ function lineIsComment(line: string): boolean {
   return line.trim().startsWith("#");
 }
 
+function writeImport(
+  sourcePath: string,
+  pathToImport: string,
+  namesToImport: string[] | undefined = undefined
+): string {
+  let segs = path.relative(sourcePath, pathToImport).split(path.sep);
+  let importFrom = "";
+  for (let seg of segs) {
+    if (seg === "..") {
+      importFrom = "." + importFrom;
+    } else {
+      if (!importFrom.endsWith(".")) {
+        importFrom += ".";
+      }
+      importFrom += seg.split(".").slice(0, -1).join(".");
+    }
+  }
+
+  return `from ${importFrom} import ${
+    namesToImport ? namesToImport.join(", ") : "*"
+  }`;
+}
+
 const pythonLangaugeLibrary: LanguageLibrary = {
   language: "python",
   fileExtensions: [".py"],
@@ -44,6 +68,7 @@ const pythonLangaugeLibrary: LanguageLibrary = {
   lineIsFunctionDef,
   parseFunctionDefForName,
   lineIsComment,
+  writeImport,
 };
 
 export default pythonLangaugeLibrary;
