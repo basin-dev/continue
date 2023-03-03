@@ -18,7 +18,7 @@ from ..fault_loc.utils import is_test_file
 from package.server.telemetry import send_telemetry_event, TelemetryEvent
 from .utils import CompletionResponse
 
-llm = OpenAI()
+llm = OpenAI(model="gpt-3.5-turbo")
 router = APIRouter(prefix="/debug", tags=["debug"])
 
 prompt = '''I ran into this problem with my Python code:
