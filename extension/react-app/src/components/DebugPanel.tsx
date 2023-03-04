@@ -2,10 +2,7 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { postVscMessage } from "../vscode";
 import { useDispatch } from "react-redux";
-import {
-  setApiUrl,
-  setVscMachineId,
-} from "../../redux/slices/debugContexSlice";
+import { setApiUrl, setVscMachineId } from "../../redux/slices/configSlice";
 interface DebugPanelProps {
   tabs: {
     element: React.ReactElement;
@@ -26,6 +23,11 @@ const GradientContainer = styled.div`
   height: 100%;
 `;
 
+const TabBar = styled.div<{ numTabs: number }>`
+  display: grid;
+  grid-template-columns: repeat(${(props) => props.numTabs}, 1fr);
+`;
+
 function DebugPanel(props: DebugPanelProps) {
   const dispatch = useDispatch();
   useEffect(() => {
@@ -41,13 +43,12 @@ function DebugPanel(props: DebugPanelProps) {
   }, []);
 
   const [currentTab, setCurrentTab] = useState(0);
+
   return (
     <GradientContainer>
       <div className="h-full rounded-md overflow-hidden bg-vsc-background">
         <div>
-          <div
-            className={`grid grid-cols-${props.tabs.length} border-b-secondary-dark border-b`}
-          >
+          <TabBar numTabs={props.tabs.length}>
             {props.tabs.map((tab, index) => {
               return (
                 <div
@@ -63,12 +64,12 @@ function DebugPanel(props: DebugPanelProps) {
                 </div>
               );
             })}
-          </div>
+          </TabBar>
           {props.tabs.map((tab, index) => {
             return (
               <div
                 key={index}
-                className="pl-5 pr-5 pt-2"
+                className="pl-5 pr-5 pb-5"
                 hidden={index !== currentTab}
               >
                 {tab.element}

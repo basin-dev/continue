@@ -7,10 +7,8 @@ import CodeMultiselect from "../components/CodeMultiselect";
 import { useSelector } from "react-redux";
 import { selectDebugContext } from "../../redux/selectors/debugContextSelectors";
 import { useDispatch } from "react-redux";
-import {
-  setWorkspacePath,
-  updateValue,
-} from "../../redux/slices/debugContexSlice";
+import { updateValue } from "../../redux/slices/debugContexSlice";
+import { setWorkspacePath } from "../../redux/slices/configSlice";
 import { SerializedDebugContext } from "../../../src/client";
 import { useEditCache } from "../util/editCache";
 

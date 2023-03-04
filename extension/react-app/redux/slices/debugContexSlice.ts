@@ -2,8 +2,8 @@ import { createSlice } from "@reduxjs/toolkit";
 import { RangeInFile, SerializedDebugContext } from "../../../src/client";
 import { RootStore } from "../store";
 
-export const debugContextSlice = createSlice({
-  name: "debugContext",
+export const debugStateSlice = createSlice({
+  name: "debugState",
   initialState: {
     debugContext: {
       rangesInFiles: [],
@@ -11,14 +11,11 @@ export const debugContextSlice = createSlice({
       traceback: undefined,
       description: undefined,
     },
-    workspacePath: undefined,
     rangesMask: [],
-    vscMachineId: undefined,
-    apiUrl: undefined,
-  } as RootStore,
+  } as RootStore["debugState"],
   reducers: {
     updateValue: (
-      state: RootStore,
+      state: RootStore["debugState"],
       action: {
         type: string;
         payload: { key: keyof SerializedDebugContext; value: any };
@@ -33,7 +30,7 @@ export const debugContextSlice = createSlice({
       };
     },
     addRangeInFile: (
-      state: RootStore,
+      state: RootStore["debugState"],
       action: {
         type: string;
         payload: {
@@ -74,7 +71,7 @@ export const debugContextSlice = createSlice({
       }
     },
     deleteRangeInFileAt: (
-      state: RootStore,
+      state: RootStore["debugState"],
       action: {
         type: string;
         payload: number;
@@ -94,7 +91,7 @@ export const debugContextSlice = createSlice({
       };
     },
     toggleSelectionAt: (
-      state: RootStore,
+      state: RootStore["debugState"],
       action: {
         type: string;
         payload: number;
@@ -110,7 +107,7 @@ export const debugContextSlice = createSlice({
       };
     },
     updateFileSystem: (
-      state: RootStore,
+      state: RootStore["debugState"],
       action: {
         type: string;
         payload: { [filepath: string]: string };
@@ -127,40 +124,14 @@ export const debugContextSlice = createSlice({
         },
       };
     },
-    setWorkspacePath: (
-      state: RootStore,
-      action: { type: string; payload: string }
-    ) => {
-      return {
-        ...state,
-        workspacePath: action.payload,
-      };
-    },
-    setApiUrl: (
-      state: RootStore,
-      action: { type: string; payload: string }
-    ) => ({
-      ...state,
-      apiUrl: action.payload,
-    }),
-    setVscMachineId: (
-      state: RootStore,
-      action: { type: string; payload: string }
-    ) => ({
-      ...state,
-      vscMachineId: action.payload,
-    }),
   },
 });
 
 export const {
   updateValue,
-  setWorkspacePath,
   updateFileSystem,
   addRangeInFile,
   deleteRangeInFileAt,
   toggleSelectionAt,
-  setApiUrl,
-  setVscMachineId,
-} = debugContextSlice.actions;
-export default debugContextSlice.reducer;
+} = debugStateSlice.actions;
+export default debugStateSlice.reducer;

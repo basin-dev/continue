@@ -4,6 +4,9 @@ import "vscode-webview";
 declare const vscode: any;
 
 export function postVscMessage(type: string, data: any) {
+  if (typeof vscode === "undefined") {
+    return;
+  }
   vscode.postMessage({
     type,
     ...data,

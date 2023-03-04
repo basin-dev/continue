@@ -2,23 +2,23 @@ import { RootStore } from "../store";
 
 const selectDebugContext = (state: RootStore) => {
   return {
-    ...state.debugContext,
-    rangesInFiles: state.debugContext.rangesInFiles.filter(
-      (_, index) => state.rangesMask[index]
+    ...state.debugState.debugContext,
+    rangesInFiles: state.debugState.debugContext.rangesInFiles.filter(
+      (_, index) => state.debugState.rangesMask[index]
     ),
   };
 };
 
 const selectAllRangesInFiles = (state: RootStore) => {
-  return state.debugContext.rangesInFiles;
+  return state.debugState.debugContext.rangesInFiles;
 };
 
 const selectRangesMask = (state: RootStore) => {
-  return state.rangesMask;
+  return state.debugState.rangesMask;
 };
 
 const selectDebugContextValue = (state: RootStore, key: string) => {
-  return (state.debugContext as any)[key];
+  return (state.debugState.debugContext as any)[key];
 };
 
 export {
