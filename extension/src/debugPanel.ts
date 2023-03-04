@@ -238,6 +238,12 @@ export function setupDebugPanel(
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script>const vscode = acquireVsCodeApi();</script>
         <link href="${styleMainUri}" rel="stylesheet">
+
+        <style>
+          html, body, #root {
+            height: calc(100% - 7px);
+          }
+        </style>
         
         <title>AutoDebug</title>
       </head>

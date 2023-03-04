@@ -46,7 +46,7 @@ function DebugPanel(props: DebugPanelProps) {
 
   return (
     <GradientContainer>
-      <div className="h-full rounded-md overflow-hidden bg-vsc-background">
+      <div className="h-full rounded-md overflow-scroll bg-vsc-background">
         <div>
           <TabBar numTabs={props.tabs.length}>
             {props.tabs.map((tab, index) => {
