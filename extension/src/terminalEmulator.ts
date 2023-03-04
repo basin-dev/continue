@@ -169,6 +169,29 @@ vscode.window.onDidOpenTerminal((terminal) => {
   }
 });
 
+function getDefaultShell(): string {
+  switch (process.platform) {
+    case "win32":
+      return process.env.COMSPEC || "cmd.exe";
+    case "darwin":
+      return process.env.SHELL || "/bin/zsh";
+    default:
+      return process.env.SHELL || "/bin/sh";
+  }
+}
+
+function getRootDir(): string | undefined {
+  var isWindows = os.platform() === "win32";
+  let cwd = isWindows ? process.env.USERPROFILE : process.env.HOME;
+  if (
+    vscode.workspace.workspaceFolders &&
+    vscode.workspace.workspaceFolders.length > 0
+  ) {
+    cwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
+  }
+  return cwd;
+}
+
 export function openCapturedTerminal(
   snoopers: TerminalSnooper[] = DEFAULT_SNOOPERS
 ) {
@@ -180,15 +203,12 @@ export function openCapturedTerminal(
     }
   }
 
-  var isWindows = os.platform() === "win32";
-  var shell = isWindows ? "powershell.exe" : "zsh";
-
-  var ptyProcess = pty.spawn(shell, [], {
+  var ptyProcess = pty.spawn(getDefaultShell(), [], {
     name: "xterm-256color",
     cols: 160, // TODO: Get size of vscode terminal, and change with resize
     rows: 26,
-    cwd: isWindows ? process.env.USERPROFILE : process.env.HOME,
-    env: Object.assign({ TEST: "Environment vars work" }, process.env),
+    cwd: getRootDir(),
+    env: process.env,
     useConpty: true,
   });
 
@@ -204,20 +224,6 @@ export function openCapturedTerminal(
     writeEmitter.fire(data);
   });
   process.on("exit", () => ptyProcess.kill());
-
-  setTimeout(() => {
-    let workspaceFolders = vscode.workspace.workspaceFolders;
-    if (workspaceFolders) {
-      ptyProcess.write("cd " + workspaceFolders![0].uri.fsPath + " && clear\r");
-    } else {
-      ptyProcess.write("clear\r");
-    }
-    // setTimeout(() => {
-    //   writeEmitter.fire(
-    //     "This terminal will parse stdout to automatically detect stacktraces\r\n"
-    //   );
-    // }, 200);
-  }, 1000);
 
   const newPty: vscode.Pseudoterminal = {
     onDidWrite: writeEmitter.event,
@@ -235,4 +241,8 @@ export function openCapturedTerminal(
     pty: newPty,
   });
   terminal.show();
+
+  setTimeout(() => {
+    ptyProcess.write("\r");
+  }, 500);
 }
