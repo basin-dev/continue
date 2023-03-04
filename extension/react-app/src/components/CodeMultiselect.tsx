@@ -146,7 +146,9 @@ function CodeMultiselect(props: {}) {
 
   // Redux
   const dispatch = useDispatch();
-  const workspacePath = useSelector((state: RootStore) => state.workspacePath);
+  const workspacePath = useSelector(
+    (state: RootStore) => state.config.workspacePath
+  );
   const debugContext = useSelector(selectDebugContext);
   const rangesInFiles = useSelector(selectAllRangesInFiles);
   const rangesInFilesMask = useSelector(selectRangesMask);
