@@ -1,10 +1,13 @@
 import { Configuration, DebugApi, UnittestApi } from "../../../src/client";
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
+import { RootStore } from "../../redux/store";
 
 export function useApi() {
-  const apiUrl = useSelector((state: any) => state.apiUrl);
-  const vscMachineId = useSelector((state: any) => state.vscMachineId);
+  const apiUrl = useSelector((state: RootStore) => state.config.apiUrl);
+  const vscMachineId = useSelector(
+    (state: RootStore) => state.config.vscMachineId
+  );
   const [debugApi, setDebugApi] = useState<DebugApi>();
   const [unittestApi, setUnittestApi] = useState<UnittestApi>();
 

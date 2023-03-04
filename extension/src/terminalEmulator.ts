@@ -241,8 +241,4 @@ export function openCapturedTerminal(
     pty: newPty,
   });
   terminal.show();
-
-  setTimeout(() => {
-    ptyProcess.write("\r");
-  }, 500);
 }
