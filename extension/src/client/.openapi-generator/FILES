@@ -17,9 +17,12 @@ models/HTTPValidationError.ts
 models/InlineBody.ts
 models/LocationInner.ts
 models/Position.ts
+models/ProgrammingLangauge.ts
 models/Range.ts
 models/RangeInFile.ts
 models/SerializedDebugContext.ts
+models/Traceback.ts
+models/TracebackFrame.ts
 models/ValidationError.ts
 models/index.ts
 runtime.ts

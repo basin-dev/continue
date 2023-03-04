@@ -32,7 +32,7 @@ function get_python_path() {
   return path.join(getExtensionUri().fsPath, "..");
 }
 
-function get_api_url() {
+export function get_api_url() {
   let extensionUri = getExtensionUri();
   let configFile = path.join(extensionUri.fsPath, "config/config.json");
   let config = require(configFile);
@@ -60,7 +60,9 @@ export async function runPythonScript(
   const command = `export PATH="$PATH:/opt/homebrew/bin" && cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
-  )} && source env/bin/activate && python3 ${scriptName} ${listToCmdLineArgs(args)}`;
+  )} && source env/bin/activate && python3 ${scriptName} ${listToCmdLineArgs(
+    args
+  )}`;
 
   const { stdout, stderr } = await exec(command);
   if (stderr) {
@@ -200,8 +202,28 @@ export async function findSuspiciousCode(
       filesystem: files,
     },
   });
+  let ranges = resp.response;
+  if (
+    ranges.length <= 1 &&
+    ctx.traceback &&
+    ctx.traceback.includes("AssertionError")
+  ) {
+    let parsed_traceback =
+      await debugApi.parseTracebackEndpointDebugParseTracebackGet({
+        traceback: ctx.traceback,
+      });
+    let last_frame = parsed_traceback.frames[0];
+    if (!last_frame) return [];
+    ranges = (
+      await runPythonScript("build_call_graph.py", [
+        last_frame.filepath,
+        last_frame.lineno.toString(),
+        last_frame._function,
+      ])
+    ).value;
+  }
 
-  return resp.response;
+  return ranges;
 }
 
 export async function writeUnitTestForFunction(

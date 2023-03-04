@@ -200,6 +200,9 @@ edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the cod
 
 def parse_multiple_file_completion(completion: str, ranges_in_files: List[RangeInFile]) -> Dict[str, str]:
     # Should do a better job of ensuring the ``` format, but for now the issue is mostly just on single file inputs:
+    if len(ranges_in_files) == 0:
+        return {}
+
     if not '```' in completion:
         completion = "```\n" + completion + "\n```"
     if completion.splitlines()[0].strip() == '```':
@@ -285,3 +288,7 @@ def find_sus_code_endpoint(body: FindBody) -> FindResp:
     parsed = parse_traceback(body.traceback)
     filesystem = VirtualFileSystem.from_serialized(body.filesystem)
     return find_sus_code(parsed, filesystem, body.description)
+
+@router.get("/parse_traceback")
+def parse_traceback_endpoint(traceback: str) -> Traceback:
+    return parse_traceback(traceback)

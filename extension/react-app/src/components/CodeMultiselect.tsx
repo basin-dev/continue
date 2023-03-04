@@ -2,15 +2,24 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Button, buttonColor, defaultBorderRadius, secondaryDark } from ".";
 import { useSelector } from "react-redux";
-import { selectDebugContext } from "../../redux/selectors/debugContextSelectors";
+import {
+  selectDebugContext,
+  selectAllRangesInFiles,
+  selectRangesMask,
+} from "../../redux/selectors/debugContextSelectors";
 import "../highlight/dark.min.css";
 import hljs from "highlight.js";
 import { postVscMessage } from "../vscode";
 import { RootStore } from "../../redux/store";
 import { useDispatch } from "react-redux";
-import { updateValue } from "../../redux/slices/debugContexSlice";
+import {
+  addRangeInFile,
+  deleteRangeInFileAt,
+  toggleSelectionAt,
+  updateFileSystem,
+} from "../../redux/slices/debugContexSlice";
 import { RangeInFile } from "../../../src/client";
-import useArrayState from "../../hooks/useArrayState";
+import { readRangeInVirtualFileSystem } from "../util";
 
 //#region Styled Components
 
@@ -131,83 +140,19 @@ function formatFileRange(
 
 //#endregion
 
-type RangeInFileWithCode = RangeInFile & { code: string };
-
-function CodeMultiselect(props: {
-  onChange?: (selectedRanges: RangeInFile[]) => void;
-}) {
+function CodeMultiselect(props: {}) {
   // State
-  const selectedRanges = useArrayState<RangeInFileWithCode>([]);
-  const selectedMask = useArrayState<boolean>([]);
   const [highlightLocked, setHighlightLocked] = useState(false);
-  const workspacePath = useSelector((state: RootStore) => state.workspacePath);
 
   // Redux
   const dispatch = useDispatch();
+  const workspacePath = useSelector((state: RootStore) => state.workspacePath);
   const debugContext = useSelector(selectDebugContext);
-  // useEffect(() => {
-  //   // setSelectedRanges(debugContext.rangesInFiles || []);
-  //   // setSelectedMask(debugContext.rangesInFiles?.map(() => true) || []);
-  // }, []);
+  const rangesInFiles = useSelector(selectAllRangesInFiles);
+  const rangesInFilesMask = useSelector(selectRangesMask);
 
   //#region Update Functions
-  function filterSelectedRanges(selectedRanges: RangeInFile[]) {
-    return selectedRanges.filter((range: RangeInFile, index: number) => {
-      return selectedMask.value[index] === false;
-    });
-  }
 
-  let onChangeTimout: NodeJS.Timeout | undefined = undefined;
-
-  function onChangeUpdate() {
-    // Debounce
-    if (onChangeTimout) {
-      clearTimeout(onChangeTimout);
-    }
-    onChangeTimout = setTimeout(() => {
-      if (props.onChange) {
-        props.onChange(filterSelectedRanges(selectedRanges.value));
-      }
-      dispatch(
-        updateValue({
-          key: "rangesInFiles",
-          value: filterSelectedRanges(selectedRanges.value),
-        })
-      );
-    }, 200);
-  }
-
-  function deleteSelectedRange(index: number) {
-    selectedRanges.remove(index);
-    selectedMask.remove(index);
-    onChangeUpdate();
-  }
-
-  function addSelectedRange(
-    range: RangeInFileWithCode,
-    updateLast: boolean = false
-  ) {
-    selectedRanges.edit((prev) => {
-      if (
-        updateLast &&
-        prev.length > 0 &&
-        range.filepath === prev[prev.length - 1].filepath
-      ) {
-        prev[prev.length - 1] = range;
-      } else {
-        prev.push(range);
-      }
-      return prev;
-    });
-    // selectedMask.add(true);
-    selectedMask.replace(selectedMask.value.length - 1, true);
-    onChangeUpdate();
-  }
-
-  function deselectRange(index: number) {
-    selectedMask.replace(index, false);
-    onChangeUpdate();
-  }
   //#endregion
 
   useEffect(() => {
@@ -215,26 +160,20 @@ function CodeMultiselect(props: {
       switch (event.data.type) {
         case "highlightedCode":
           if (!highlightLocked) {
-            addSelectedRange(event.data.rangeInFile, true);
+            dispatch(
+              addRangeInFile({
+                rangeInFile: event.data.rangeInFile,
+                canUpdateLast: true,
+              })
+            );
+            dispatch(updateFileSystem(event.data.filesystem));
           }
           break;
         case "findSuspiciousCode":
           for (let c of event.data.codeLocations) {
-            addSelectedRange(c);
+            dispatch(addRangeInFile({ rangeInFile: c, canUpdateLast: false }));
           }
-
-          // It's serialized to be an array [startPos, endPos]
-          // let range = {
-          //   start: {
-          //     line: codeLocation.range[0].line,
-          //     character: codeLocation.range[0].character,
-          //   },
-          //   end: {
-          //     line: codeLocation.range[1].line,
-          //     character: codeLocation.range[1].character,
-          //   },
-          // };
-          // setResponseLoading(true);
+          dispatch(updateFileSystem(event.data.filesystem));
           postVscMessage("listTenThings", { debugContext });
           break;
       }
@@ -245,22 +184,21 @@ function CodeMultiselect(props: {
 
   useEffect(() => {
     hljs.highlightAll();
-  });
+  }, [rangesInFiles]);
 
   return (
     <MultiSelectContainer>
-      {selectedRanges.value.map((range: RangeInFileWithCode, index: number) => {
+      {rangesInFiles.map((range: RangeInFile, index: number) => {
         return (
           <MultiSelectOption
             key={index}
             style={{
               border: `1px solid ${
-                selectedMask.value[index] ? buttonColor : "gray"
+                rangesInFilesMask[index] ? buttonColor : "gray"
               }`,
             }}
             onClick={() => {
-              selectedMask.replace(index, !selectedMask.value[index]);
-              onChangeUpdate();
+              dispatch(toggleSelectionAt(index));
             }}
           >
             <MultiSelectHeader>
@@ -268,7 +206,7 @@ function CodeMultiselect(props: {
                 {formatFileRange(range, workspacePath)}
               </p>
               <DeleteSelectedRangeButton
-                onClick={() => deleteSelectedRange(index)}
+                onClick={() => dispatch(deleteRangeInFileAt(index))}
               >
                 x
               </DeleteSelectedRangeButton>
@@ -277,13 +215,13 @@ function CodeMultiselect(props: {
               <code
                 className={"language-" + filenameToLanguage(range.filepath)}
               >
-                {range.code}
+                {readRangeInVirtualFileSystem(range, debugContext.filesystem)}
               </code>
             </pre>
           </MultiSelectOption>
         );
       })}
-      {selectedRanges.value.length === 0 && (
+      {rangesInFiles.length === 0 && (
         <>
           <p>Highlight relevant code in the editor.</p>
           <ToggleHighlightButton

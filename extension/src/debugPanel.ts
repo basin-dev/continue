@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { debugApi, unittestApi } from "./bridge";
+import { debugApi, get_api_url, unittestApi } from "./bridge";
 import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
@@ -9,7 +9,6 @@ import { RangeInFile, SerializedDebugContext } from "./client";
 import { addFileSystemToDebugContext } from "./util/util";
 
 export let debugPanelWebview: vscode.Webview | undefined;
-
 export function setupDebugPanel(
   panel: vscode.WebviewPanel,
   context: vscode.ExtensionContext | undefined
@@ -47,14 +46,17 @@ export function setupDebugPanel(
       return;
     }
 
-    let rangeInFile: RangeInFile & { code: string } = {
+    let rangeInFile: RangeInFile = {
       range: e.selections[0],
       filepath: e.textEditor.document.fileName,
-      code: e.textEditor.document.getText(e.selections[0]),
+    };
+    let filesystem = {
+      [rangeInFile.filepath]: e.textEditor.document.getText(),
     };
     panel.webview.postMessage({
       type: "highlightedCode",
       rangeInFile,
+      filesystem,
     });
 
     panel.webview.postMessage({
@@ -65,6 +67,14 @@ export function setupDebugPanel(
 
   panel.webview.onDidReceiveMessage(async (data) => {
     switch (data.type) {
+      case "onLoad": {
+        panel.webview.postMessage({
+          type: "onLoad",
+          vscMachineId: vscode.env.machineId,
+          apiUrl: get_api_url(),
+        });
+        break;
+      }
       case "listTenThings": {
         sendTelemetryEvent(TelemetryEvent.GenerateIdeas);
         let resp = await debugApi.listtenDebugListPost({
@@ -133,32 +143,41 @@ export function setupDebugPanel(
         break;
       }
       case "makeEdit": {
-        sendTelemetryEvent(TelemetryEvent.SuggestFix);
-        let debugContext = addFileSystemToDebugContext(data.debugContext);
-        let suggestedEdits = (
-          await debugApi.editEndpointDebugEditPost({
-            serializedDebugContext: debugContext,
-          })
-        ).completion;
+        vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: "Generating Fix",
+            cancellable: false,
+          },
+          async () => {
+            sendTelemetryEvent(TelemetryEvent.SuggestFix);
+            let suggestedEdits = data.edits;
 
-        for (let i = 0; i < suggestedEdits.length; i++) {
-          let edit = suggestedEdits[i];
-          await showSuggestion(
-            edit.filepath,
-            new vscode.Range(
-              edit.range.start.line,
-              edit.range.start.character,
-              edit.range.end.line,
-              edit.range.end.character
-            ),
-            edit.replacement
-          );
-        }
+            if (
+              typeof suggestedEdits === "undefined" ||
+              suggestedEdits.length === 0
+            ) {
+              vscode.window.showInformationMessage(
+                "Autodebug couldn't find a fix for this error."
+              );
+              return;
+            }
 
-        // To tell it to stop displaying the loader
-        panel.webview.postMessage({
-          type: "makeEdit",
-        });
+            for (let i = 0; i < suggestedEdits.length; i++) {
+              let edit = suggestedEdits[i];
+              await showSuggestion(
+                edit.filepath,
+                new vscode.Range(
+                  edit.range.start.line,
+                  edit.range.start.character,
+                  edit.range.end.line,
+                  edit.range.end.character
+                ),
+                edit.replacement
+              );
+            }
+          }
+        );
         break;
       }
       case "generateUnitTest": {

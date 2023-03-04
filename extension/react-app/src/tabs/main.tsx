@@ -7,11 +7,10 @@ import CodeMultiselect from "../components/CodeMultiselect";
 import { useSelector } from "react-redux";
 import { selectDebugContext } from "../../redux/selectors/debugContextSelectors";
 import { useDispatch } from "react-redux";
-import {
-  setWorkspacePath,
-  updateValue,
-} from "../../redux/slices/debugContexSlice";
+import { updateValue } from "../../redux/slices/debugContexSlice";
+import { setWorkspacePath } from "../../redux/slices/configSlice";
 import { SerializedDebugContext } from "../../../src/client";
+import { useEditCache } from "../util/editCache";
 
 const ButtonDiv = styled.div`
   display: flex;
@@ -36,9 +35,15 @@ function MainTab(props: any) {
     []
   );
 
+  const editCache = useEditCache();
+
   const [responseLoading, setResponseLoading] = useState(false);
 
   let debugContext = useSelector(selectDebugContext);
+
+  useEffect(() => {
+    editCache.preloadEdit(debugContext);
+  }, [debugContext]);
 
   function postVscMessageWithDebugContext(
     type: string,
@@ -58,9 +63,6 @@ function MainTab(props: any) {
           setSuggestion(event.data.value);
           setResponseLoading(false);
           break;
-        case "makeEdit":
-          setResponseLoading(false);
-          break;
         case "traceback":
           setTraceback(event.data.value);
           if (selectedRanges.length === 0) {
@@ -73,6 +75,7 @@ function MainTab(props: any) {
               "findSuspiciousCode",
               updatedDebugContext
             );
+            postVscMessageWithDebugContext("preloadEdit", updatedDebugContext);
           }
           break;
         case "workspacePath":
@@ -144,9 +147,9 @@ function MainTab(props: any) {
         </Button>
         <Button
           disabled={selectedRanges.length === 0}
-          onClick={() => {
-            postVscMessageWithDebugContext("makeEdit");
-            setResponseLoading(true);
+          onClick={async () => {
+            let edits = await editCache.getEdit(debugContext);
+            postVscMessage("makeEdit", { edits });
           }}
         >
           Suggest Fix

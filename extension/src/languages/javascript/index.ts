@@ -10,6 +10,7 @@ const javascriptLangaugeLibrary: LanguageLibrary = {
   lineIsFunctionDef: NI("lineIsFunctionDef"),
   parseFunctionDefForName: NI("parseFunctionDefForName"),
   lineIsComment: NI("lineIsComment"),
+  writeImport: NI("writeImport"),
 };
 
 export default javascriptLangaugeLibrary;
