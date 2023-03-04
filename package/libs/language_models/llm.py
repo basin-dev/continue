@@ -75,10 +75,20 @@ class OpenAI(LLM):
     def complete(self, prompt: str, **kwargs) -> str:
         self.completion_count += 1
         args = { "model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
-        return openai.Completion.create(
-            prompt=prompt,
-            **args,
-        ).choices[0].text
+        
+        if args["model"] == "gpt-3.5-turbo":
+            return openai.ChatCompletion.create(
+                model=args["model"],
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }]
+            ).choices[0].message.content
+        else:
+            return openai.Completion.create(
+                prompt=prompt,
+                **args,
+            ).choices[0].text
 
     def embed(self, input: List[str] | str) -> List[np.ndarray]:
         resps = openai.Embedding.create(

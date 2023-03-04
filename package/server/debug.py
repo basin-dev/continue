@@ -18,7 +18,7 @@ from ..fault_loc.utils import is_test_file
 from package.server.telemetry import send_telemetry_event, TelemetryEvent
 from .utils import CompletionResponse
 
-llm = OpenAI(model="gpt-3.5-turbo")
+llm = OpenAI()
 router = APIRouter(prefix="/debug", tags=["debug"])
 
 prompt = '''I ran into this problem with my Python code:
@@ -28,7 +28,7 @@ prompt = '''I ran into this problem with my Python code:
 Instructions to fix:
 
 '''
-fix_suggestion_prompter = SimplePrompter(lambda stderr: prompt.replace("{traceback}", stderr))
+fix_suggestion_prompter = SimplePrompter(lambda stderr: prompt.replace("{traceback}", stderr), llm=llm)
 
 def get_steps(traceback: str) -> str:
     parsed_traceback = parse_traceback(traceback)
@@ -63,7 +63,7 @@ I ran into this problem with my Python code:
 This is my Python code after I fixed the problem:
 
 '''
-attempt_edit_prompter1 = SimplePrompter(lambda x: attempt_prompt.replace("{code}", x[0]).replace("{traceback}", x[1]))
+attempt_edit_prompter1 = SimplePrompter(lambda x: attempt_prompt.replace("{code}", x[0]).replace("{traceback}", x[1]), llm=llm)
 
 attempt_prompt2 = '''This was my Python code:
 
@@ -80,7 +80,7 @@ These are the steps to fix the problem:
 This is my Python code after I fixed the problem:
 
 '''
-attempt_edit_prompter2 = SimplePrompter(lambda x: attempt_prompt.replace("{code}", x[0]).replace("{traceback}", x[1]).replace("{steps}", x[2]))
+attempt_edit_prompter2 = SimplePrompter(lambda x: attempt_prompt.replace("{code}", x[0]).replace("{traceback}", x[1]).replace("{steps}", x[2]), llm=llm)
 
 def make_edit(stderr: str, steps: str):
     # Compile prompt, get response
@@ -157,7 +157,7 @@ def ctx_prompt(ctx: DebugContext, final_instruction: str) -> str:
     return prompt
 
 n = 3
-n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potential solutions to the problem or causes. They should be precise and useful:"))
+n_things_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, f"List {n} potential solutions to the problem or causes. They should be precise and useful:"), llm=llm)
 
 @router.post("/list")
 def listten(body: SerializedDebugContext, userid=Depends(userid)) -> CompletionResponse:
@@ -175,7 +175,7 @@ def listten(body: SerializedDebugContext, userid=Depends(userid)) -> CompletionR
 
     return {"completion": n_things}
 
-explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"))
+explain_code_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "Here is a thorough explanation of the purpose and function of the above code:"), llm=llm)
 
 class ExplainResponse(BaseModel):
     completion: str
@@ -196,7 +196,7 @@ def explain(body: SerializedDebugContext, userid=Depends(userid)) -> ExplainResp
 
     return {"completion": explanation}
 
-edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"))
+edit_prompter = SimplePrompter(lambda ctx: ctx_prompt(ctx, "This is what the code should be in order to avoid the problem:"), llm=llm)
 
 def parse_multiple_file_completion(completion: str, ranges_in_files: List[RangeInFile]) -> Dict[str, str]:
     # Should do a better job of ensuring the ``` format, but for now the issue is mostly just on single file inputs:
@@ -235,8 +235,8 @@ def suggest_file_edits(ctx: DebugContext, edit_tests: bool=False) -> List[FileEd
     """Suggest edits in the code to fix the problem."""
     try:
         completion = edit_prompter.complete(ctx)
-    except:
-        print("Error completing edit")
+    except Exception as e:
+        print("Error completing edit: ", e)
         return []
     suggestions = parse_multiple_file_completion(completion, ctx.ranges_in_files)
 

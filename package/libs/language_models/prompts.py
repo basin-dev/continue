@@ -24,8 +24,11 @@ def cls_method_to_str(cls_name: str, init: str, method: str) -> str:
 
 # Prompter classes
 class Prompter:
-    def __init__(self):
-        self.llm = OpenAI()
+    def __init__(self, llm: LLM = None):
+        if llm is None:
+            self.llm = OpenAI()
+        else:
+            self.llm = llm
 
     def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
         "Takes input and returns prompt, prefix, suffix"
@@ -51,8 +54,8 @@ class Prompter:
 
 # Note that this can be used hierarchically : )
 class MixedPrompter(Prompter):
-    def __init__(self, prompters: List[Prompter], router: Callable[[Any], int]):
-        super().__init__()
+    def __init__(self, prompters: List[Prompter], router: Callable[[Any], int], llm: LLM = None):
+        super().__init__(llm=llm)
         self.prompters = prompters
         self.router = router
     
@@ -65,8 +68,8 @@ class MixedPrompter(Prompter):
         return prompter.complete(inp)
 
 class SimplePrompter(Prompter):
-    def __init__(self, prompt_fn: Callable[[Any], str]):
-        super().__init__()
+    def __init__(self, prompt_fn: Callable[[Any], str], llm: LLM = None):
+        super().__init__(llm=llm)
         self.prompt_fn = prompt_fn
 
     def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
@@ -74,18 +77,18 @@ class SimplePrompter(Prompter):
 
 class FormatStringPrompter(SimplePrompter):
     """Pass a formatted string, and the input should be a dict with the keys to format"""
-    def __init__(self, prompt: str):
-        super().__init__(lambda inp: prompt.format(**inp))
+    def __init__(self, prompt: str, llm: LLM = None):
+        super().__init__(lambda inp: prompt.format(**inp), llm=llm)
 
 class BasicCommentPrompter(SimplePrompter):
-    def __init__(self, comment: str):
+    def __init__(self, comment: str, llm: LLM = None):
         super().__init__(lambda inp: f"""{inp}
 
-# {comment}""")
+# {comment}""", llm=llm)
 
 class EditPrompter(Prompter):
-    def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str]]):
-        super().__init__()
+    def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str]], llm: LLM = None):
+        super().__init__(llm=llm)
         self.prompt_fn = prompt_fn
     
     def complete(self, inp: str, **kwargs) -> str:
@@ -103,8 +106,8 @@ class EditPrompter(Prompter):
         return self.llm.parallel_edit(prompts, instructions)
 
 class InsertPrompter(Prompter):
-    def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str, str]]):
-        super().__init__()
+    def __init__(self, prompt_fn: Callable[[Any], Tuple[str, str, str]], llm: LLM = None):
+        super().__init__(llm=llm)
         self.prompt_fn = prompt_fn
     
     def _compile_prompt(self, inp: Any) -> Tuple[str, str, str | None]:
