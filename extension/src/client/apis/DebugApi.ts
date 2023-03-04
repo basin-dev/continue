@@ -23,6 +23,7 @@ import type {
   HTTPValidationError,
   InlineBody,
   SerializedDebugContext,
+  Traceback,
 } from '../models';
 import {
     CompletionResponseFromJSON,
@@ -41,6 +42,8 @@ import {
     InlineBodyToJSON,
     SerializedDebugContextFromJSON,
     SerializedDebugContextToJSON,
+    TracebackFromJSON,
+    TracebackToJSON,
 } from '../models';
 
 export interface EditEndpointDebugEditPostRequest {
@@ -64,6 +67,10 @@ export interface InlineDebugInlinePostRequest {
 export interface ListtenDebugListPostRequest {
     serializedDebugContext: SerializedDebugContext;
     xVscMachineId?: string;
+}
+
+export interface ParseTracebackEndpointDebugParseTracebackGetRequest {
+    traceback: string;
 }
 
 export interface RunDebugRunPostRequest {
@@ -254,6 +261,40 @@ export class DebugApi extends runtime.BaseAPI {
      */
     async listtenDebugListPost(requestParameters: ListtenDebugListPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CompletionResponse> {
         const response = await this.listtenDebugListPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Parse Traceback Endpoint
+     */
+    async parseTracebackEndpointDebugParseTracebackGetRaw(requestParameters: ParseTracebackEndpointDebugParseTracebackGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Traceback>> {
+        if (requestParameters.traceback === null || requestParameters.traceback === undefined) {
+            throw new runtime.RequiredError('traceback','Required parameter requestParameters.traceback was null or undefined when calling parseTracebackEndpointDebugParseTracebackGet.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.traceback !== undefined) {
+            queryParameters['traceback'] = requestParameters.traceback;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request({
+            path: `/debug/parse_traceback`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => TracebackFromJSON(jsonValue));
+    }
+
+    /**
+     * Parse Traceback Endpoint
+     */
+    async parseTracebackEndpointDebugParseTracebackGet(requestParameters: ParseTracebackEndpointDebugParseTracebackGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Traceback> {
+        const response = await this.parseTracebackEndpointDebugParseTracebackGetRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

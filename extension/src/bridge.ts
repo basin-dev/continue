@@ -202,8 +202,28 @@ export async function findSuspiciousCode(
       filesystem: files,
     },
   });
+  let ranges = resp.response;
+  if (
+    ranges.length <= 1 &&
+    ctx.traceback &&
+    ctx.traceback.includes("AssertionError")
+  ) {
+    let parsed_traceback =
+      await debugApi.parseTracebackEndpointDebugParseTracebackGet({
+        traceback: ctx.traceback,
+      });
+    let last_frame = parsed_traceback.frames[0];
+    if (!last_frame) return [];
+    ranges = (
+      await runPythonScript("build_call_graph.py", [
+        last_frame.filepath,
+        last_frame.lineno.toString(),
+        last_frame._function,
+      ])
+    ).value;
+  }
 
-  return resp.response;
+  return ranges;
 }
 
 export async function writeUnitTestForFunction(

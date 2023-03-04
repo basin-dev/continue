@@ -288,3 +288,7 @@ def find_sus_code_endpoint(body: FindBody) -> FindResp:
     parsed = parse_traceback(body.traceback)
     filesystem = VirtualFileSystem.from_serialized(body.filesystem)
     return find_sus_code(parsed, filesystem, body.description)
+
+@router.get("/parse_traceback")
+def parse_traceback_endpoint(traceback: str) -> Traceback:
+    return parse_traceback(traceback)
