@@ -56,6 +56,10 @@ export interface ExplainDebugExplainPostRequest {
     xVscMachineId?: string;
 }
 
+export interface FindDocsDebugFindDocsGetRequest {
+    traceback: string;
+}
+
 export interface FindSusCodeEndpointDebugFindPostRequest {
     findBody: FindBody;
 }
@@ -158,6 +162,40 @@ export class DebugApi extends runtime.BaseAPI {
      */
     async explainDebugExplainPost(requestParameters: ExplainDebugExplainPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ExplainResponse> {
         const response = await this.explainDebugExplainPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Find Docs
+     */
+    async findDocsDebugFindDocsGetRaw(requestParameters: FindDocsDebugFindDocsGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CompletionResponse>> {
+        if (requestParameters.traceback === null || requestParameters.traceback === undefined) {
+            throw new runtime.RequiredError('traceback','Required parameter requestParameters.traceback was null or undefined when calling findDocsDebugFindDocsGet.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.traceback !== undefined) {
+            queryParameters['traceback'] = requestParameters.traceback;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        const response = await this.request({
+            path: `/debug/find_docs`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => CompletionResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Find Docs
+     */
+    async findDocsDebugFindDocsGet(requestParameters: FindDocsDebugFindDocsGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CompletionResponse> {
+        const response = await this.findDocsDebugFindDocsGetRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

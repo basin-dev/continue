@@ -16,7 +16,7 @@ from ..libs.virtual_filesystem import VirtualFileSystem, FileSystem
 from ..libs.util import merge_ranges_in_files, parse_traceback
 from ..fault_loc.utils import is_test_file
 from package.server.telemetry import send_telemetry_event, TelemetryEvent
-from .utils import CompletionResponse
+from .utils import CompletionResponse, OptionalCompletionResponse
 from .docs import find_docs
 
 llm = OpenAI()
@@ -296,5 +296,5 @@ def parse_traceback_endpoint(traceback: str) -> Traceback:
 
 documentation_prompter = FormatStringPrompter("Show me the documentation for the {function} function in the package at the path {path}.")
 @router.get("/find_docs")
-def find_docs(traceback: str) -> CompletionResponse:
+def find_docs_endpoint(traceback: str) -> OptionalCompletionResponse:
     return find_docs(traceback)

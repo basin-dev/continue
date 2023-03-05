@@ -11,6 +11,8 @@ import { updateValue } from "../../redux/slices/debugContexSlice";
 import { setWorkspacePath } from "../../redux/slices/configSlice";
 import { SerializedDebugContext } from "../../../src/client";
 import { useEditCache } from "../util/editCache";
+import { useApi } from "../util/api";
+import { addMessage } from "../../redux/slices/chatSlice";
 
 const ButtonDiv = styled.div`
   display: flex;
@@ -36,6 +38,7 @@ function MainTab(props: any) {
   );
 
   const editCache = useEditCache();
+  const { debugApi } = useApi();
 
   const [responseLoading, setResponseLoading] = useState(false);
 
@@ -77,6 +80,16 @@ function MainTab(props: any) {
             );
             postVscMessageWithDebugContext("preloadEdit", updatedDebugContext);
           }
+          console.log("TODO");
+          // debugApi
+          //   ?.findDocsDebugFindDocsGet({ traceback: event.data.value })
+          //   .then((resp) => {
+          //     if (resp.completion) {
+          //       dispatch(
+          //         addMessage({ content: resp.completion, role: "assistant" })
+          //       );
+          //     }
+          //   });
           break;
         case "workspacePath":
           dispatch(setWorkspacePath(event.data.value));

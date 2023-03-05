@@ -1,7 +1,7 @@
 import ast
 from ..libs.language_models.prompts import FormatStringPrompter
 from ..libs.util import parse_traceback
-from ..server.utils import CompletionResponse
+from ..server.utils import CompletionResponse, OptionalCompletionResponse
 from ..fault_loc.main import to_be_ignored_spec
 from ..libs.virtual_filesystem import FileSystem, VirtualFileSystem, RealFileSystem
 from ..fault_loc.static_call_graph import get_fn_def_in_file
@@ -22,7 +22,7 @@ documentation_prompter = FormatStringPrompter(dedent("""\
 
     Adapt my code to correctly call {function}:
     """))
-def find_docs(traceback: str, filesystem: FileSystem=RealFileSystem()) -> CompletionResponse:
+def find_docs(traceback: str, filesystem: FileSystem=RealFileSystem()) -> OptionalCompletionResponse:
     parsed = parse_traceback(traceback)
 
     # Check for external code (not ours) at the bottom of stacktrace
@@ -38,11 +38,11 @@ def find_docs(traceback: str, filesystem: FileSystem=RealFileSystem()) -> Comple
             last_our_code = frame
 
     if first_external_code is None:
-        return {"completion": "Not found"}
+        return {"completion": None}
     
     fn_def = get_fn_def_in_file(first_external_code.filepath, first_external_code.function)
     if fn_def is None:
-        return {"completion": "Not found"}
+        return {"completion": None}
     
 
     completion = documentation_prompter.complete({

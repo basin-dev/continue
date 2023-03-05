@@ -34,9 +34,9 @@ class Prompter:
         "Takes input and returns prompt, prefix, suffix"
         raise NotImplementedError
 
-    def complete(self, inp: Any) -> str:
+    def complete(self, inp: Any, **kwargs) -> str:
         prompt, prefix, suffix = self._compile_prompt(inp)
-        resp = self.llm.complete(prompt + prefix, suffix=suffix)
+        resp = self.llm.complete(prompt + prefix, suffix=suffix, **kwargs)
         return prefix + resp + (suffix or "")
 
     def parallel_complete(self, inps: List[Any]) -> List[str]:
@@ -63,9 +63,9 @@ class MixedPrompter(Prompter):
         prompter = self.prompters[self.router(inp)]
         return prompter._compile_prompt(inp)
 
-    def complete(self, inp: Any) -> str:
+    def complete(self, inp: Any, **kwargs) -> str:
         prompter = self.prompters[self.router(inp)]
-        return prompter.complete(inp)
+        return prompter.complete(inp, **kwargs)
 
 class SimplePrompter(Prompter):
     def __init__(self, prompt_fn: Callable[[Any], str], llm: LLM = None):

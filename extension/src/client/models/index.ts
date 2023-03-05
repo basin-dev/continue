@@ -1,5 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './ChatHistory';
+export * from './ChatMessage';
 export * from './CompletionResponse';
 export * from './EditResp';
 export * from './ExplainResponse';

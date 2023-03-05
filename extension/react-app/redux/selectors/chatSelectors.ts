@@ -1,7 +1,7 @@
 import { RootStore } from "../store";
 
-const selectChat = (state: RootStore) => {
-  return state.chat;
+const selectChatMessages = (state: RootStore) => {
+  return state.chat.messages;
 };
 
-export { selectChat };
+export { selectChatMessages };

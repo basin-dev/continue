@@ -19,7 +19,10 @@ export interface RootStore {
     apiUrl: string | undefined;
     vscMachineId: string | undefined;
   };
-  chat: ChatMessage[];
+  chat: {
+    messages: ChatMessage[];
+    isStreaming: boolean;
+  };
 }
 
 const store = configureStore({

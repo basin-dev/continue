@@ -47,13 +47,13 @@ function DebugPanel(props: DebugPanelProps) {
   return (
     <GradientContainer>
       <div className="h-full rounded-md overflow-scroll bg-vsc-background">
-        <div>
+        <div className="h-full">
           <TabBar numTabs={props.tabs.length}>
             {props.tabs.map((tab, index) => {
               return (
                 <div
                   key={index}
-                  className={`p-2 cursor-pointer text-center ${
+                  className={`p-2 h-full cursor-pointer text-center ${
                     index === currentTab
                       ? "bg-secondary-dark"
                       : "bg-vsc-background"

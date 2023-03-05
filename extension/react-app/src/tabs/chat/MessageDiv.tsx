@@ -1,36 +1,40 @@
 import React from "react";
 import { ChatMessage } from "../../../redux/store";
 import styled from "styled-components";
+import { buttonColor, secondaryDark } from "../../components";
 
-const Container = styled.div<{ role: ChatMessage["role"] }>`
+const Container = styled.div`
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 8px;
+  margin: 3px;
+  width: fit-content;
   background-color: ${(props) => {
     if (props.role === "user") {
-      return "#455588";
+      return buttonColor;
     } else {
-      return "lightgreen";
+      return secondaryDark;
     }
   }};
-  text-align: ${(props) => {
+  float: ${(props) => {
     if (props.role === "user") {
       return "right";
     } else {
       return "left";
     }
   }};
-  border-radius: 8px;
-  padding-top: 1px;
-  padding-bottom: 1px;
-  padding-left: 8px;
-  padding-right: 8px;
-
-  margin: 8px;
+  display: block;
 `;
 
 function MessageDiv(props: ChatMessage) {
   return (
-    <Container role={props.role}>
-      <p>{props.content}</p>
-    </Container>
+    <>
+      <div className="overflow-auto">
+        <Container role={props.role}>
+          <p>{props.content}</p>
+        </Container>
+      </div>
+    </>
   );
 }
 
