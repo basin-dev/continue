@@ -142,42 +142,63 @@ export function setupDebugPanel(
         });
         break;
       }
-      case "makeEdit": {
+      case "withProgress": {
+        // This message allows withProgress to be used in the webview
+        if (data.done) {
+          // Will be caught in the listener created below
+          break;
+        }
+        let title = data.title;
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: "Generating Fix",
+            title,
             cancellable: false,
           },
           async () => {
-            sendTelemetryEvent(TelemetryEvent.SuggestFix);
-            let suggestedEdits = data.edits;
-
-            if (
-              typeof suggestedEdits === "undefined" ||
-              suggestedEdits.length === 0
-            ) {
-              vscode.window.showInformationMessage(
-                "Autodebug couldn't find a fix for this error."
-              );
-              return;
-            }
-
-            for (let i = 0; i < suggestedEdits.length; i++) {
-              let edit = suggestedEdits[i];
-              await showSuggestion(
-                edit.filepath,
-                new vscode.Range(
-                  edit.range.start.line,
-                  edit.range.start.character,
-                  edit.range.end.line,
-                  edit.range.end.character
-                ),
-                edit.replacement
-              );
-            }
+            return new Promise<void>((resolve, reject) => {
+              let listener = panel.webview.onDidReceiveMessage(async (data) => {
+                if (
+                  data.type === "withProgress" &&
+                  data.done &&
+                  data.title === title
+                ) {
+                  listener.dispose();
+                  resolve();
+                }
+              });
+            });
           }
         );
+        break;
+      }
+      case "makeEdit": {
+        sendTelemetryEvent(TelemetryEvent.SuggestFix);
+        let suggestedEdits = data.edits;
+
+        if (
+          typeof suggestedEdits === "undefined" ||
+          suggestedEdits.length === 0
+        ) {
+          vscode.window.showInformationMessage(
+            "Autodebug couldn't find a fix for this error."
+          );
+          return;
+        }
+
+        for (let i = 0; i < suggestedEdits.length; i++) {
+          let edit = suggestedEdits[i];
+          await showSuggestion(
+            edit.filepath,
+            new vscode.Range(
+              edit.range.start.line,
+              edit.range.start.character,
+              edit.range.end.line,
+              edit.range.end.character
+            ),
+            edit.replacement
+          );
+        }
         break;
       }
       case "generateUnitTest": {

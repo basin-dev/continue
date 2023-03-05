@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { postVscMessage } from "../vscode";
 import { useDispatch } from "react-redux";
-import { setApiUrl, setVscMachineId } from "../../redux/slices/configSlice";
+import { setApiUrl, setVscMachineId } from "../redux/slices/configSlice";
 interface DebugPanelProps {
   tabs: {
     element: React.ReactElement;

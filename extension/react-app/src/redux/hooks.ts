@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootStore } from "./store";
 import { selectDebugContextValue } from "./selectors/debugContextSelectors";
 import { updateValue } from "./slices/debugContexSlice";
-import { SerializedDebugContext } from "../../src/client";
+import { SerializedDebugContext } from "../../../src/client";
 
 export function useDebugContextValue(
   key: keyof SerializedDebugContext,

@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import debugStateReducer from "./slices/debugContexSlice";
 import chatReducer from "./slices/chatSlice";
 import configReducer from "./slices/configSlice";
-import { SerializedDebugContext } from "../../src/client";
+import { SerializedDebugContext } from "../../../src/client";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";

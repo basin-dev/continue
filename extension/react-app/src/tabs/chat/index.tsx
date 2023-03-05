@@ -1,10 +1,9 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { selectChat } from "../../../redux/selectors/chatSelectors";
+import { selectChat } from "../../redux/selectors/chatSelectors";
 import MessageDiv from "./MessageDiv";
 import styled from "styled-components";
-import { secondaryDark, vscBackground } from "../../components";
-import { addMessage } from "../../../redux/slices/chatSlice";
+import { addMessage } from "../../redux/slices/chatSlice";
 
 const TextEntryBar = styled.input`
   width: 100%;

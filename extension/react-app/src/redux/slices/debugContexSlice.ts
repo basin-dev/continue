@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { RangeInFile, SerializedDebugContext } from "../../../src/client";
+import { RangeInFile, SerializedDebugContext } from "../../../../src/client";
 import { RootStore } from "../store";
 
 export const debugStateSlice = createSlice({
