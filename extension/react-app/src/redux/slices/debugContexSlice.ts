@@ -40,6 +40,18 @@ export const debugStateSlice = createSlice({
       }
     ) => {
       let rangesInFiles = state.debugContext.rangesInFiles;
+      // If identical to existing range, don't add. Ideally you check for overlap of ranges.
+      for (let range of rangesInFiles) {
+        if (
+          range.filepath === action.payload.rangeInFile.filepath &&
+          range.range.start.line ===
+            action.payload.rangeInFile.range.start.line &&
+          range.range.end.line === action.payload.rangeInFile.range.end.line
+        ) {
+          return state;
+        }
+      }
+
       if (
         action.payload.canUpdateLast &&
         rangesInFiles.length > 0 &&

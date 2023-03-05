@@ -18,41 +18,49 @@ export function activateExtension(
   registerAllCommands(context);
 
   if (showTutorial) {
-    vscode.workspace
-      .openTextDocument(
-        path.join(getExtensionUri().fsPath, "examples/python/sum.py")
-      )
-      .then((document) =>
-        vscode.window.showTextDocument(document, {
-          preview: false,
-          viewColumn: vscode.ViewColumn.One,
-        })
-      );
-
-    vscode.workspace
-      .openTextDocument(
-        path.join(getExtensionUri().fsPath, "examples/python/main.py")
-      )
-      .then((document) =>
-        vscode.window
-          .showTextDocument(document, {
+    Promise.all([
+      vscode.workspace
+        .openTextDocument(
+          path.join(getExtensionUri().fsPath, "examples/python/sum.py")
+        )
+        .then((document) =>
+          vscode.window.showTextDocument(document, {
             preview: false,
             viewColumn: vscode.ViewColumn.One,
           })
-          .then((editor) => {
-            editor.revealRange(
-              new vscode.Range(0, 0, 0, 0),
-              vscode.TextEditorRevealType.InCenter
-            );
-          })
-      );
-  }
+        ),
 
-  vscode.commands
-    .executeCommand("autodebug.openDebugPanel", context)
-    .then(() => {
-      openCapturedTerminal();
+      vscode.workspace
+        .openTextDocument(
+          path.join(getExtensionUri().fsPath, "examples/python/main.py")
+        )
+        .then((document) =>
+          vscode.window
+            .showTextDocument(document, {
+              preview: false,
+              viewColumn: vscode.ViewColumn.One,
+            })
+            .then((editor) => {
+              editor.revealRange(
+                new vscode.Range(0, 0, 0, 0),
+                vscode.TextEditorRevealType.InCenter
+              );
+            })
+        ),
+    ]).then(() => {
+      vscode.commands
+        .executeCommand("autodebug.openDebugPanel", context)
+        .then(() => {
+          openCapturedTerminal();
+        });
     });
+  } else {
+    vscode.commands
+      .executeCommand("autodebug.openDebugPanel", context)
+      .then(() => {
+        openCapturedTerminal();
+      });
+  }
 
   extensionContext = context;
 }
