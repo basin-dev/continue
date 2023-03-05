@@ -25,3 +25,10 @@ export function useVscMessageValue(
   });
   return [value, setValue];
 }
+
+export async function withProgress(title: string, fn: () => Promise<any>) {
+  postVscMessage("withProgress", { title, done: false });
+  return fn().finally(() => {
+    postVscMessage("withProgress", { title, done: true });
+  });
+}

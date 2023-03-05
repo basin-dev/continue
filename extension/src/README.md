@@ -1,4 +1,4 @@
-# autodebug VS Code Extension README
+# Continue VS Code Extension README
 
 ## How to get started with development
 
@@ -16,7 +16,7 @@
 
 7. Start the FastAPI server by following instructions outlined in `package/server/README.md`
 
-8. `cmd+shift+p` to look at developer console and select AutoDebug commands
+8. `cmd+shift+p` to look at developer console and select Continue commands
 
 9. Every time you make changes to the code, you need to run `npm run compile`
 
@@ -24,7 +24,7 @@
 
 ## Alternative: Install a packaged version
 
-You should always have a packaged version installed in VSCode, because when autodebug is broken you'll want a stable version to help you debug. There are four key commands in the `package.json`:
+You should always have a packaged version installed in VSCode, because when Continue is broken you'll want a stable version to help you debug. There are four key commands in the `package.json`:
 
 1. `npm run package` will create a .vsix file in the `build/` folder that can then be installed. It is this same file that you can share with others who want to try the extension.
 
@@ -39,7 +39,7 @@ You should always have a packaged version installed in VSCode, because when auto
 - `src/bridge.ts`: connects this VS Code Extension to our Python backend that interacts with GPT-3
 - `src/debugPanel.ts`: contains the HTML for the full window on the right (used for investigation)
 - `src/DebugViewProvider.ts`: contains the HTML for the bottom left panel
-- `src/extension.ts`: entry point into the extension, where all of the commands / views are registered (activate function is what happens when you start autodebugger)
+- `src/extension.ts`: entry point into the extension, where all of the commands / views are registered (activate function is what happens when you start extension)
 - `media/main.js`: handles messages sent from the extension to the webview (bottom left)
 - `media/debugPanel.js`: loaded by right window
 

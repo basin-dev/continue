@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { selectChatMessages } from "../../../redux/selectors/chatSelectors";
+import { selectChatMessages } from "../../redux/selectors/chatSelectors";
 import MessageDiv from "./MessageDiv";
 import styled from "styled-components";
-import { addMessage } from "../../../redux/slices/chatSlice";
+import { addMessage } from "../../redux/slices/chatSlice";
 import { AnyAction, Dispatch } from "@reduxjs/toolkit";
-import { closeStream, streamUpdate } from "../../../redux/slices/chatSlice";
-import { RootStore } from "../../../redux/store";
+import { closeStream, streamUpdate } from "../../redux/slices/chatSlice";
+import { RootStore } from "../../redux/store";
 
 function streamToStateThunk(
   dispatch: Dispatch<AnyAction>,

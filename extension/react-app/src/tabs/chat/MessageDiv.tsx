@@ -1,5 +1,5 @@
 import React from "react";
-import { ChatMessage } from "../../../redux/store";
+import { ChatMessage } from "../../redux/store";
 import styled from "styled-components";
 import { buttonColor, secondaryDark } from "../../components";
 

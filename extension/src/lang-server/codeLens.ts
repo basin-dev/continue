@@ -21,12 +21,12 @@ class SuggestionsCodeLensProvider implements vscode.CodeLensProvider {
       codeLenses.push(
         new vscode.CodeLens(range, {
           title: "Accept",
-          command: "autodebug.acceptSuggestion",
+          command: "continue.acceptSuggestion",
           arguments: [suggestion],
         }),
         new vscode.CodeLens(range, {
           title: "Reject",
-          command: "autodebug.rejectSuggestion",
+          command: "continue.rejectSuggestion",
           arguments: [suggestion],
         })
       );
@@ -70,8 +70,8 @@ class PytestCodeLensProvider implements vscode.CodeLensProvider {
           document.fileName + "::" + functionToTest;
         codeLenses.push(
           new vscode.CodeLens(new vscode.Range(lineno, 0, lineno, 1), {
-            title: "AutoDebug This Test",
-            command: "autodebug.debugTest",
+            title: "Debug This Test",
+            command: "continue.debugTest",
             arguments: [fileAndFunctionNameSpecifier],
           })
         );

@@ -2,8 +2,8 @@
 
 import * as vscode from "vscode";
 import { extensionContext } from "./activation/activate";
-const pty = require("node-pty");
-const os = require("os");
+import pty = require("node-pty");
+import os = require("os");
 import { debugPanelWebview } from "./debugPanel"; // Need to consider having multiple panels, where to store this state.
 
 abstract class TerminalSnooper {
@@ -127,7 +127,7 @@ class PythonTracebackSnooper extends TerminalSnooper {
           });
         } else {
           vscode.commands
-            .executeCommand("autodebug.openDebugPanel", extensionContext)
+            .executeCommand("continue.openDebugPanel", extensionContext)
             .then(() => {
               // TODO: Waiting for the webview to load, but should add a hook to the onLoad message event. Same thing in autodebugTest command in commands.ts
               setTimeout(() => {
@@ -152,7 +152,7 @@ class PyTestSnooper extends CommandCaptureSnooper {
     if (data.trim().startsWith("pytest ")) {
       let fileAndFunctionSpecifier = data.split(" ")[1];
       vscode.commands.executeCommand(
-        "autodebug.debugTest",
+        "continue.debugTest",
         fileAndFunctionSpecifier
       );
     }
@@ -163,20 +163,23 @@ const DEFAULT_SNOOPERS = [new PythonTracebackSnooper(), new PyTestSnooper()];
 
 // Whenever a user opens a terminal, replace it with ours
 vscode.window.onDidOpenTerminal((terminal) => {
-  if (terminal.name != "AutoDebug") {
+  if (terminal.name != "Continue") {
     terminal.dispose();
     openCapturedTerminal();
   }
 });
 
 function getDefaultShell(): string {
+  if (process.platform !== "win32") {
+    return os.userInfo().shell;
+  }
   switch (process.platform) {
     case "win32":
       return process.env.COMSPEC || "cmd.exe";
-    case "darwin":
-      return process.env.SHELL || "/bin/zsh";
-    default:
-      return process.env.SHELL || "/bin/sh";
+    // case "darwin":
+    //   return process.env.SHELL || "/bin/zsh";
+    // default:
+    //   return process.env.SHELL || "/bin/sh";
   }
 }
 
@@ -195,12 +198,17 @@ function getRootDir(): string | undefined {
 export function openCapturedTerminal(
   snoopers: TerminalSnooper[] = DEFAULT_SNOOPERS
 ) {
-  // If there is another existing, non-AutoDebug terminal, delete it
+  // If there is another existing, non-Continue terminal, delete it
   let terminals = vscode.window.terminals;
   for (let i = 0; i < terminals.length; i++) {
-    if (terminals[i].name != "AutoDebug") {
+    if (terminals[i].name != "Continue") {
       terminals[i].dispose();
     }
+  }
+
+  let env = { ...(process.env as any) };
+  if (os.platform() !== "win32") {
+    env["PATH"] += ":" + ["/opt/homebrew/bin", "/opt/homebrew/sbin"].join(":");
   }
 
   var ptyProcess = pty.spawn(getDefaultShell(), [], {
@@ -208,7 +216,7 @@ export function openCapturedTerminal(
     cols: 160, // TODO: Get size of vscode terminal, and change with resize
     rows: 26,
     cwd: getRootDir(),
-    env: process.env,
+    env,
     useConpty: true,
   });
 
@@ -237,7 +245,7 @@ export function openCapturedTerminal(
     },
   };
   const terminal = vscode.window.createTerminal({
-    name: "AutoDebug",
+    name: "Continue",
     pty: newPty,
   });
   terminal.show();

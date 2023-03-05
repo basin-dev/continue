@@ -56,7 +56,15 @@ class DecorationManager {
     Map<vscode.TextEditorDecorationType, vscode.DecorationOptions[]>
   >();
 
-  constructor() {}
+  constructor() {
+    vscode.window.onDidChangeVisibleTextEditors((editors) => {
+      for (const editor of editors) {
+        if (editor.document.isClosed) {
+          this.editorToDecorations.delete(editor.document.uri.toString());
+        }
+      }
+    });
+  }
 
   private rerenderDecorations(
     editorUri: string,
@@ -156,6 +164,7 @@ export function showGutterSpinner(
 ): DecorationKey {
   const key = constructBaseKey(editor, lineno, gutterSpinnerDecorationType);
   decorationManager.addDecoration(key);
+
   return key;
 }
 

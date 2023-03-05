@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { H3, TextArea, Button, Pre, Loader } from "../components";
 import styled from "styled-components";
-import { postVscMessage } from "../vscode";
-import { useDebugContextValue } from "../../redux/hooks";
+import { postVscMessage, withProgress } from "../vscode";
+import { useDebugContextValue } from "../redux/hooks";
 import CodeMultiselect from "../components/CodeMultiselect";
 import { useSelector } from "react-redux";
-import { selectDebugContext } from "../../redux/selectors/debugContextSelectors";
+import { selectDebugContext } from "../redux/selectors/debugContextSelectors";
 import { useDispatch } from "react-redux";
-import { updateValue } from "../../redux/slices/debugContexSlice";
-import { setWorkspacePath } from "../../redux/slices/configSlice";
+import { updateValue } from "../redux/slices/debugContexSlice";
+import { setWorkspacePath } from "../redux/slices/configSlice";
 import { SerializedDebugContext } from "../../../src/client";
 import { useEditCache } from "../util/editCache";
 import { useApi } from "../util/api";
-import { addMessage } from "../../redux/slices/chatSlice";
+import { addMessage } from "../redux/slices/chatSlice";
 
 const ButtonDiv = styled.div`
   display: flex;
@@ -57,6 +57,16 @@ function MainTab(props: any) {
     });
   }
 
+  function launchFindSuspiciousCode(newTraceback: string) {
+    // setTraceback's effects don't occur immediately, so we have to add it to the debug context manually
+    let updatedDebugContext = {
+      ...debugContext,
+      traceback: newTraceback,
+    };
+    postVscMessageWithDebugContext("findSuspiciousCode", updatedDebugContext);
+    postVscMessageWithDebugContext("preloadEdit", updatedDebugContext);
+  }
+
   useEffect(() => {
     const eventListener = (event: any) => {
       switch (event.data.type) {
@@ -68,28 +78,7 @@ function MainTab(props: any) {
           break;
         case "traceback":
           setTraceback(event.data.value);
-          if (selectedRanges.length === 0) {
-            // setTraceback's effects don't occur immediately, so we have to add it to the debug context manually
-            let updatedDebugContext = {
-              ...debugContext,
-              traceback: event.data.value,
-            };
-            postVscMessageWithDebugContext(
-              "findSuspiciousCode",
-              updatedDebugContext
-            );
-            postVscMessageWithDebugContext("preloadEdit", updatedDebugContext);
-          }
-          console.log("TODO");
-          // debugApi
-          //   ?.findDocsDebugFindDocsGet({ traceback: event.data.value })
-          //   .then((resp) => {
-          //     if (resp.completion) {
-          //       dispatch(
-          //         addMessage({ content: resp.completion, role: "assistant" })
-          //       );
-          //     }
-          //   });
+          launchFindSuspiciousCode(event.data.value);
           break;
         case "workspacePath":
           dispatch(setWorkspacePath(event.data.value));
@@ -131,6 +120,12 @@ function MainTab(props: any) {
           dispatch(updateValue({ key: "traceback", value: e.target.value }));
           // postVscMessageWithDebugContext("findSuspiciousCode");
         }}
+        onPaste={(e) => {
+          let pasted = e.clipboardData.getData("text");
+          console.log("PASTED", pasted);
+          setTraceback(pasted);
+          launchFindSuspiciousCode(pasted);
+        }}
         value={traceback}
       ></TextArea>
 
@@ -161,8 +156,10 @@ function MainTab(props: any) {
         <Button
           disabled={selectedRanges.length === 0}
           onClick={async () => {
-            let edits = await editCache.getEdit(debugContext);
-            postVscMessage("makeEdit", { edits });
+            withProgress("Generating Fix", async () => {
+              let edits = await editCache.getEdit(debugContext);
+              postVscMessage("makeEdit", { edits });
+            });
           }}
         >
           Suggest Fix

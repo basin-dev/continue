@@ -6,7 +6,7 @@ import {
 } from "../../../src/client";
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
-import { RootStore } from "../../redux/store";
+import { RootStore } from "../redux/store";
 
 export function useApi() {
   const apiUrl = useSelector((state: RootStore) => state.config.apiUrl);
