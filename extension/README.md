@@ -1,4 +1,4 @@
-# autodebug
+# continue
 
 Bug report to fix in 1/10th the time.
 
@@ -25,7 +25,7 @@ Either manually highlight code snippets you think are suspicious, or let us find
 
 ### Generate a Fix
 
-Once autodebug has code snippets to work with, it can generate a fix. Just click to accept or reject, or make the tweak you need.
+Once Continue has code snippets to work with, it can generate a fix. Just click to accept or reject, or make the tweak you need.
 
 ### Stacktrace Parsing
 

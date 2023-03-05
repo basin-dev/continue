@@ -20,7 +20,7 @@ async function setupPythonEnv() {
 }
 
 async function installNodeModules() {
-  console.log("Installing node modules for autodebug extension...");
+  console.log("Installing node modules for Continue extension...");
   const { stdout, stderr } = await exec(
     `cd ${getExtensionUri().fsPath} && npm install && npm run rebuild`
   );

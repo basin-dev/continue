@@ -49,14 +49,14 @@ export function activateExtension(
         ),
     ]).then(() => {
       vscode.commands
-        .executeCommand("autodebug.openDebugPanel", context)
+        .executeCommand("continue.openDebugPanel", context)
         .then(() => {
           openCapturedTerminal();
         });
     });
   } else {
     vscode.commands
-      .executeCommand("autodebug.openDebugPanel", context)
+      .executeCommand("continue.openDebugPanel", context)
       .then(() => {
         openCapturedTerminal();
       });

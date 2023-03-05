@@ -27,7 +27,7 @@ import { addFileSystemToDebugContext } from "./util/util";
 
 // Copy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
-  "autodebug.askQuestion": (data: any, webviewView: vscode.WebviewView) => {
+  "continue.askQuestion": (data: any, webviewView: vscode.WebviewView) => {
     if (!vscode.workspace.workspaceFolders) {
       return;
     }
@@ -38,7 +38,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       webviewView.webview
     );
   },
-  "autodebug.askQuestionFromInput": () => {
+  "continue.askQuestionFromInput": () => {
     vscode.window
       .showInputBox({ placeHolder: "Ask away!" })
       .then((question) => {
@@ -56,15 +56,15 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
         );
       });
   },
-  "autodebug.suggestionDown": suggestionDownCommand,
-  "autodebug.suggestionUp": suggestionUpCommand,
-  "autodebug.acceptSuggestion": acceptSuggestionCommand,
-  "autodebug.rejectSuggestion": rejectSuggestionCommand,
-  "autodebug.openDebugPanel": (context: vscode.ExtensionContext) => {
+  "continue.suggestionDown": suggestionDownCommand,
+  "continue.suggestionUp": suggestionUpCommand,
+  "continue.acceptSuggestion": acceptSuggestionCommand,
+  "continue.rejectSuggestion": rejectSuggestionCommand,
+  "continue.openDebugPanel": (context: vscode.ExtensionContext) => {
     let column = getRightViewColumn();
     const panel = vscode.window.createWebviewPanel(
-      "autodebug.debugPanelView",
-      "AutoDebug",
+      "continue.debugPanelView",
+      "Continue",
       column,
       {
         enableScripts: true,
@@ -75,11 +75,11 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
     // And set its HTML content
     panel.webview.html = setupDebugPanel(panel, context);
   },
-  "autodebug.openCapturedTerminal": () => {
+  "continue.openCapturedTerminal": () => {
     // Happens in webview resolution function
     openCapturedTerminal();
   },
-  "autodebug.findSuspiciousCode": async (
+  "continue.findSuspiciousCode": async (
     debugContext: SerializedDebugContext
   ) => {
     vscode.window.withProgress(
@@ -100,7 +100,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       }
     );
   },
-  "autodebug.debugTest": async (fileAndFunctionSpecifier: string) => {
+  "continue.debugTest": async (fileAndFunctionSpecifier: string) => {
     sendTelemetryEvent(TelemetryEvent.AutoDebugThisTest);
     let editor = vscode.window.activeTextEditor;
     if (editor) editor.document.save();
@@ -114,7 +114,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       vscode.window.showInformationMessage("The test passes!");
       return;
     }
-    vscode.commands.executeCommand("autodebug.openDebugPanel").then(() => {
+    vscode.commands.executeCommand("continue.openDebugPanel").then(() => {
       setTimeout(() => {
         debugPanelWebview?.postMessage({
           type: "traceback",
@@ -126,7 +126,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
 };
 
 const textEditorCommandsMap: { [command: string]: (...args: any) => {} } = {
-  "autodebug.writeUnitTest": async (editor: vscode.TextEditor) => {
+  "continue.writeUnitTest": async (editor: vscode.TextEditor) => {
     let position = editor.selection.active;
 
     let gutterSpinnerKey = showGutterSpinner(editor, position.line);
@@ -141,7 +141,7 @@ const textEditorCommandsMap: { [command: string]: (...args: any) => {} } = {
       decorationManager.deleteDecoration(gutterSpinnerKey);
     }
   },
-  "autodebug.writeDocstring": async (editor: vscode.TextEditor, _) => {
+  "continue.writeDocstring": async (editor: vscode.TextEditor, _) => {
     sendTelemetryEvent(TelemetryEvent.GenerateDocstring);
     let gutterSpinnerKey = showGutterSpinner(
       editor,

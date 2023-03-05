@@ -23,6 +23,7 @@ well as some additional properties for some of the events.
 Description: Recorded when the VS Code extension is activated.
 Location: Client
 Properties
+
 - user_id
 
 #### SuggestionAccepted
@@ -30,6 +31,7 @@ Properties
 Description: Recorded when a code fix suggestion is accepted.
 Location: Client
 Properties
+
 - user_id
 
 #### SuggestionRejected
@@ -37,14 +39,16 @@ Properties
 Description: Recorded when a code fix suggestion is rejected.
 Location: Client
 Properties
+
 - user_id
 
 #### UniversalPromptQuery
 
-Description: Recorded when a user asks a question to the prompt opened by `cmd+shift+j` 
+Description: Recorded when a user asks a question to the prompt opened by `cmd+shift+j`
 on MacOS or `ctrl+shift+j` on Windows.
 Location: Client
 Properties
+
 - user_id
 - question
 
@@ -53,6 +57,7 @@ Properties
 Description: Recorded when the `Explain Code` button is clicked.
 Location: Client
 Properties
+
 - user_id
 
 #### GenerateIdeas
@@ -60,6 +65,7 @@ Properties
 Description: Recorded when the `Generate Ideas` button is clicked.
 Location: Client
 Properties
+
 - user_id
 
 #### SuggestFix
@@ -67,6 +73,7 @@ Properties
 Description: Recorded when the `Suggest Fix` button is clicked.
 Location: Client
 Properties
+
 - user_id
 
 #### CreateTest
@@ -74,13 +81,15 @@ Properties
 Description: Recorded when the `Create Test` button is clicked.
 Location: Client
 Properties
+
 - user_id
 
-#### AutoDebugThisTest
+#### DebugThisTest
 
-Description: Recorded when the `AutoDebug This Test` button is clicked.
+Description: Recorded when the `Debug This Test` button is clicked.
 Location: Client
 Properties
+
 - user_id
 
 #### GenerateDocstring
@@ -89,6 +98,7 @@ Description: Recorded when a user generates a docstring for a function
 using `cmd+shift+l` on MacOS or `ctrl+shift+l` on Windows.
 Location: Client
 Properties
+
 - user_id
 
 #### CodeExplained
@@ -96,6 +106,7 @@ Properties
 Description: Recorded when the server generates a code explanation.
 Location: Server
 Properties
+
 - user_id
 - language
 - traceback
@@ -109,6 +120,7 @@ Properties
 Description: Recorded when the server generates ideas for how to fix.
 Location: Server
 Properties
+
 - user_id
 - language
 - traceback
@@ -122,6 +134,7 @@ Properties
 Description: Recorded when the server generates a suggested fix.
 Location: Server
 Properties
+
 - user_id
 - language
 - traceback
@@ -135,6 +148,7 @@ Properties
 Description: Recorded when the server generates a unit test.
 Location: Server
 Properties
+
 - user_id
 - language
 - ranges_in_files
@@ -146,6 +160,7 @@ Properties
 Description: Recorded when the server generates a docstring.
 Location: Server
 Properties
+
 - user_id
 - language
 - ranges_in_files
@@ -156,6 +171,7 @@ Properties
 ### Future Ideas
 
 Client side
+
 - Collect `Enable Highlight` button clicked
 - Collect `Disable Highlight` button clicked
 - Collect the files that were edited

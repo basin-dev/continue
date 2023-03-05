@@ -123,7 +123,7 @@ export function setupDebugPanel(
         );
         if (traceback === undefined) return;
         vscode.commands.executeCommand(
-          "autodebug.findSuspiciousCode",
+          "continue.findSuspiciousCode",
           data.debugContext
         );
         break;
@@ -181,7 +181,7 @@ export function setupDebugPanel(
           suggestedEdits.length === 0
         ) {
           vscode.window.showInformationMessage(
-            "Autodebug couldn't find a fix for this error."
+            "Continue couldn't find a fix for this error."
           );
           return;
         }
@@ -266,7 +266,7 @@ export function setupDebugPanel(
           }
         </style>
         
-        <title>AutoDebug</title>
+        <title>Continue</title>
       </head>
       <body>
         <div id="root"></div>
