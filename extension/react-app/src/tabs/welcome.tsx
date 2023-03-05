@@ -6,11 +6,17 @@ function WelcomeTab() {
       <h1>Welcome to Continue</h1>
 
       <p>
-        See our tutorial{" "}
-        <a href="https://basin-dev.notion.site/AutoDebug-1c6ad99887d0474d9e42206f6c98efa4">
+        Click{" "}
+        <a href="https://basin-dev.notion.site/Continue-User-Guide-1c6ad99887d0474d9e42206f6c98efa4">
           here
         </a>{" "}
-        for a detailed guide
+        for the Continue User Guide
+      </p>
+      <p>
+        Send Nate or Ty your reactions to these questions:
+        1. What excites you about Continue?
+        2. What did you struggle with when using Continue?
+        3. How do you wish Continue worked?
       </p>
     </div>
   );
