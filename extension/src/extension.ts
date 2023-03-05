@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: "Setting up AutoDebug extension...",
+        title: "Setting up Continue extension...",
         cancellable: false,
       },
       async () => {
