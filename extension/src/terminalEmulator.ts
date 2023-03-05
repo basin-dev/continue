@@ -207,6 +207,9 @@ export function openCapturedTerminal(
   }
 
   let env = { ...(process.env as any) };
+  if (os.platform() !== "win32") {
+    env["PATH"] += ":" + ["/opt/homebrew/bin", "/opt/homebrew/sbin"].join(":");
+  }
 
   var ptyProcess = pty.spawn(getDefaultShell(), [], {
     name: "xterm-256color",
