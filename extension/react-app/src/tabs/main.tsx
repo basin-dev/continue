@@ -12,7 +12,6 @@ import { setWorkspacePath } from "../redux/slices/configSlice";
 import { SerializedDebugContext } from "../../../src/client";
 import { useEditCache } from "../util/editCache";
 import { useApi } from "../util/api";
-import { addMessage } from "../redux/slices/chatSlice";
 
 const ButtonDiv = styled.div`
   display: flex;

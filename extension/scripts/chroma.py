@@ -88,8 +88,13 @@ def get_modified_deleted_files() -> Tuple[List[str], List[str]]:
     return further_filter(modified_files, get_git_root_dir()), further_filter(deleted_files, get_git_root_dir())
 
 def create_collection(branch: str):
-    """Create a new collection."""
-    collection = client.create_collection(name=branch)
+    """Create a new collection, returning whether it already existed."""
+    try:
+        collection = client.create_collection(name=branch)
+    except Exception as e:
+        print(e)
+        return
+
     files = get_input_files(get_git_root_dir())
     for file in files:
         with open(file, 'r') as f:
@@ -97,6 +102,11 @@ def create_collection(branch: str):
         print(f"Added {file}")
     with open(f"./data/{branch}.json", 'w') as f:
         json.dump({"commit": get_current_commit()}, f)
+
+def collection_exists():
+    """Check if a collection exists."""
+    branch = get_current_branch()
+    return branch in client.list_collections()
 
 def update_collection():
     """Update the collection."""
@@ -123,6 +133,13 @@ def update_collection():
     except:
 
         create_collection(branch)
+
+def query_collection(query: str, n_results: int):
+    """Query the collection."""
+    branch = get_current_branch()
+    collection = client.get_collection(branch)
+    results = collection.query(query_texts=[query], n_results=n_results)
+    return results
 
 if __name__ == "__main__":
     """python3 update.py"""

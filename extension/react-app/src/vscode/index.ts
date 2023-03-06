@@ -13,6 +13,19 @@ export function postVscMessage(type: string, data: any) {
   });
 }
 
+export async function vscRequest(type: string, data: any): Promise<any> {
+  return new Promise((resolve) => {
+    const handler = (event: any) => {
+      if (event.data.type === type) {
+        window.removeEventListener("message", handler);
+        resolve(event.data);
+      }
+    };
+    window.addEventListener("message", handler);
+    postVscMessage(type, data);
+  });
+}
+
 export function useVscMessageValue(
   messageType: string | string[],
   initialValue?: any

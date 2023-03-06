@@ -1,9 +1,13 @@
 import * as vscode from "vscode";
-import { debugApi, get_api_url, unittestApi } from "./bridge";
+import { debugApi, get_api_url, runPythonScript, unittestApi } from "./bridge";
 import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
-import { getExtensionUri, getNonce } from "./util/vscode";
+import {
+  getExtensionUri,
+  getNonce,
+  openEditorAndRevealRange,
+} from "./util/vscode";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { RangeInFile, SerializedDebugContext } from "./client";
 import { addFileSystemToDebugContext } from "./util/util";
@@ -126,6 +130,21 @@ export function setupDebugPanel(
           "continue.findSuspiciousCode",
           data.debugContext
         );
+        break;
+      }
+      case "queryEmbeddings": {
+        let { results } = await runPythonScript("index.py query", [
+          data.query,
+          3,
+        ]);
+        panel.webview.postMessage({
+          type: "queryEmbeddings",
+          results,
+        });
+        break;
+      }
+      case "openFile": {
+        openEditorAndRevealRange(data.path, undefined, vscode.ViewColumn.One);
         break;
       }
       case "explainCode": {
