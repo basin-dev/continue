@@ -11,7 +11,7 @@ const tracebackEnd = (buf: string): string | undefined => {
     if (
       lines[i].startsWith("  File") &&
       i + 2 < lines.length &&
-      lines[i + 2][0] != " "
+      lines[i + 2][0] !== " "
     ) {
       return lines.slice(0, i + 3).join("\n");
     }

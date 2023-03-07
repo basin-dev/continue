@@ -1,4 +1,5 @@
-import { test, describe, expect } from "@jest/globals";
+import { test, describe } from "mocha";
+import * as assert from "assert";
 import { convertSingleToDoubleQuoteJSON } from "../../util/util";
 
 describe("utils.ts", () => {
@@ -10,7 +11,7 @@ describe("utils.ts", () => {
     ];
     for (let pair of pairs) {
       let result = convertSingleToDoubleQuoteJSON(pair[0]);
-      expect(result).toBe(pair[1]);
+      assert(result === pair[1]);
       JSON.parse(result);
     }
   });
