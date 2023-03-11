@@ -107,12 +107,17 @@ export class PythonTracebackSnooper extends TerminalSnooper<string> {
   override onWrite(data: string): void {}
   override onData(data: string): void {
     let strippedData = stripAnsi(data);
+    // Strip fully blank and squiggle lines
+    strippedData = strippedData
+      .split("\n")
+      .filter((line) => line.trim().length > 0 && line.trim() !== "~~^~~")
+      .join("\n");
     // Snoop for traceback
     let idx = strippedData.indexOf(PythonTracebackSnooper.tracebackStart);
     if (idx >= 0) {
       this.tracebackBuffer = strippedData.substr(idx);
     } else if (this.tracebackBuffer.length > 0) {
-      this.tracebackBuffer += strippedData;
+      this.tracebackBuffer += "\n" + strippedData;
     }
     // End of traceback, send to webview
     if (this.tracebackBuffer.length > 0) {
@@ -120,8 +125,8 @@ export class PythonTracebackSnooper extends TerminalSnooper<string> {
         this.tracebackBuffer
       );
       if (wholeTraceback) {
-        this.tracebackBuffer = "";
         this.callback(wholeTraceback);
+        this.tracebackBuffer = "";
       }
     }
   }
