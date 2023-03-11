@@ -154,7 +154,6 @@
     "reinstall": "rm -rf ./build && npm run package && npm run uninstall && npm run install-extension"
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.2.10",
     "@openapitools/openapi-generator-cli": "^2.5.2",
     "@types/glob": "^8.0.0",
     "@types/mocha": "^10.0.1",
@@ -171,6 +170,7 @@
     "vsce": "^2.15.0"
   },
   "dependencies": {
+    "@electron/rebuild": "^3.2.10",
     "@reduxjs/toolkit": "^1.9.3",
     "@segment/analytics-node": "^0.0.1-beta.16",
     "axios": "^1.2.5",

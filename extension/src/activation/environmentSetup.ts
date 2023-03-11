@@ -22,10 +22,12 @@ async function setupPythonEnv() {
 async function installNodeModules() {
   console.log("Installing node modules for Continue extension...");
   const { stdout, stderr } = await exec(
-    `cd ${getExtensionUri().fsPath} && npm install && npm run rebuild`
+    `cd ${
+      getExtensionUri().fsPath
+    } && node node_modules/@electron/rebuild/lib/src/cli.js -v 19.1.8 node-pty`
   );
-  console.log("Standard out from installing node modules: ", stdout);
-  console.log("Standard error from installing node modules: ", stderr);
+  console.log("Standard out from rebuilding node-pty: ", stdout);
+  console.log("Standard error from rebuilding node-pty: ", stderr);
 }
 
 export function isPythonEnvSetup(): boolean {
