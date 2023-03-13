@@ -1,6 +1,6 @@
-import { Configuration, DebugApi, UnittestApi } from "../../../src/client";
-import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { Configuration, DebugApi, UnittestApi } from "../../../src/client";
 import { RootStore } from "../redux/store";
 
 export function useApi() {
@@ -15,12 +15,13 @@ export function useApi() {
     if (apiUrl && vscMachineId) {
       let config = new Configuration({
         basePath: apiUrl,
+        fetchApi: fetch,
         middleware: [
           {
             pre: async (context) => {
               context.init.headers = {
                 ...context.init.headers,
-                "x-vsc-machine-code": vscMachineId,
+                "x-vsc-machine-id": vscMachineId,
               };
             },
           },
