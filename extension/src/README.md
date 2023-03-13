@@ -4,17 +4,27 @@
 
 1. Clone the `continue` repo
 
-2. Open the `extension` sub-directory of the repo in VS Code
+2. Open a VS Code window with the `continue` repo
 
-3. Run `npm install`
+3. Package and then start the FastAPI server by following instructions outlined in `package/server/README.md`
 
-4. Open `src/activate.ts` file
+4. Open the `extension` sub-directory of the repo in a second VS Code window
 
-5. Press `F5` on your keyboard to start `Run and Debug` mode
+5. Run `npm install`
 
-6. Open a second VS Code window with the `continue` repo
+6. Run `npm run clientgen`
 
-7. Start the FastAPI server by following instructions outlined in `package/server/README.md`
+7. Run `cd react-app`
+
+8. Run `npm run build`
+
+9. Run `cd ..` to return to `extension` directory
+
+10. Then run `npm run compile`
+
+7. Open `src/activate.ts` file (or any TypeScript file)
+
+7. Press `F5` on your keyboard to start `Run and Debug` mode
 
 8. `cmd+shift+p` to look at developer console and select Continue commands
 
