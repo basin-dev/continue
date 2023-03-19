@@ -19,6 +19,8 @@ const Container = styled.div`
   border-radius: 8px;
   margin: 3px;
   width: fit-content;
+  max-width: 100%;
+  overflow: scroll;
   height: fit-content;
   overflow: hidden;
   background-color: ${(props) => {

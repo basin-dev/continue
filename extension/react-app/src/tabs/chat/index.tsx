@@ -51,6 +51,16 @@ const BottomDiv = styled.div`
   grid-template-rows: auto ${textEntryBarHeight};
 `;
 
+const BottomButton = styled.button`
+  font-size: 10px;
+  border: none;
+  color: white;
+  cursor: pointer;
+  background-color: gray;
+  border-radius: ${defaultBorderRadius};
+  padding: 8px;
+`;
+
 const TextEntryBar = styled.input`
   height: ${textEntryBarHeight};
   border-bottom-left-radius: ${defaultBorderRadius};
@@ -70,6 +80,8 @@ function ChatTab() {
   const debugContext = useSelector(selectDebugContext);
 
   const [includeHighlightedCode, setIncludeHighlightedCode] = useState(true);
+  const [writeCodeAtCursor, setWriteCodeAtCursor] = useState(false);
+  const [replaceHighlightedCode, setReplaceHighlightedCode] = useState(false);
 
   const highlightedCode = useSelector(selectHighlightedCode);
 
@@ -166,16 +178,30 @@ function ChatTab() {
           {highlightedCode?.range !== undefined &&
             highlightedCode.range.start !== highlightedCode.range.end && (
               <div className="flex items-center justify-right p-2">
-                <button
+                {/* <BottomButton
+                  className="ml-auto"
+                  onClick={() => setWriteCodeAtCursor(!writeCodeAtCursor)}
+                >
+                  Write code at cursor
+                </BottomButton>
+                <BottomButton
+                  onClick={() =>
+                    setReplaceHighlightedCode(!replaceHighlightedCode)
+                  }
+                >
+                  Replace highlighted code
+                </BottomButton> */}
+
+                <BottomButton
+                  className="ml-auto"
                   onClick={() => {
                     setIncludeHighlightedCode(!includeHighlightedCode);
                   }}
-                  className="ml-auto text-xs border-none text-white cursor-pointer bg-gray-500 rounded-md p-2"
                 >
                   {includeHighlightedCode
                     ? "Including highlighted code"
                     : "Click to include highlighted code"}
-                </button>
+                </BottomButton>
               </div>
             )}
         </div>
