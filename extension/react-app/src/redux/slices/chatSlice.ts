@@ -29,6 +29,12 @@ export const chatSlice = createSlice({
         messages: [...state.messages, action.payload],
       };
     },
+    setIsStreaming: (state, action) => {
+      return {
+        ...state,
+        isStreaming: action.payload,
+      };
+    },
     streamUpdate: (state, action) => {
       if (!state.isStreaming) {
         return {
@@ -44,6 +50,19 @@ export const chatSlice = createSlice({
         };
       } else {
         let lastMessage = state.messages[state.messages.length - 1];
+        if (lastMessage.role !== "assistant") {
+          return {
+            ...state,
+            messages: [
+              ...state.messages,
+              {
+                role: "assistant",
+                content: action.payload,
+              },
+            ],
+            isStreaming: true,
+          };
+        }
         return {
           ...state,
           messages: [
@@ -73,6 +92,11 @@ export const chatSlice = createSlice({
   },
 });
 
-export const { addMessage, streamUpdate, closeStream, clearChat } =
-  chatSlice.actions;
+export const {
+  addMessage,
+  streamUpdate,
+  closeStream,
+  clearChat,
+  setIsStreaming,
+} = chatSlice.actions;
 export default chatSlice.reducer;

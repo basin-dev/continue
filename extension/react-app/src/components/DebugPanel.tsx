@@ -3,6 +3,8 @@ import styled from "styled-components";
 import { postVscMessage } from "../vscode";
 import { useDispatch } from "react-redux";
 import { setApiUrl, setVscMachineId } from "../redux/slices/configSlice";
+import { setHighlightedCode } from "../redux/slices/miscSlice";
+import { updateFileSystem } from "../redux/slices/debugContexSlice";
 interface DebugPanelProps {
   tabs: {
     element: React.ReactElement;
@@ -38,9 +40,15 @@ function DebugPanel(props: DebugPanelProps) {
   const dispatch = useDispatch();
   useEffect(() => {
     const eventListener = (event: any) => {
-      if (event.data.type === "onLoad") {
-        dispatch(setApiUrl(event.data.apiUrl));
-        dispatch(setVscMachineId(event.data.vscMachineId));
+      switch (event.data.type) {
+        case "onLoad":
+          dispatch(setApiUrl(event.data.apiUrl));
+          dispatch(setVscMachineId(event.data.vscMachineId));
+          break;
+        case "highlightedCode":
+          dispatch(setHighlightedCode(event.data.rangeInFile));
+          dispatch(updateFileSystem(event.data.filesystem));
+          break;
       }
     };
     window.addEventListener("message", eventListener);

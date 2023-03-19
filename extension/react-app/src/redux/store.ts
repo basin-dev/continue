@@ -2,7 +2,8 @@ import { configureStore } from "@reduxjs/toolkit";
 import debugStateReducer from "./slices/debugContexSlice";
 import chatReducer from "./slices/chatSlice";
 import configReducer from "./slices/configSlice";
-import { SerializedDebugContext } from "../../../src/client";
+import miscReducer from "./slices/miscSlice";
+import { RangeInFile, SerializedDebugContext } from "../../../src/client";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -23,6 +24,9 @@ export interface RootStore {
     messages: ChatMessage[];
     isStreaming: boolean;
   };
+  misc: {
+    highlightedCode: RangeInFile | undefined;
+  };
 }
 
 const store = configureStore({
@@ -30,6 +34,7 @@ const store = configureStore({
     debugState: debugStateReducer,
     chat: chatReducer,
     config: configReducer,
+    misc: miscReducer,
   },
 });
 

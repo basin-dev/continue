@@ -1,8 +1,17 @@
 import React, { useEffect } from "react";
 import { ChatMessage } from "../../redux/store";
 import styled from "styled-components";
-import { buttonColor, secondaryDark } from "../../components";
+import {
+  buttonColor,
+  defaultBorderRadius,
+  secondaryDark,
+} from "../../components";
 import VSCodeFileLink from "../../components/VSCodeFileLink";
+import ReactMarkdown from "react-markdown";
+import "../../highlight/dark.min.css";
+import hljs from "highlight.js";
+import { useSelector } from "react-redux";
+import { selectIsStreaming } from "../../redux/selectors/chatSelectors";
 
 const Container = styled.div`
   padding-left: 8px;
@@ -27,88 +36,25 @@ const Container = styled.div`
     }
   }};
   display: block;
+
+  & pre {
+    border: 1px solid gray;
+    border-radius: ${defaultBorderRadius};
+  }
 `;
-
-function formatWithLinks(content: string) {
-  let richContent: JSX.Element[] = [];
-
-  let lastMatchIndex = -1;
-  let insideTicks = false;
-  let tickIsPath = false;
-  for (let match of content.matchAll(/[`]/g)) {
-    let index = match.index;
-    if (index !== undefined) {
-      if (insideTicks && tickIsPath) {
-        let path = content.slice(lastMatchIndex + 1, index);
-        richContent.push(
-          <VSCodeFileLink
-            path={path}
-            text={" " + path.split("/").at(-1) + " "}
-          />
-        );
-        insideTicks = false;
-      } else if (insideTicks && !tickIsPath) {
-        richContent.push(
-          <code>{content.substring(lastMatchIndex + 1, index)}</code>
-        );
-        insideTicks = false;
-      } else {
-        richContent.push(<>{content.substring(lastMatchIndex + 1, index)}</>);
-        insideTicks = true;
-        tickIsPath = content[index + 1] === "/";
-      }
-      lastMatchIndex = index;
-    }
-  }
-
-  if (richContent.length === 0) {
-    richContent = [<>{content}</>];
-  }
-
-  return richContent;
-}
-
-function format(content: string) {
-  let richContent: JSX.Element[] = [];
-
-  // Replace bullet point lines with <li> tags using regex
-  let currentUl: JSX.Element[] = [];
-  const updateUl = () => {
-    if (currentUl.length > 0) {
-      richContent.push(<ul>{currentUl}</ul>);
-      currentUl = [];
-    }
-  };
-  let endOfLastMatch = -1;
-  for (let bullet of content.matchAll(/[\*-] (.*)\n/g)) {
-    if (bullet.index === undefined) continue;
-
-    let startOfThisMatch = bullet.index;
-    if (endOfLastMatch < startOfThisMatch) {
-      updateUl();
-      richContent.push(
-        <>{content.substring(endOfLastMatch + 1, startOfThisMatch)}</>
-      );
-    }
-
-    endOfLastMatch = startOfThisMatch + bullet[0].length;
-    currentUl.push(<li>{formatWithLinks(bullet[1])}</li>);
-  }
-
-  updateUl();
-
-  if (endOfLastMatch < content.length) {
-    richContent.push(<>{content.substring(endOfLastMatch + 1)}</>);
-  }
-
-  return richContent;
-}
 
 function MessageDiv(props: ChatMessage) {
   const [richContent, setRichContent] = React.useState<JSX.Element[]>([]);
+  const isStreaming = useSelector(selectIsStreaming);
 
   useEffect(() => {
-    setRichContent(format(props.content));
+    if (!isStreaming) {
+      hljs.highlightAll();
+    }
+  }, [richContent, isStreaming]);
+
+  useEffect(() => {
+    setRichContent([<ReactMarkdown>{props.content}</ReactMarkdown>]);
   }, [props.content]);
 
   return (

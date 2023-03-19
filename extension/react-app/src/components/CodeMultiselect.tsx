@@ -153,10 +153,6 @@ function CodeMultiselect(props: {}) {
   const rangesInFiles = useSelector(selectAllRangesInFiles);
   const rangesInFilesMask = useSelector(selectRangesMask);
 
-  //#region Update Functions
-
-  //#endregion
-
   useEffect(() => {
     let eventListener = (event: any) => {
       switch (event.data.type) {

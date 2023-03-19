@@ -4,4 +4,8 @@ const selectChatMessages = (state: RootStore) => {
   return state.chat.messages;
 };
 
-export { selectChatMessages };
+const selectIsStreaming = (state: RootStore) => {
+  return state.chat.isStreaming;
+};
+
+export { selectChatMessages, selectIsStreaming };
