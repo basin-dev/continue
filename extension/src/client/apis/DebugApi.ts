@@ -22,6 +22,7 @@ import type {
   FindResp,
   HTTPValidationError,
   InlineBody,
+  OptionalCompletionResponse,
   SerializedDebugContext,
   Traceback,
 } from '../models';
@@ -40,6 +41,8 @@ import {
     HTTPValidationErrorToJSON,
     InlineBodyFromJSON,
     InlineBodyToJSON,
+    OptionalCompletionResponseFromJSON,
+    OptionalCompletionResponseToJSON,
     SerializedDebugContextFromJSON,
     SerializedDebugContextToJSON,
     TracebackFromJSON,
@@ -56,7 +59,7 @@ export interface ExplainDebugExplainPostRequest {
     xVscMachineId?: string;
 }
 
-export interface FindDocsDebugFindDocsGetRequest {
+export interface FindDocsEndpointDebugFindDocsGetRequest {
     traceback: string;
 }
 
@@ -166,11 +169,11 @@ export class DebugApi extends runtime.BaseAPI {
     }
 
     /**
-     * Find Docs
+     * Find Docs Endpoint
      */
-    async findDocsDebugFindDocsGetRaw(requestParameters: FindDocsDebugFindDocsGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CompletionResponse>> {
+    async findDocsEndpointDebugFindDocsGetRaw(requestParameters: FindDocsEndpointDebugFindDocsGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OptionalCompletionResponse>> {
         if (requestParameters.traceback === null || requestParameters.traceback === undefined) {
-            throw new runtime.RequiredError('traceback','Required parameter requestParameters.traceback was null or undefined when calling findDocsDebugFindDocsGet.');
+            throw new runtime.RequiredError('traceback','Required parameter requestParameters.traceback was null or undefined when calling findDocsEndpointDebugFindDocsGet.');
         }
 
         const queryParameters: any = {};
@@ -188,14 +191,14 @@ export class DebugApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => CompletionResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => OptionalCompletionResponseFromJSON(jsonValue));
     }
 
     /**
-     * Find Docs
+     * Find Docs Endpoint
      */
-    async findDocsDebugFindDocsGet(requestParameters: FindDocsDebugFindDocsGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CompletionResponse> {
-        const response = await this.findDocsDebugFindDocsGetRaw(requestParameters, initOverrides);
+    async findDocsEndpointDebugFindDocsGet(requestParameters: FindDocsEndpointDebugFindDocsGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OptionalCompletionResponse> {
+        const response = await this.findDocsEndpointDebugFindDocsGetRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

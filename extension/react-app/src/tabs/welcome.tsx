@@ -2,7 +2,7 @@ import React from "react";
 
 function WelcomeTab() {
   return (
-    <div>
+    <div className="mx-5">
       <h1>Welcome to Continue</h1>
 
       <p>
@@ -13,10 +13,9 @@ function WelcomeTab() {
         for the Continue User Guide
       </p>
       <p>
-        Send Nate or Ty your reactions to these questions:
-        1. What excites you about Continue?
-        2. What did you struggle with when using Continue?
-        3. How do you wish Continue worked?
+        Send Nate or Ty your reactions to these questions: 1. What excites you
+        about Continue? 2. What did you struggle with when using Continue? 3.
+        How do you wish Continue worked?
       </p>
     </div>
   );

@@ -3,7 +3,19 @@ import { ChatMessage, RootStore } from "../store";
 
 export const chatSlice = createSlice({
   name: "chat",
-  initialState: { messages: [], isStreaming: false } as RootStore["chat"],
+  initialState: {
+    messages: [
+      {
+        role: "user",
+        content: "Hello, my name is Nate.",
+      },
+      {
+        role: "assistant",
+        content: "Hi Nate!\n* One\n * Two\n * Three\n How can I help?",
+      },
+    ],
+    isStreaming: false,
+  } as RootStore["chat"],
   reducers: {
     addMessage: (
       state,

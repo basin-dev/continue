@@ -28,6 +28,12 @@ const TabBar = styled.div<{ numTabs: number }>`
   grid-template-columns: repeat(${(props) => props.numTabs}, 1fr);
 `;
 
+const TabsAndBodyDiv = styled.div`
+  display: grid;
+  grid-template-rows: 50px 1fr;
+  height: 100%;
+`;
+
 function DebugPanel(props: DebugPanelProps) {
   const dispatch = useDispatch();
   useEffect(() => {
@@ -47,13 +53,13 @@ function DebugPanel(props: DebugPanelProps) {
   return (
     <GradientContainer>
       <div className="h-full rounded-md overflow-scroll bg-vsc-background">
-        <div className="h-full">
+        <TabsAndBodyDiv>
           <TabBar numTabs={props.tabs.length}>
             {props.tabs.map((tab, index) => {
               return (
                 <div
                   key={index}
-                  className={`p-2 h-full cursor-pointer text-center ${
+                  className={`p-2 cursor-pointer text-center ${
                     index === currentTab
                       ? "bg-secondary-dark"
                       : "bg-vsc-background"
@@ -67,16 +73,12 @@ function DebugPanel(props: DebugPanelProps) {
           </TabBar>
           {props.tabs.map((tab, index) => {
             return (
-              <div
-                key={index}
-                className="pl-5 pr-5 pb-5"
-                hidden={index !== currentTab}
-              >
+              <div key={index} hidden={index !== currentTab}>
                 {tab.element}
               </div>
             );
           })}
-        </div>
+        </TabsAndBodyDiv>
       </div>
     </GradientContainer>
   );

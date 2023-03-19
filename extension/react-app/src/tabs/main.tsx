@@ -90,7 +90,7 @@ function MainTab(props: any) {
   }, [debugContext, selectedRanges]);
 
   return (
-    <>
+    <div className="mx-5">
       <h1>Debug Panel</h1>
 
       <H3>Code Sections</H3>
@@ -182,7 +182,7 @@ function MainTab(props: any) {
       </Pre>
 
       <br></br>
-    </>
+    </div>
   );
 }
 

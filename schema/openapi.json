@@ -387,8 +387,8 @@
         "tags": [
           "debug"
         ],
-        "summary": "Find Docs",
-        "operationId": "find_docs_debug_find_docs_get",
+        "summary": "Find Docs Endpoint",
+        "operationId": "find_docs_endpoint_debug_find_docs_get",
         "parameters": [
           {
             "required": true,
@@ -406,7 +406,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CompletionResponse"
+                  "$ref": "#/components/schemas/OptionalCompletionResponse"
                 }
               }
             }
@@ -903,6 +903,16 @@
             "title": "Traceback",
             "type": "string",
             "default": ""
+          }
+        }
+      },
+      "OptionalCompletionResponse": {
+        "title": "OptionalCompletionResponse",
+        "type": "object",
+        "properties": {
+          "completion": {
+            "title": "Completion",
+            "type": "string"
           }
         }
       },

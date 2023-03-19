@@ -13,6 +13,7 @@ export * from './FindResp';
 export * from './HTTPValidationError';
 export * from './InlineBody';
 export * from './LocationInner';
+export * from './OptionalCompletionResponse';
 export * from './Position';
 export * from './ProgrammingLangauge';
 export * from './Range';

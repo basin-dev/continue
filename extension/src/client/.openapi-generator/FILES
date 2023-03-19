@@ -19,6 +19,7 @@ models/FindResp.ts
 models/HTTPValidationError.ts
 models/InlineBody.ts
 models/LocationInner.ts
+models/OptionalCompletionResponse.ts
 models/Position.ts
 models/ProgrammingLangauge.ts
 models/Range.ts

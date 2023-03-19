@@ -60,31 +60,47 @@ function formatWithLinks(content: string) {
       lastMatchIndex = index;
     }
   }
+
+  if (richContent.length === 0) {
+    richContent = [<>{content}</>];
+  }
+
   return richContent;
 }
 
 function format(content: string) {
   let richContent: JSX.Element[] = [];
 
-  let lastMatchIndex = -1;
-  let insideBullet = false;
-  let bullets = [];
-  for (let match of content.matchAll(/[\*]/g)) {
-    console.log("MATCH: ", match);
-    let index = match.index;
-    if (index !== undefined) {
-      let text = content.substring(lastMatchIndex + 1, index);
-      let richText = formatWithLinks(text);
-      if (insideBullet) {
-        bullets.push(<li>{richText}</li>);
-      } else {
-        richContent.push(<>{richText}</>);
-        insideBullet = true;
-      }
-      lastMatchIndex = index;
+  // Replace bullet point lines with <li> tags using regex
+  let currentUl: JSX.Element[] = [];
+  const updateUl = () => {
+    if (currentUl.length > 0) {
+      richContent.push(<ul>{currentUl}</ul>);
+      currentUl = [];
     }
+  };
+  let endOfLastMatch = -1;
+  for (let bullet of content.matchAll(/[\*-] (.*)\n/g)) {
+    if (bullet.index === undefined) continue;
+
+    let startOfThisMatch = bullet.index;
+    if (endOfLastMatch < startOfThisMatch) {
+      updateUl();
+      richContent.push(
+        <>{content.substring(endOfLastMatch + 1, startOfThisMatch)}</>
+      );
+    }
+
+    endOfLastMatch = startOfThisMatch + bullet[0].length;
+    currentUl.push(<li>{formatWithLinks(bullet[1])}</li>);
   }
-  richContent.push(<ul>{bullets}</ul>);
+
+  updateUl();
+
+  if (endOfLastMatch < content.length) {
+    richContent.push(<>{content.substring(endOfLastMatch + 1)}</>);
+  }
+
   return richContent;
 }
 
@@ -92,7 +108,6 @@ function MessageDiv(props: ChatMessage) {
   const [richContent, setRichContent] = React.useState<JSX.Element[]>([]);
 
   useEffect(() => {
-    console.log("U");
     setRichContent(format(props.content));
   }, [props.content]);
 

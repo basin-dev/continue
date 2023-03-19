@@ -3,7 +3,7 @@ import { H3, TextArea } from "../components";
 
 function AdditionalContextTab() {
   return (
-    <>
+    <div className="mx-5">
       <H3>Additional Context</H3>
       <TextArea
         rows={8}
@@ -11,7 +11,7 @@ function AdditionalContextTab() {
         className="additionalContextTextarea"
       ></TextArea>
       <br></br>
-    </>
+    </div>
   );
 }
 

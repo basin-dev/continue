@@ -82,7 +82,6 @@ class OpenAI(LLM):
             messages=messages,
             **args,
         ):  
-            print(chunk.choices[0])
             if "content" in chunk.choices[0].delta:
                 yield chunk.choices[0].delta.content
             else:

@@ -8,6 +8,7 @@ import { AnyAction, Dispatch } from "@reduxjs/toolkit";
 import { closeStream, streamUpdate } from "../../redux/slices/chatSlice";
 import { ChatMessage, RootStore } from "../../redux/store";
 import { postVscMessage, vscRequest } from "../../vscode";
+import { defaultBorderRadius } from "../../components";
 
 function streamToStateThunk(
   dispatch: Dispatch<AnyAction>,
@@ -30,20 +31,27 @@ function streamToStateThunk(
   });
 }
 
+let textEntryBarHeight = "30px";
+
 const ChatContainer = styled.div`
   display: grid;
-  grid-template-rows: 1fr 20px;
+  grid-template-rows: 1fr ${textEntryBarHeight};
   height: 100%;
 `;
 
+const MessagesContainer = styled.div`
+  overflow-y: scroll;
+`;
+
 const TextEntryBar = styled.input`
-  width: 100%;
-  height: 20px;
-  border-radius: 16px;
+  height: ${textEntryBarHeight};
+  border-bottom-left-radius: ${defaultBorderRadius};
+  border-bottom-right-radius: ${defaultBorderRadius};
   padding: 8px;
   border: 1px solid white;
   background-color: black;
   color: white;
+  outline: none;
 `;
 
 function ChatTab() {
@@ -105,10 +113,15 @@ function ChatTab() {
 
   return (
     <ChatContainer>
-      <h1>Chat</h1>
-      {chatMessages.map((message, idx) => {
-        return <MessageDiv key={idx} {...message}></MessageDiv>;
-      })}
+      <div className="mx-5">
+        <h1>Chat</h1>
+        <MessagesContainer>
+          {chatMessages.map((message, idx) => {
+            return <MessageDiv key={idx} {...message}></MessageDiv>;
+          })}
+        </MessagesContainer>
+      </div>
+
       <TextEntryBar
         type="text"
         placeholder="Enter your message here"
