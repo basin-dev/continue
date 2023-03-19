@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { selectChatMessages } from "../../redux/selectors/chatSelectors";
 import MessageDiv from "./MessageDiv";
@@ -38,12 +38,17 @@ let textEntryBarHeight = "30px";
 
 const ChatContainer = styled.div`
   display: grid;
-  grid-template-rows: 1fr ${textEntryBarHeight};
+  grid-template-rows: 1fr auto;
   height: 100%;
 `;
 
 const MessagesContainer = styled.div`
   overflow-y: scroll;
+`;
+
+const BottomDiv = styled.div`
+  display: grid;
+  grid-template-rows: auto ${textEntryBarHeight};
 `;
 
 const TextEntryBar = styled.input`
@@ -64,10 +69,13 @@ function ChatTab() {
   const baseUrl = useSelector((state: RootStore) => state.config.apiUrl);
   const debugContext = useSelector(selectDebugContext);
 
+  const [includeHighlightedCode, setIncludeHighlightedCode] = useState(true);
+
   const highlightedCode = useSelector(selectHighlightedCode);
 
   const compileHiddenChatMessages = useCallback(async () => {
     if (
+      includeHighlightedCode &&
       highlightedCode?.filepath !== undefined &&
       highlightedCode?.range !== undefined &&
       debugContext.filesystem[highlightedCode.filepath] !== undefined
@@ -153,19 +161,38 @@ function ChatTab() {
         </MessagesContainer>
       </div>
 
-      <TextEntryBar
-        type="text"
-        placeholder="Enter your message here"
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            console.log("Sending message", e.currentTarget.value);
-            dispatch(
-              addMessage({ content: e.currentTarget.value, role: "user" })
-            );
-            (e.target as any).value = "";
-          }
-        }}
-      ></TextEntryBar>
+      <BottomDiv>
+        <div className="h-12 bg-secondary-">
+          {highlightedCode?.range !== undefined &&
+            highlightedCode.range.start !== highlightedCode.range.end && (
+              <div className="flex items-center justify-right p-2">
+                <button
+                  onClick={() => {
+                    setIncludeHighlightedCode(!includeHighlightedCode);
+                  }}
+                  className="ml-auto text-xs border-none text-white cursor-pointer bg-gray-500 rounded-md p-2"
+                >
+                  {includeHighlightedCode
+                    ? "Including highlighted code"
+                    : "Click to include highlighted code"}
+                </button>
+              </div>
+            )}
+        </div>
+        <TextEntryBar
+          type="text"
+          placeholder="Enter your message here"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              console.log("Sending message", e.currentTarget.value);
+              dispatch(
+                addMessage({ content: e.currentTarget.value, role: "user" })
+              );
+              (e.target as any).value = "";
+            }
+          }}
+        ></TextEntryBar>
+      </BottomDiv>
     </ChatContainer>
   );
 }
