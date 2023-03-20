@@ -13,27 +13,6 @@ import { selectHighlightedCode } from "../../redux/selectors/miscSelectors";
 import { readRangeInVirtualFileSystem } from "../../util";
 import { selectDebugContext } from "../../redux/selectors/debugContextSelectors";
 
-function streamToStateThunk(
-  dispatch: Dispatch<AnyAction>,
-  getResponse: () => Promise<Response>
-) {
-  getResponse().then((resp) => {
-    if (resp.body) {
-      resp.body.pipeTo(
-        new WritableStream({
-          write(chunk) {
-            let update = new TextDecoder("utf-8").decode(chunk);
-            dispatch(streamUpdate(update));
-          },
-          close() {
-            dispatch(closeStream());
-          },
-        })
-      );
-    }
-  });
-}
-
 let textEntryBarHeight = "30px";
 
 const ChatContainer = styled.div`
@@ -51,15 +30,18 @@ const BottomDiv = styled.div`
   grid-template-rows: auto ${textEntryBarHeight};
 `;
 
-const BottomButton = styled.button`
+const BottomButton = styled.button(
+  (props: { active: boolean }) => `
   font-size: 10px;
   border: none;
   color: white;
+  margin-right: 4px;
   cursor: pointer;
-  background-color: gray;
+  background-color: ${props.active ? "black" : "gray"};
   border-radius: ${defaultBorderRadius};
   padding: 8px;
-`;
+`
+);
 
 const TextEntryBar = styled.input`
   height: ${textEntryBarHeight};
@@ -85,50 +67,89 @@ function ChatTab() {
 
   const highlightedCode = useSelector(selectHighlightedCode);
 
+  const streamToStateThunk = useCallback(
+    (dispatch: Dispatch<AnyAction>, getResponse: () => Promise<Response>) => {
+      let streamToCursor = writeCodeAtCursor;
+      getResponse().then((resp) => {
+        if (resp.body) {
+          resp.body.pipeTo(
+            new WritableStream({
+              write(chunk) {
+                let update = new TextDecoder("utf-8").decode(chunk);
+                dispatch(streamUpdate(update));
+                if (streamToCursor) {
+                  postVscMessage("streamUpdate", { update });
+                }
+              },
+              close() {
+                dispatch(closeStream());
+                if (streamToCursor) {
+                  postVscMessage("closeStream", null);
+                }
+              },
+            })
+          );
+        }
+      });
+    },
+    [writeCodeAtCursor]
+  );
+
   const compileHiddenChatMessages = useCallback(async () => {
+    let messages: ChatMessage[] = [];
     if (
       includeHighlightedCode &&
       highlightedCode?.filepath !== undefined &&
       highlightedCode?.range !== undefined &&
       debugContext.filesystem[highlightedCode.filepath] !== undefined
     ) {
-      return [
-        {
-          role: "user",
-          content: readRangeInVirtualFileSystem(
-            highlightedCode,
-            debugContext.filesystem
-          ),
-        },
-        {
-          role: "user",
-          content:
-            "Use the above code to help you answer the question below. Respond in markdown if using bullets or other special formatting, being sure to specify language for code blocks.",
-        },
-      ];
-    } else {
-      return [];
-      let data = await vscRequest("queryEmbeddings", {
-        query: chatMessages[chatMessages.length - 1].content,
-      });
-      let codeContextMessages = data.results.map(
-        (result: { id: string; document: string }) => {
-          let msg: ChatMessage = {
-            role: "user",
-            content: `File: ${result.id} \n ${result.document}`,
-          };
-          return msg;
-        }
+      let fileContents = readRangeInVirtualFileSystem(
+        highlightedCode,
+        debugContext.filesystem
       );
-      codeContextMessages.push({
-        role: "user",
-        content:
-          "Use the above code to help you answer the question below. Answer in asterisk bullet points, and give the full path whenever you reference files.",
-      });
-
-      return codeContextMessages;
+      if (fileContents) {
+        messages.push({
+          role: "user",
+          content: fileContents,
+        });
+      }
+    } else {
+      // let data = await vscRequest("queryEmbeddings", {
+      //   query: chatMessages[chatMessages.length - 1].content,
+      // });
+      // let codeContextMessages = data.results.map(
+      //   (result: { id: string; document: string }) => {
+      //     let msg: ChatMessage = {
+      //       role: "user",
+      //       content: `File: ${result.id} \n ${result.document}`,
+      //     };
+      //     return msg;
+      //   }
+      // );
+      // codeContextMessages.push({
+      //   role: "user",
+      //   content:
+      //     "Use the above code to help you answer the question below. Answer in asterisk bullet points, and give the full path whenever you reference files.",
+      // });
+      // messages.push(...codeContextMessages);
     }
-  }, [highlightedCode, chatMessages]);
+
+    let systemMsgContent =
+      replaceHighlightedCode || writeCodeAtCursor
+        ? "Respond only with the exact code requested, no additional text."
+        : "Use the above code to help you answer the question below. Respond in markdown if using bullets or other special formatting, being sure to specify language for code blocks.";
+
+    messages.push({
+      role: "system",
+      content: systemMsgContent,
+    });
+    return messages;
+  }, [
+    highlightedCode,
+    chatMessages,
+    includeHighlightedCode,
+    writeCodeAtCursor,
+  ]);
 
   useEffect(() => {
     if (
@@ -166,6 +187,7 @@ function ChatTab() {
     <ChatContainer>
       <div className="mx-5">
         <h1>Chat</h1>
+        <hr></hr>
         <MessagesContainer>
           {chatMessages.map((message, idx) => {
             return <MessageDiv key={idx} {...message}></MessageDiv>;
@@ -175,35 +197,40 @@ function ChatTab() {
 
       <BottomDiv>
         <div className="h-12 bg-secondary-">
-          {highlightedCode?.range !== undefined &&
-            highlightedCode.range.start !== highlightedCode.range.end && (
-              <div className="flex items-center justify-right p-2">
-                {/* <BottomButton
-                  className="ml-auto"
-                  onClick={() => setWriteCodeAtCursor(!writeCodeAtCursor)}
-                >
-                  Write code at cursor
-                </BottomButton>
-                <BottomButton
-                  onClick={() =>
-                    setReplaceHighlightedCode(!replaceHighlightedCode)
-                  }
-                >
-                  Replace highlighted code
-                </BottomButton> */}
+          <div className="flex items-center p-2">
+            <BottomButton
+              active={writeCodeAtCursor}
+              className="ml-auto"
+              onClick={() => {
+                setWriteCodeAtCursor(!writeCodeAtCursor);
+                setReplaceHighlightedCode(false);
+              }}
+            >
+              {writeCodeAtCursor ? "Writing at cursor" : "Write at cursor"}
+            </BottomButton>
+            <BottomButton
+              active={replaceHighlightedCode}
+              onClick={() => {
+                setReplaceHighlightedCode(!replaceHighlightedCode);
+                setWriteCodeAtCursor(false);
+              }}
+            >
+              {replaceHighlightedCode
+                ? "Replacing highlighted code"
+                : "Replace highlighted code"}
+            </BottomButton>
 
-                <BottomButton
-                  className="ml-auto"
-                  onClick={() => {
-                    setIncludeHighlightedCode(!includeHighlightedCode);
-                  }}
-                >
-                  {includeHighlightedCode
-                    ? "Including highlighted code"
-                    : "Click to include highlighted code"}
-                </BottomButton>
-              </div>
-            )}
+            <BottomButton
+              active={includeHighlightedCode}
+              onClick={() => {
+                setIncludeHighlightedCode(!includeHighlightedCode);
+              }}
+            >
+              {includeHighlightedCode
+                ? "Including highlighted code"
+                : "Click to include highlighted code"}
+            </BottomButton>
+          </div>
         </div>
         <TextEntryBar
           type="text"
