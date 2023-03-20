@@ -72,16 +72,21 @@ export async function runPythonScript(
   )}`;
 
   const { stdout, stderr } = await exec(command);
-  if (stderr) {
-    throw new Error(stderr);
-  }
 
-  let jsonString = stdout.substring(
-    stdout.indexOf("{"),
-    stdout.lastIndexOf("}") + 1
-  );
-  jsonString = convertSingleToDoubleQuoteJSON(jsonString);
-  return JSON.parse(jsonString);
+  try {
+    let jsonString = stdout.substring(
+      stdout.indexOf("{"),
+      stdout.lastIndexOf("}") + 1
+    );
+    jsonString = convertSingleToDoubleQuoteJSON(jsonString);
+    return JSON.parse(jsonString);
+  } catch (e) {
+    if (stderr) {
+      throw new Error(stderr);
+    } else {
+      throw new Error("Failed to parse JSON: " + e);
+    }
+  }
 }
 
 function parseStdout(

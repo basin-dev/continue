@@ -57,37 +57,43 @@ def get_input_files(root_dir: str):
     nonignored_files = all_files - ignored_files
     return further_filter(nonignored_files, root_dir)
 
-def get_git_root_dir():
+def get_git_root_dir(cwd: str):
     """Get the root directory of a Git repository."""
-    result = subprocess.run(['git', 'rev-parse', '--show-toplevel'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = subprocess.run(['git', 'rev-parse', '--show-toplevel'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
     return result.stdout.decode().strip()
 
-def get_current_branch() -> str:
+def get_current_branch(cwd: str) -> str:
     """Get the current Git branch."""
-    return subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
+    try:
+        return subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=cwd).decode("utf-8").strip()
+    except:
+        return "main"
 
-def get_current_commit() -> str:
-    return subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
+def get_current_commit(cwd: str) -> str:
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd).decode("utf-8").strip()
+    except:
+        return "NO_COMMITS"
 
-def get_modified_deleted_files() -> Tuple[List[str], List[str]]:
+def get_modified_deleted_files(cwd: str) -> Tuple[List[str], List[str]]:
     """Get a list of all files that have been modified since the last commit."""
-    branch = get_current_branch()
-    current_commit = get_current_commit()
+    branch = get_current_branch(cwd)
+    current_commit = get_current_commit(cwd)
 
     with open(f"./data/{branch}.json", 'r') as f:
         previous_commit = json.load(f)["commit"]
 
-    modified_deleted_files = subprocess.check_output(["git", "diff", "--name-only", previous_commit, current_commit]).decode("utf-8").strip()
+    modified_deleted_files = subprocess.check_output(["git", "diff", "--name-only", previous_commit, current_commit], cwd=cwd).decode("utf-8").strip()
     modified_deleted_files = modified_deleted_files.split("\n")
     modified_deleted_files = [f for f in modified_deleted_files if f]
 
-    root = get_git_root_dir()
+    root = get_git_root_dir(cwd)
     deleted_files = [f for f in modified_deleted_files if not os.path.exists(root + "/" + f)]
     modified_files = [f for f in modified_deleted_files if os.path.exists(root + "/" +  f)]
 
-    return further_filter(modified_files, get_git_root_dir()), further_filter(deleted_files, get_git_root_dir())
+    return further_filter(modified_files, root), further_filter(deleted_files, root)
 
-def create_collection(branch: str):
+def create_collection(branch: str, cwd: str):
     """Create a new collection, returning whether it already existed."""
     try:
         collection = client.create_collection(name=branch)
@@ -95,28 +101,28 @@ def create_collection(branch: str):
         print(e)
         return
 
-    files = get_input_files(get_git_root_dir())
+    files = get_input_files(get_git_root_dir(cwd))
     for file in files:
         with open(file, 'r') as f:
             collection.add(documents=[f.read()], ids=[file])
         print(f"Added {file}")
     with open(f"./data/{branch}.json", 'w') as f:
-        json.dump({"commit": get_current_commit()}, f)
+        json.dump({"commit": get_current_commit(cwd)}, f)
 
-def collection_exists():
+def collection_exists(cwd: str):
     """Check if a collection exists."""
-    branch = get_current_branch()
+    branch = get_current_branch(cwd)
     return branch in client.list_collections()
 
-def update_collection():
+def update_collection(cwd: str):
     """Update the collection."""
-    branch = get_current_branch()
+    branch = get_current_branch(cwd)
 
     try:
 
         collection = client.get_collection(branch)
         
-        modified_files, deleted_files = get_modified_deleted_files()
+        modified_files, deleted_files = get_modified_deleted_files(cwd)
 
         for file in deleted_files:
             collection.delete(ids=[file])
@@ -128,19 +134,19 @@ def update_collection():
             print(f"Updated {file}")
         
         with open(f"./data/{branch}.json", 'w') as f:
-            json.dump({"commit": get_current_commit()}, f)
+            json.dump({"commit": get_current_commit(cwd)}, f)
 
     except:
 
-        create_collection(branch)
+        create_collection(branch, cwd)
 
-def query_collection(query: str, n_results: int):
+def query_collection(query: str, n_results: int, cwd: str):
     """Query the collection."""
-    branch = get_current_branch()
-    collection = client.get_collection(branch)
+    branch = get_current_branch(cwd)
+    try:
+        collection = client.get_collection(branch)
+    except:
+        create_collection(branch, cwd)
+        collection = client.get_collection(branch)
     results = collection.query(query_texts=[query], n_results=n_results)
     return results
-
-if __name__ == "__main__":
-    """python3 update.py"""
-    update_collection()

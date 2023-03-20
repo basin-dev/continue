@@ -193,7 +193,8 @@ export function setupDebugPanel(
       case "queryEmbeddings": {
         let { results } = await runPythonScript("index.py query", [
           data.query,
-          3,
+          2,
+          vscode.workspace.workspaceFolders?.[0].uri.fsPath,
         ]);
         panel.webview.postMessage({
           type: "queryEmbeddings",

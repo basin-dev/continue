@@ -20,28 +20,28 @@ class SilenceStdoutContextManager:
 silence = SilenceStdoutContextManager()
 
 @app.command("exists")
-def exists():
+def exists(cwd: str):
     with silence:
-        exists = collection_exists()
+        exists = collection_exists(cwd)
     print({"exists": exists})
 
 @app.command("create")
-def create():
+def create(cwd: str):
     with silence:
-        branch = get_current_branch()
-        create_collection(branch)
+        branch = get_current_branch(cwd)
+        create_collection(branch, cwd)
     print({"success": True})
 
 @app.command("update")
-def update():
+def update(cwd: str):
     with silence:
-        update_collection()
+        update_collection(cwd)
     print({"success": True})
 
 @app.command("query")
-def query(query: str, n_results: int):
+def query(query: str, n_results: int, cwd: str):
     with silence:
-        resp = query_collection(query, n_results)
+        resp = query_collection(query, n_results, cwd)
     results = [{
         "id": resp["ids"][0][i],
         "document": resp["documents"][0][i]

@@ -8,7 +8,7 @@ import { AnyAction, Dispatch } from "@reduxjs/toolkit";
 import { closeStream, streamUpdate } from "../../redux/slices/chatSlice";
 import { ChatMessage, RootStore } from "../../redux/store";
 import { postVscMessage, vscRequest } from "../../vscode";
-import { defaultBorderRadius } from "../../components";
+import { defaultBorderRadius, Loader } from "../../components";
 import { selectHighlightedCode } from "../../redux/selectors/miscSelectors";
 import { readRangeInVirtualFileSystem } from "../../util";
 import { selectDebugContext } from "../../redux/selectors/debugContextSelectors";
@@ -59,6 +59,7 @@ function ChatTab() {
 
   const [includeHighlightedCode, setIncludeHighlightedCode] = useState(true);
   const [writeToEditor, setWriteToEditor] = useState(false);
+  const [waitingForResponse, setWaitingForResponse] = useState(false);
 
   const highlightedCode = useSelector(selectHighlightedCode);
 
@@ -66,6 +67,7 @@ function ChatTab() {
     (dispatch: Dispatch<AnyAction>, getResponse: () => Promise<Response>) => {
       let streamToCursor = writeToEditor;
       getResponse().then((resp) => {
+        setWaitingForResponse(false);
         if (resp.body) {
           resp.body.pipeTo(
             new WritableStream({
@@ -178,7 +180,12 @@ function ChatTab() {
     // Scroll to bottom
     let interval = setInterval(() => {
       if (chatMessagesDiv.current) {
-        chatMessagesDiv.current.scrollTop += 4;
+        chatMessagesDiv.current.scrollTop += Math.max(
+          4,
+          0.05 * chatMessagesDiv.current.scrollHeight -
+            chatMessagesDiv.current.clientHeight -
+            chatMessagesDiv.current.scrollTop
+        );
         if (
           chatMessagesDiv.current.scrollTop >=
           chatMessagesDiv.current.scrollHeight -
@@ -196,9 +203,17 @@ function ChatTab() {
         <h1>Chat</h1>
         <hr></hr>
         <div>
-          {chatMessages.map((message, idx) => {
-            return <MessageDiv key={idx} {...message}></MessageDiv>;
-          })}
+          {chatMessages.length > 0 ? (
+            chatMessages.map((message, idx) => {
+              return <MessageDiv key={idx} {...message}></MessageDiv>;
+            })
+          ) : (
+            <p className="text-gray-400 m-auto text-center">
+              You can ask questions about your codebase or ask for code written
+              directly in the editor.
+            </p>
+          )}
+          {(waitingForResponse || true) && <Loader></Loader>}
         </div>
       </div>
 
@@ -240,6 +255,7 @@ function ChatTab() {
                 addMessage({ content: e.currentTarget.value, role: "user" })
               );
               (e.target as any).value = "";
+              setWaitingForResponse(true);
             }
           }}
         ></TextEntryBar>
