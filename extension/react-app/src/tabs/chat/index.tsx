@@ -58,14 +58,13 @@ function ChatTab() {
   const debugContext = useSelector(selectDebugContext);
 
   const [includeHighlightedCode, setIncludeHighlightedCode] = useState(true);
-  const [writeCodeAtCursor, setWriteCodeAtCursor] = useState(false);
-  const [replaceHighlightedCode, setReplaceHighlightedCode] = useState(false);
+  const [writeToEditor, setWriteToEditor] = useState(false);
 
   const highlightedCode = useSelector(selectHighlightedCode);
 
   const streamToStateThunk = useCallback(
     (dispatch: Dispatch<AnyAction>, getResponse: () => Promise<Response>) => {
-      let streamToCursor = writeCodeAtCursor;
+      let streamToCursor = writeToEditor;
       getResponse().then((resp) => {
         if (resp.body) {
           resp.body.pipeTo(
@@ -88,7 +87,7 @@ function ChatTab() {
         }
       });
     },
-    [writeCodeAtCursor]
+    [writeToEditor]
   );
 
   const compileHiddenChatMessages = useCallback(async () => {
@@ -110,42 +109,37 @@ function ChatTab() {
         });
       }
     } else {
-      // let data = await vscRequest("queryEmbeddings", {
-      //   query: chatMessages[chatMessages.length - 1].content,
-      // });
-      // let codeContextMessages = data.results.map(
-      //   (result: { id: string; document: string }) => {
-      //     let msg: ChatMessage = {
-      //       role: "user",
-      //       content: `File: ${result.id} \n ${result.document}`,
-      //     };
-      //     return msg;
-      //   }
-      // );
-      // codeContextMessages.push({
-      //   role: "user",
-      //   content:
-      //     "Use the above code to help you answer the question below. Answer in asterisk bullet points, and give the full path whenever you reference files.",
-      // });
-      // messages.push(...codeContextMessages);
+      // Similarity search over workspace
+      let data = await vscRequest("queryEmbeddings", {
+        query: chatMessages[chatMessages.length - 1].content,
+      });
+      let codeContextMessages = data.results.map(
+        (result: { id: string; document: string }) => {
+          let msg: ChatMessage = {
+            role: "user",
+            content: `File: ${result.id} \n ${result.document}`,
+          };
+          return msg;
+        }
+      );
+      codeContextMessages.push({
+        role: "user",
+        content:
+          "Use the above code to help you answer the question below. Answer in asterisk bullet points, and give the full path whenever you reference files.",
+      });
+      messages.push(...codeContextMessages);
     }
 
-    let systemMsgContent =
-      replaceHighlightedCode || writeCodeAtCursor
-        ? "Respond only with the exact code requested, no additional text."
-        : "Use the above code to help you answer the question below. Respond in markdown if using bullets or other special formatting, being sure to specify language for code blocks.";
+    let systemMsgContent = writeToEditor
+      ? "Respond only with the exact code requested, no additional text."
+      : "Use the above code to help you answer the question below. Respond in markdown if using bullets or other special formatting, being sure to specify language for code blocks.";
 
     messages.push({
       role: "system",
       content: systemMsgContent,
     });
     return messages;
-  }, [
-    highlightedCode,
-    chatMessages,
-    includeHighlightedCode,
-    writeCodeAtCursor,
-  ]);
+  }, [highlightedCode, chatMessages, includeHighlightedCode, writeToEditor]);
 
   useEffect(() => {
     if (
@@ -211,26 +205,17 @@ function ChatTab() {
       <BottomDiv>
         <div className="h-12 bg-secondary-">
           <div className="flex items-center p-2">
+            {/* <p className="mr-auto text-xs">
+              Highlighted code is automatically included in your chat message.
+            </p> */}
             <BottomButton
-              active={writeCodeAtCursor}
               className="ml-auto"
+              active={writeToEditor}
               onClick={() => {
-                setWriteCodeAtCursor(!writeCodeAtCursor);
-                setReplaceHighlightedCode(false);
+                setWriteToEditor(!writeToEditor);
               }}
             >
-              {writeCodeAtCursor ? "Writing at cursor" : "Write at cursor"}
-            </BottomButton>
-            <BottomButton
-              active={replaceHighlightedCode}
-              onClick={() => {
-                setReplaceHighlightedCode(!replaceHighlightedCode);
-                setWriteCodeAtCursor(false);
-              }}
-            >
-              {replaceHighlightedCode
-                ? "Replacing highlighted code"
-                : "Replace highlighted code"}
+              {writeToEditor ? "Writing to editor" : "Write to editor"}
             </BottomButton>
 
             <BottomButton
@@ -241,7 +226,7 @@ function ChatTab() {
             >
               {includeHighlightedCode
                 ? "Including highlighted code"
-                : "Click to include highlighted code"}
+                : "Automatically finding relevant code"}
             </BottomButton>
           </div>
         </div>

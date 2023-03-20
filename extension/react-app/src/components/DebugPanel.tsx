@@ -84,7 +84,9 @@ function DebugPanel(props: DebugPanelProps) {
               <div
                 key={index}
                 hidden={index !== currentTab}
-                className="overflow-hidden"
+                className={
+                  tab.title === "Chat" ? "overflow-hidden" : "overflow-scroll"
+                }
               >
                 {tab.element}
               </div>

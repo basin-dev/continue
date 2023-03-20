@@ -22,7 +22,11 @@ class StreamManager {
       vscode.window.activeTextEditor || vscode.window.visibleTextEditors[0];
 
     if (typeof this._insertionPoint === "undefined") {
-      this._insertionPoint = editor?.selection.active;
+      if (editor?.selection.isEmpty) {
+        this._insertionPoint = editor?.selection.active;
+      } else {
+        this._insertionPoint = editor?.selection.end;
+      }
     }
     editor?.edit((editBuilder) => {
       if (this._insertionPoint) {
