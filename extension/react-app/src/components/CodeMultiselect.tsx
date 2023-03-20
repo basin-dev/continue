@@ -142,7 +142,7 @@ function formatFileRange(
 
 function CodeMultiselect(props: {}) {
   // State
-  const [highlightLocked, setHighlightLocked] = useState(false);
+  const [highlightLocked, setHighlightLocked] = useState(true);
 
   // Redux
   const dispatch = useDispatch();

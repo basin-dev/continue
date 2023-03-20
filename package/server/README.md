@@ -2,13 +2,14 @@
 
 Run the server:
 
-1. `cd continue/package`
-2. `poetry shell`
+1. Run `cd continue/package`
+2. Run `poetry shell`
 3. Install everything else: `poetry install`
 4. Make sure there is a `.env` file with the following:
    - OPENAI_API_KEY
 5. Go back to `continue` directory by running the `cd ..` command
-6. Run `uvicorn package.server.main:app` (with the `--reload` tag if you are developing and want automatic updates upon file saves)
+6. Run `python3 -m package.server.openapi_gen`
+7. Run `uvicorn package.server.main:app` (with the `--reload` tag if you are developing and want automatic updates upon file saves)
 
 Setup NGINX:
 

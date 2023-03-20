@@ -21,12 +21,13 @@ export function useApi() {
     if (apiUrl && vscMachineId) {
       let config = new Configuration({
         basePath: apiUrl,
+        fetchApi: fetch,
         middleware: [
           {
             pre: async (context) => {
               context.init.headers = {
                 ...context.init.headers,
-                "x-vsc-machine-code": vscMachineId,
+                "x-vsc-machine-id": vscMachineId,
               };
             },
           },

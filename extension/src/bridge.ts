@@ -1,15 +1,22 @@
-import * as vscode from "vscode";
+import fetch from "node-fetch";
 import * as path from "path";
-const axios = require("axios").default;
-import { getExtensionUri } from "./util/vscode";
+import * as vscode from "vscode";
+import {
+  Configuration,
+  DebugApi,
+  RangeInFile,
+  SerializedDebugContext,
+  UnittestApi,
+} from "./client";
 import { convertSingleToDoubleQuoteJSON } from "./util/util";
+import { getExtensionUri } from "./util/vscode";
+const axios = require("axios").default;
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
-import { RangeInFile, SerializedDebugContext } from "./client";
-import { Configuration, DebugApi, UnittestApi } from "./client";
 
 const configuration = new Configuration({
   basePath: get_api_url(),
+  fetchApi: fetch as any,
   middleware: [
     {
       pre: async (context) => {
@@ -19,7 +26,7 @@ const configuration = new Configuration({
         // Add the VS Code Machine Code Header
         context.init.headers = {
           ...context.init.headers,
-          "x-vsc-machine-code": vscode.env.machineId,
+          "x-vsc-machine-id": vscode.env.machineId,
         };
       },
     },

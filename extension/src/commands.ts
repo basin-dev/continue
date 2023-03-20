@@ -13,7 +13,7 @@ import {
 } from "./suggestions";
 import * as bridge from "./bridge";
 import { debugPanelWebview, setupDebugPanel } from "./debugPanel";
-import { openCapturedTerminal } from "./terminalEmulator";
+import { openCapturedTerminal } from "./terminal/terminalEmulator";
 import { getRightViewColumn } from "./util/vscode";
 import {
   findSuspiciousCode,
