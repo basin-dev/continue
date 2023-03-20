@@ -382,6 +382,48 @@
         }
       }
     },
+    "/debug/find_docs": {
+      "get": {
+        "tags": [
+          "debug"
+        ],
+        "summary": "Find Docs Endpoint",
+        "operationId": "find_docs_endpoint_debug_find_docs_get",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "title": "Traceback",
+              "type": "string"
+            },
+            "name": "traceback",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptionalCompletionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/docstring/forline": {
       "get": {
         "tags": [
@@ -548,6 +590,85 @@
         }
       }
     },
+    "/chat/test": {
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Test",
+        "operationId": "test_chat_test_get",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "title": "Prompt",
+              "type": "string"
+            },
+            "name": "prompt",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/complete": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Complete",
+        "operationId": "complete_chat_complete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatHistory"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/test": {
       "get": {
         "summary": "Test",
@@ -567,6 +688,40 @@
   },
   "components": {
     "schemas": {
+      "ChatHistory": {
+        "title": "ChatHistory",
+        "required": [
+          "messages"
+        ],
+        "type": "object",
+        "properties": {
+          "messages": {
+            "title": "Messages",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            }
+          }
+        }
+      },
+      "ChatMessage": {
+        "title": "ChatMessage",
+        "required": [
+          "role",
+          "content"
+        ],
+        "type": "object",
+        "properties": {
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          }
+        }
+      },
       "CompletionResponse": {
         "title": "CompletionResponse",
         "required": [
@@ -748,6 +903,16 @@
             "title": "Traceback",
             "type": "string",
             "default": ""
+          }
+        }
+      },
+      "OptionalCompletionResponse": {
+        "title": "OptionalCompletionResponse",
+        "type": "object",
+        "properties": {
+          "completion": {
+            "title": "Completion",
+            "type": "string"
           }
         }
       },

@@ -84,12 +84,12 @@ const spin = keyframes`
 `;
 
 export const Loader = styled.div`
-  border: 8px solid #f3f3f3;
+  border: 4px solid ${secondaryDark};
   border-radius: 50%;
-  border-top: 8px solid #3498db;
-  width: 60px;
-  height: 60px;
-  -webkit-animation: ${spin} 2s linear infinite;
-  animation: ${spin} 2s linear infinite;
+  border-top: 4px solid ${buttonColor};
+  width: 36px;
+  height: 36px;
+  -webkit-animation: ${spin} 1s ease-in-out infinite;
+  animation: ${spin} 1s ease-in-out infinite;
   margin: auto;
 `;

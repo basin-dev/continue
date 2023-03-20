@@ -1,5 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './ChatHistory';
+export * from './ChatMessage';
 export * from './CompletionResponse';
 export * from './EditResp';
 export * from './ExplainResponse';
@@ -11,6 +13,7 @@ export * from './FindResp';
 export * from './HTTPValidationError';
 export * from './InlineBody';
 export * from './LocationInner';
+export * from './OptionalCompletionResponse';
 export * from './Position';
 export * from './ProgrammingLangauge';
 export * from './Range';

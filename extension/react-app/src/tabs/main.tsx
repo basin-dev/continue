@@ -11,6 +11,7 @@ import { updateValue } from "../redux/slices/debugContexSlice";
 import { setWorkspacePath } from "../redux/slices/configSlice";
 import { SerializedDebugContext } from "../../../src/client";
 import { useEditCache } from "../util/editCache";
+import { useApi } from "../util/api";
 
 const ButtonDiv = styled.div`
   display: flex;
@@ -36,6 +37,7 @@ function MainTab(props: any) {
   );
 
   const editCache = useEditCache();
+  const { debugApi } = useApi();
 
   const [responseLoading, setResponseLoading] = useState(false);
 
@@ -88,7 +90,7 @@ function MainTab(props: any) {
   }, [debugContext, selectedRanges]);
 
   return (
-    <>
+    <div className="mx-5">
       <h1>Debug Panel</h1>
 
       <H3>Code Sections</H3>
@@ -180,7 +182,7 @@ function MainTab(props: any) {
       </Pre>
 
       <br></br>
-    </>
+    </div>
   );
 }
 

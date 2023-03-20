@@ -10,6 +10,12 @@
   --def-border-radius: 5px;
 }
 
+html,
+body,
+#root {
+  height: calc(100% - 7px);
+}
+
 body {
   background-color: var(--vsc-background);
   padding: 0;

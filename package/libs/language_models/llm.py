@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Tuple
+from typing import Any, Generator, List, Tuple
 import openai
 import os
 from dotenv import load_dotenv
@@ -72,9 +72,47 @@ class OpenAI(LLM):
     def __init__(self, model: str="text-davinci-003"):
         self.default_model = model
 
-    def complete(self, prompt: str, **kwargs) -> str:
+    def stream_chat(self, messages, **kwargs) -> Generator[Any | list | dict, None, None] | Any | list | dict:
+        self.completion_count += 1
+        args = { "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 } | kwargs
+        args["stream"] = True
+        args["model"] = "gpt-3.5-turbo"
+
+        for chunk in openai.ChatCompletion.create(
+            messages=messages,
+            **args,
+        ):  
+            if "content" in chunk.choices[0].delta:
+                yield chunk.choices[0].delta.content
+            else:
+                continue
+
+    def stream_complete(self, prompt: str, **kwargs) -> Generator[Any | list | dict, None, None] | Any | list | dict:
         self.completion_count += 1
         args = { "model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
+        args["stream"] = True
+
+        if args["model"] == "gpt-3.5-turbo":
+            generator = openai.ChatCompletion.create(
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }],
+                **args,
+            )
+            for chunk in generator:
+                yield chunk.choices[0].message.content
+        else:
+            generator = openai.Completion.create(
+                prompt=prompt,
+                **args,
+            )
+            for chunk in generator:
+                yield chunk.choices[0].text
+
+    def complete(self, prompt: str, **kwargs) -> str:
+        self.completion_count += 1
+        args = { "model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None, "stream": False } | kwargs
         
         if args["model"] == "gpt-3.5-turbo":
             return openai.ChatCompletion.create(
@@ -82,7 +120,8 @@ class OpenAI(LLM):
                 messages=[{
                     "role": "user",
                     "content": prompt
-                }]
+                }],
+                **args,
             ).choices[0].message.content
         else:
             return openai.Completion.create(

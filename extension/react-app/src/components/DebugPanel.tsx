@@ -3,6 +3,8 @@ import styled from "styled-components";
 import { postVscMessage } from "../vscode";
 import { useDispatch } from "react-redux";
 import { setApiUrl, setVscMachineId } from "../redux/slices/configSlice";
+import { setHighlightedCode } from "../redux/slices/miscSlice";
+import { updateFileSystem } from "../redux/slices/debugContexSlice";
 interface DebugPanelProps {
   tabs: {
     element: React.ReactElement;
@@ -28,13 +30,25 @@ const TabBar = styled.div<{ numTabs: number }>`
   grid-template-columns: repeat(${(props) => props.numTabs}, 1fr);
 `;
 
+const TabsAndBodyDiv = styled.div`
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+`;
+
 function DebugPanel(props: DebugPanelProps) {
   const dispatch = useDispatch();
   useEffect(() => {
     const eventListener = (event: any) => {
-      if (event.data.type === "onLoad") {
-        dispatch(setApiUrl(event.data.apiUrl));
-        dispatch(setVscMachineId(event.data.vscMachineId));
+      switch (event.data.type) {
+        case "onLoad":
+          dispatch(setApiUrl(event.data.apiUrl));
+          dispatch(setVscMachineId(event.data.vscMachineId));
+          break;
+        case "highlightedCode":
+          dispatch(setHighlightedCode(event.data.rangeInFile));
+          dispatch(updateFileSystem(event.data.filesystem));
+          break;
       }
     };
     window.addEventListener("message", eventListener);
@@ -47,7 +61,7 @@ function DebugPanel(props: DebugPanelProps) {
   return (
     <GradientContainer>
       <div className="h-full rounded-md overflow-scroll bg-vsc-background">
-        <div>
+        <TabsAndBodyDiv>
           <TabBar numTabs={props.tabs.length}>
             {props.tabs.map((tab, index) => {
               return (
@@ -69,14 +83,16 @@ function DebugPanel(props: DebugPanelProps) {
             return (
               <div
                 key={index}
-                className="pl-5 pr-5 pb-5"
                 hidden={index !== currentTab}
+                className={
+                  tab.title === "Chat" ? "overflow-hidden" : "overflow-scroll"
+                }
               >
                 {tab.element}
               </div>
             );
           })}
-        </div>
+        </TabsAndBodyDiv>
       </div>
     </GradientContainer>
   );

@@ -1,36 +1,72 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { ChatMessage } from "../../redux/store";
 import styled from "styled-components";
+import {
+  buttonColor,
+  defaultBorderRadius,
+  secondaryDark,
+} from "../../components";
+import VSCodeFileLink from "../../components/VSCodeFileLink";
+import ReactMarkdown from "react-markdown";
+import "../../highlight/dark.min.css";
+import hljs from "highlight.js";
+import { useSelector } from "react-redux";
+import { selectIsStreaming } from "../../redux/selectors/chatSelectors";
 
-const Container = styled.div<{ role: ChatMessage["role"] }>`
+const Container = styled.div`
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 8px;
+  margin: 3px;
+  width: fit-content;
+  max-width: 75%;
+  overflow: scroll;
+  word-wrap: break-word;
+  -ms-word-wrap: break-word;
+  height: fit-content;
+  overflow: hidden;
   background-color: ${(props) => {
     if (props.role === "user") {
-      return "#455588";
+      return buttonColor;
     } else {
-      return "lightgreen";
+      return secondaryDark;
     }
   }};
-  text-align: ${(props) => {
+  float: ${(props) => {
     if (props.role === "user") {
       return "right";
     } else {
       return "left";
     }
   }};
-  border-radius: 8px;
-  padding-top: 1px;
-  padding-bottom: 1px;
-  padding-left: 8px;
-  padding-right: 8px;
+  display: block;
 
-  margin: 8px;
+  & pre {
+    border: 1px solid gray;
+    border-radius: ${defaultBorderRadius};
+  }
 `;
 
 function MessageDiv(props: ChatMessage) {
+  const [richContent, setRichContent] = React.useState<JSX.Element[]>([]);
+  const isStreaming = useSelector(selectIsStreaming);
+
+  useEffect(() => {
+    if (!isStreaming) {
+      hljs.highlightAll();
+    }
+  }, [richContent, isStreaming]);
+
+  useEffect(() => {
+    setRichContent([<ReactMarkdown key={1}>{props.content}</ReactMarkdown>]);
+  }, [props.content]);
+
   return (
-    <Container role={props.role}>
-      <p>{props.content}</p>
-    </Container>
+    <>
+      <div className="overflow-auto">
+        <Container role={props.role}>{richContent}</Container>
+      </div>
+    </>
   );
 }
 

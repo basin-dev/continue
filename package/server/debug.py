@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from package.server.dependencies import userid
-from ..fault_loc.main import fl1, filter_ignored_traceback_frames, edit_context_ast, find_code_in_range, fl2, frame_to_code_range
+from ..fault_loc.main import fl1, filter_ignored_traceback_frames, edit_context_ast, find_code_in_range, fl2, to_be_ignored_spec
 from boltons import tbutils
 from ..libs.language_models.llm import OpenAI
-from ..libs.language_models.prompts import SimplePrompter
+from ..libs.language_models.prompts import SimplePrompter, FormatStringPrompter
 import ast
 import os
 from ..libs.models.main import RangeInFile, SerializedVirtualFileSystem, Traceback, FileEdit
@@ -16,7 +16,8 @@ from ..libs.virtual_filesystem import VirtualFileSystem, FileSystem
 from ..libs.util import merge_ranges_in_files, parse_traceback
 from ..fault_loc.utils import is_test_file
 from package.server.telemetry import send_telemetry_event, TelemetryEvent
-from .utils import CompletionResponse
+from .utils import CompletionResponse, OptionalCompletionResponse
+from .docs import find_docs
 
 llm = OpenAI()
 router = APIRouter(prefix="/debug", tags=["debug"])
@@ -292,3 +293,8 @@ def find_sus_code_endpoint(body: FindBody) -> FindResp:
 @router.get("/parse_traceback")
 def parse_traceback_endpoint(traceback: str) -> Traceback:
     return parse_traceback(traceback)
+
+documentation_prompter = FormatStringPrompter("Show me the documentation for the {function} function in the package at the path {path}.")
+@router.get("/find_docs")
+def find_docs_endpoint(traceback: str) -> OptionalCompletionResponse:
+    return find_docs(traceback)

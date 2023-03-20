@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import {
+  Configuration,
+  DebugApi,
+  UnittestApi,
+  ChatApi,
+} from "../../../src/client";
 import { useSelector } from "react-redux";
-import { Configuration, DebugApi, UnittestApi } from "../../../src/client";
+import { useEffect, useState } from "react";
 import { RootStore } from "../redux/store";
 
 export function useApi() {
@@ -10,6 +15,7 @@ export function useApi() {
   );
   const [debugApi, setDebugApi] = useState<DebugApi>();
   const [unittestApi, setUnittestApi] = useState<UnittestApi>();
+  const [chatApi, setChatApi] = useState<ChatApi>();
 
   useEffect(() => {
     if (apiUrl && vscMachineId) {
@@ -29,8 +35,9 @@ export function useApi() {
       });
       setDebugApi(new DebugApi(config));
       setUnittestApi(new UnittestApi(config));
+      setChatApi(new ChatApi(config));
     }
   }, [apiUrl, vscMachineId]);
 
-  return { debugApi, unittestApi };
+  return { debugApi, unittestApi, chatApi };
 }

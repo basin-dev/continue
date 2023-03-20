@@ -1,10 +1,13 @@
 .openapi-generator-ignore
+apis/ChatApi.ts
 apis/DebugApi.ts
 apis/DefaultApi.ts
 apis/DocstringApi.ts
 apis/UnittestApi.ts
 apis/index.ts
 index.ts
+models/ChatHistory.ts
+models/ChatMessage.ts
 models/CompletionResponse.ts
 models/EditResp.ts
 models/ExplainResponse.ts
@@ -16,6 +19,7 @@ models/FindResp.ts
 models/HTTPValidationError.ts
 models/InlineBody.ts
 models/LocationInner.ts
+models/OptionalCompletionResponse.ts
 models/Position.ts
 models/ProgrammingLangauge.ts
 models/Range.ts

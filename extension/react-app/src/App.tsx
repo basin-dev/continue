@@ -12,8 +12,8 @@ function App() {
         <DebugPanel
           tabs={[
             { element: <MainTab />, title: "Debug Panel" },
-            { element: <WelcomeTab />, title: "Welcome to Continue" },
-            // { element: <ChatTab />, title: "Chat" },
+            { element: <WelcomeTab />, title: "Welcome" },
+            { element: <ChatTab />, title: "Chat" },
           ]}
         ></DebugPanel>
       </Provider>

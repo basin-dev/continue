@@ -130,19 +130,23 @@ export async function readFileAtRange(
 
 export function openEditorAndRevealRange(
   editorFilename: string,
-  range?: vscode.Range
+  range?: vscode.Range,
+  viewColumn?: vscode.ViewColumn
 ): Promise<vscode.TextEditor> {
   return new Promise((resolve, _) => {
     // Check if the editor is already open
-    let viewColumn = getViewColumnOfFile(editorFilename);
-
     vscode.workspace.openTextDocument(editorFilename).then((doc) => {
-      vscode.window.showTextDocument(doc, viewColumn).then((editor) => {
-        if (range) {
-          editor.revealRange(range);
-        }
-        resolve(editor);
-      });
+      vscode.window
+        .showTextDocument(
+          doc,
+          getViewColumnOfFile(editorFilename) || viewColumn
+        )
+        .then((editor) => {
+          if (range) {
+            editor.revealRange(range);
+          }
+          resolve(editor);
+        });
     });
   });
 }

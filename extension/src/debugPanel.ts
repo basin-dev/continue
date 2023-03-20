@@ -1,12 +1,74 @@
 import * as vscode from "vscode";
-import { debugApi, get_api_url, unittestApi } from "./bridge";
+import { debugApi, get_api_url, runPythonScript, unittestApi } from "./bridge";
 import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
-import { getExtensionUri, getNonce } from "./util/vscode";
+import {
+  getExtensionUri,
+  getNonce,
+  openEditorAndRevealRange,
+} from "./util/vscode";
 import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { RangeInFile, SerializedDebugContext } from "./client";
 import { addFileSystemToDebugContext } from "./util/util";
+
+class StreamManager {
+  private _fullText: string = "";
+  private _updateBuffer: string = "";
+  private _insertionPoint: vscode.Position | undefined;
+
+  private _addToEditor(update: string) {
+    let editor =
+      vscode.window.activeTextEditor || vscode.window.visibleTextEditors[0];
+
+    if (typeof this._insertionPoint === "undefined") {
+      if (editor?.selection.isEmpty) {
+        this._insertionPoint = editor?.selection.active;
+      } else {
+        this._insertionPoint = editor?.selection.end;
+      }
+    }
+    editor?.edit((editBuilder) => {
+      if (this._insertionPoint) {
+        editBuilder.insert(this._insertionPoint, update);
+        this._insertionPoint = this._insertionPoint.translate(
+          Array.from(update.matchAll(/\n/g)).length,
+          update.length
+        );
+      }
+    });
+  }
+
+  public closeStream() {
+    this._fullText = "";
+    this._updateBuffer = "";
+    this._insertionPoint = undefined;
+  }
+
+  public onStreamUpdate(update: string) {
+    this._fullText += update;
+
+    let backticks = Array.from(this._fullText.matchAll(/```/g));
+    if (backticks.length % 2 === 0) {
+      return;
+    }
+
+    if (
+      update[update.length - 1] === "`" ||
+      update.substring(update.lastIndexOf("`")).match(/[\s\n]/g) === null
+    ) {
+      this._updateBuffer += update;
+    } else {
+      update = (this._updateBuffer + update)
+        .replace(/[```[a-z]\n]/g, "")
+        .replace("`", "");
+      this._updateBuffer = "";
+      this._addToEditor(update);
+    }
+  }
+}
+
+let streamManager = new StreamManager();
 
 export let debugPanelWebview: vscode.Webview | undefined;
 export function setupDebugPanel(
@@ -126,6 +188,31 @@ export function setupDebugPanel(
           "continue.findSuspiciousCode",
           data.debugContext
         );
+        break;
+      }
+      case "queryEmbeddings": {
+        let { results } = await runPythonScript("index.py query", [
+          data.query,
+          2,
+          vscode.workspace.workspaceFolders?.[0].uri.fsPath,
+        ]);
+        panel.webview.postMessage({
+          type: "queryEmbeddings",
+          results,
+        });
+        break;
+      }
+      case "openFile": {
+        openEditorAndRevealRange(data.path, undefined, vscode.ViewColumn.One);
+        break;
+      }
+      case "streamUpdate": {
+        // Write code at the position of the cursor
+        streamManager.onStreamUpdate(data.update);
+        break;
+      }
+      case "closeStream": {
+        streamManager.closeStream();
         break;
       }
       case "explainCode": {
@@ -259,12 +346,6 @@ export function setupDebugPanel(
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script>const vscode = acquireVsCodeApi();</script>
         <link href="${styleMainUri}" rel="stylesheet">
-
-        <style>
-          html, body, #root {
-            height: calc(100% - 7px);
-          }
-        </style>
         
         <title>Continue</title>
       </head>
