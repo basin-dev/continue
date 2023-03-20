@@ -32,7 +32,7 @@ const TabBar = styled.div<{ numTabs: number }>`
 
 const TabsAndBodyDiv = styled.div`
   display: grid;
-  grid-template-rows: 50px 1fr;
+  grid-template-rows: auto 1fr;
   height: 100%;
 `;
 
@@ -81,7 +81,11 @@ function DebugPanel(props: DebugPanelProps) {
           </TabBar>
           {props.tabs.map((tab, index) => {
             return (
-              <div key={index} hidden={index !== currentTab}>
+              <div
+                key={index}
+                hidden={index !== currentTab}
+                className="overflow-hidden"
+              >
                 {tab.element}
               </div>
             );

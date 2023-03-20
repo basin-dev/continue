@@ -21,6 +21,8 @@ const Container = styled.div`
   width: fit-content;
   max-width: 75%;
   overflow: scroll;
+  word-wrap: break-word;
+  -ms-word-wrap: break-word;
   height: fit-content;
   overflow: hidden;
   background-color: ${(props) => {
@@ -56,15 +58,13 @@ function MessageDiv(props: ChatMessage) {
   }, [richContent, isStreaming]);
 
   useEffect(() => {
-    setRichContent([<ReactMarkdown>{props.content}</ReactMarkdown>]);
+    setRichContent([<ReactMarkdown key={1}>{props.content}</ReactMarkdown>]);
   }, [props.content]);
 
   return (
     <>
       <div className="overflow-auto">
-        <Container role={props.role}>
-          <p>{richContent}</p>
-        </Container>
+        <Container role={props.role}>{richContent}</Container>
       </div>
     </>
   );

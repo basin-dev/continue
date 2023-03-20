@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { selectChatMessages } from "../../redux/selectors/chatSelectors";
 import MessageDiv from "./MessageDiv";
@@ -21,13 +21,9 @@ const ChatContainer = styled.div`
   height: 100%;
 `;
 
-const MessagesContainer = styled.div`
-  overflow-y: scroll;
-`;
-
 const BottomDiv = styled.div`
   display: grid;
-  grid-template-rows: auto ${textEntryBarHeight};
+  grid-template-rows: auto auto;
 `;
 
 const BottomButton = styled.button(
@@ -183,16 +179,33 @@ function ChatTab() {
     }
   }, [chatMessages, dispatch, isStreaming, highlightedCode]);
 
+  const chatMessagesDiv = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // Scroll to bottom
+    let interval = setInterval(() => {
+      if (chatMessagesDiv.current) {
+        chatMessagesDiv.current.scrollTop += 4;
+        if (
+          chatMessagesDiv.current.scrollTop >=
+          chatMessagesDiv.current.scrollHeight -
+            chatMessagesDiv.current.clientHeight
+        ) {
+          clearInterval(interval);
+        }
+      }
+    }, 10);
+  }, [chatMessages, chatMessagesDiv]);
+
   return (
     <ChatContainer>
-      <div className="mx-5">
+      <div className="mx-5 overflow-y-scroll" ref={chatMessagesDiv}>
         <h1>Chat</h1>
         <hr></hr>
-        <MessagesContainer>
+        <div>
           {chatMessages.map((message, idx) => {
             return <MessageDiv key={idx} {...message}></MessageDiv>;
           })}
-        </MessagesContainer>
+        </div>
       </div>
 
       <BottomDiv>
@@ -236,7 +249,7 @@ function ChatTab() {
           type="text"
           placeholder="Enter your message here"
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && e.currentTarget.value !== "") {
               console.log("Sending message", e.currentTarget.value);
               dispatch(
                 addMessage({ content: e.currentTarget.value, role: "user" })
