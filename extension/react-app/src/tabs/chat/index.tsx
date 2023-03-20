@@ -179,7 +179,7 @@ function ChatTab() {
   useEffect(() => {
     // Scroll to bottom
     let interval = setInterval(() => {
-      if (chatMessagesDiv.current) {
+      if (chatMessagesDiv.current && !waitingForResponse) {
         chatMessagesDiv.current.scrollTop += Math.max(
           4,
           0.05 * chatMessagesDiv.current.scrollHeight -
@@ -195,7 +195,7 @@ function ChatTab() {
         }
       }
     }, 10);
-  }, [chatMessages, chatMessagesDiv]);
+  }, [chatMessages, chatMessagesDiv, waitingForResponse]);
 
   return (
     <ChatContainer>
@@ -213,7 +213,7 @@ function ChatTab() {
               directly in the editor.
             </p>
           )}
-          {(waitingForResponse || true) && <Loader></Loader>}
+          {waitingForResponse && <Loader></Loader>}
         </div>
       </div>
 

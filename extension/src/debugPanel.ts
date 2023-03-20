@@ -14,7 +14,6 @@ import { addFileSystemToDebugContext } from "./util/util";
 
 class StreamManager {
   private _fullText: string = "";
-  private _updateBuffer: string = "";
   private _insertionPoint: vscode.Position | undefined;
 
   private _addToEditor(update: string) {
@@ -41,30 +40,45 @@ class StreamManager {
 
   public closeStream() {
     this._fullText = "";
-    this._updateBuffer = "";
     this._insertionPoint = undefined;
+    this._codeBlockStatus = "closed";
+    this._pendingBackticks = 0;
   }
 
+  private _codeBlockStatus: "open" | "closed" | "language-descriptor" =
+    "closed";
+  private _pendingBackticks: number = 0;
   public onStreamUpdate(update: string) {
-    this._fullText += update;
-
-    let backticks = Array.from(this._fullText.matchAll(/```/g));
-    if (backticks.length % 2 === 0) {
-      return;
+    let textToInsert = "";
+    for (let i = 0; i < update.length; i++) {
+      switch (this._codeBlockStatus) {
+        case "closed":
+          if (update[i] === "`" && this._fullText.endsWith("``")) {
+            this._codeBlockStatus = "language-descriptor";
+          }
+          break;
+        case "language-descriptor":
+          if (update[i] === " " || update[i] === "\n") {
+            this._codeBlockStatus = "open";
+          }
+          break;
+        case "open":
+          if (update[i] === "`") {
+            if (this._fullText.endsWith("``")) {
+              this._codeBlockStatus = "closed";
+              this._pendingBackticks = 0;
+            } else {
+              this._pendingBackticks += 1;
+            }
+          } else {
+            textToInsert += "`".repeat(this._pendingBackticks) + update[i];
+            this._pendingBackticks = 0;
+          }
+          break;
+      }
+      this._fullText += update[i];
     }
-
-    if (
-      update[update.length - 1] === "`" ||
-      update.substring(update.lastIndexOf("`")).match(/[\s\n]/g) === null
-    ) {
-      this._updateBuffer += update;
-    } else {
-      update = (this._updateBuffer + update)
-        .replace(/[```[a-z]\n]/g, "")
-        .replace("`", "");
-      this._updateBuffer = "";
-      this._addToEditor(update);
-    }
+    this._addToEditor(textToInsert);
   }
 }
 

@@ -3,8 +3,10 @@ const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 import * as path from "path";
 import * as fs from "fs";
+import rebuild from "@electron/rebuild";
 
 async function setupPythonEnv() {
+  console.log("Setting up python env for Continue extension...");
   let command = `cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
@@ -20,14 +22,13 @@ async function setupPythonEnv() {
 }
 
 async function installNodeModules() {
-  console.log("Installing node modules for Continue extension...");
-  const { stdout, stderr } = await exec(
-    `cd ${
-      getExtensionUri().fsPath
-    } && node node_modules/@electron/rebuild/lib/src/cli.js -v 19.1.8 node-pty`
-  );
-  console.log("Standard out from rebuilding node-pty: ", stdout);
-  console.log("Standard error from rebuilding node-pty: ", stderr);
+  console.log("Rebuilding node-pty for Continue extension...");
+  await rebuild({
+    buildPath: getExtensionUri().fsPath, // Folder containing node_modules
+    electronVersion: "19.1.8",
+    onlyModules: ["node-pty"],
+  });
+  console.log("Successfully rebuilt node-pty");
 }
 
 export function isPythonEnvSetup(): boolean {
