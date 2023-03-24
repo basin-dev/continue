@@ -93,3 +93,15 @@ export const Loader = styled.div`
   animation: ${spin} 1s ease-in-out infinite;
   margin: auto;
 `;
+
+export const GradientBorder = styled.div<{ borderWidth?: string }>`
+  border-radius: ${defaultBorderRadius};
+  padding: ${(props) => props.borderWidth || "1px"};
+  background: linear-gradient(
+    101.79deg,
+    #12887a 0%,
+    #87245c 37.64%,
+    #e12637 65.98%,
+    #ffb215 110.45%
+  );
+`;

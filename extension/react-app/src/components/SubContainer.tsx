@@ -1,0 +1,22 @@
+import React from "react";
+import styled from "styled-components";
+import { defaultBorderRadius, secondaryDark } from ".";
+
+const SubContainerDiv = styled.div`
+  margin: 4px;
+  padding: 8px;
+  border-radius: ${defaultBorderRadius};
+  background-color: ${secondaryDark};
+`;
+
+function SubContainer(props: { children: React.ReactNode; title: string }) {
+  return (
+    <SubContainerDiv>
+      <b className="mb-12">{props.title}</b>
+      <br></br>
+      {props.children}
+    </SubContainerDiv>
+  );
+}
+
+export default SubContainer;
