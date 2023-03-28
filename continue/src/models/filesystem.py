@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import os
-from .models.main import SerializedVirtualFileSystem, RangeInFile, Range, FileEdit, EditDiff
+from ..models.main import EditDiff, Position, RangeInFile, Range, FileEdit
 
 class FileSystem(ABC):
     """An abstract filesystem that can read/write from a set of files."""
@@ -37,11 +37,38 @@ class FileSystem(ABC):
         return "\n".join(lines)
     
     @classmethod
-    def apply_edit_to_str(self, s: str, edit: FileEdit) -> str:
+    def apply_edit_to_str(self, s: str, edit: FileEdit) -> Tuple[str, EditDiff]:
+        original = self.read_range_in_str(s, edit.range)
+
         lines = s.splitlines()
         before_lines = lines[:edit.range.start.line]
         after_lines = lines[edit.range.end.line + 1:]
         between_str = lines[edit.range.start.line][:edit.range.start.character] + edit.replacement + lines[edit.range.end.line][edit.range.end.character + 1:]
+        
+        lines = before_lines + between_str.splitlines() + after_lines
+        return "\n".join(lines), EditDiff(
+            edit=edit,
+            original=original
+        )
+    
+    @classmethod
+    def reverse_edit_on_str(self, s: str, diff: EditDiff) -> str:
+        lines = s.splitlines()
+
+        replacement_lines = diff.replacement.splitlines()
+        replacement_d_lines = len(replacement_lines)
+        replacement_d_chars = len(replacement_lines[-1])
+        replacement_range = Range(
+            start=diff.edit.range.start,
+            end=Position(
+                line=diff.edit.range.start + replacement_d_lines,
+                character=diff.edit.range.start.character + replacement_d_chars
+            )
+        )
+
+        before_lines = lines[:replacement_range.start.line]
+        after_lines = lines[replacement_range.end.line + 1:]
+        between_str = lines[replacement_range.start.line][:replacement_range.start.character] + diff.original + lines[replacement_range.end.line][replacement_range.end.character + 1:]
         
         lines = before_lines + between_str.splitlines() + after_lines
         return "\n".join(lines)
@@ -66,23 +93,25 @@ class RealFileSystem(FileSystem):
     def read_range_in_file(self, r: RangeInFile) -> str:
         return FileSystem.read_range_in_str(self.read(r.filepath), r.range)
     
-    def apply_file_edit(self, edit: FileEdit):
+    def apply_file_edit(self, edit: FileEdit) -> EditDiff:
         old_content = self.read(edit.filepath)
-        new_content = FileSystem.apply_edit_to_str(old_content, edit)
+        new_content, original = FileSystem.apply_edit_to_str(old_content, edit)
         self.write(edit.filepath, new_content)
+        return EditDiff(
+            edit=edit,
+            original=original
+        )
+
+    def reverse_file_edit(self, diff: EditDiff):
+        old_content = self.read(diff.edit.filepath)
+        new_content = FileSystem.reverse_edit_on_str(old_content, diff)
+        self.write(diff.edit.filepath, new_content)
     
 class VirtualFileSystem(FileSystem):
     """A simulated filesystem from a mapping of filepath to file contents."""
-    files: SerializedVirtualFileSystem
-    def __init__(self, files: SerializedVirtualFileSystem):
+    files: Dict[str, str]
+    def __init__(self, files: Dict[str, str]):
         self.files = files
-
-    @classmethod
-    def from_serialized(cls, serialized: SerializedVirtualFileSystem):
-        return cls(serialized)
-    
-    def serialize(self) -> SerializedVirtualFileSystem:
-        return self.files.copy()
     
     def read(self, path) -> str:
         return self.files[path]
@@ -99,7 +128,16 @@ class VirtualFileSystem(FileSystem):
     def read_range_in_file(self, r: RangeInFile) -> str:
         return FileSystem.read_range_in_str(self.read(r.filepath), r.range)
     
-    def apply_file_edit(self, edit: FileEdit):
+    def apply_file_edit(self, edit: FileEdit) -> EditDiff:
         old_content = self.read(edit.filepath)
-        new_content = FileSystem.apply_edit_to_str(old_content, edit)
+        new_content, original = FileSystem.apply_edit_to_str(old_content, edit)
         self.write(edit.filepath, new_content)
+        return EditDiff(
+            edit=edit,
+            original=original
+        )
+    
+    def reverse_file_edit(self, diff: EditDiff):
+        old_content = self.read(diff.edit.filepath)
+        new_content = FileSystem.reverse_edit_on_str(old_content, diff)
+        self.write(diff.edit.filepath, new_content)
