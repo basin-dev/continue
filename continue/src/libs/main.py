@@ -142,7 +142,7 @@ class Agent:
     # Shouldn't it be able to run and check recursively? And keep track of the global number of loops?
     def run_and_check(self, action: Action) -> bool:
         """Run the agent, returning whether successful."""
-        self._run_action(action)
+        self.act(action)
         success = self.fix_validators()
         return success
     

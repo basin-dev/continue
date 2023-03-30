@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple
 import os
-from ..models.main import EditDiff, Position, Range, FileEdit
+from ..models.main import EditDiff, Position, Range, FileEdit, FileSystemEdit, AddFile, DeleteFile, RenameFile, AddDirectory, RenameDirectory, DeleteDirectory, SequentialFileSystemEdit
 from pydantic import BaseModel
 
 class RangeInFile(BaseModel):
@@ -41,12 +41,34 @@ class FileSystem(ABC):
     def read_range_in_file(self, r: RangeInFile) -> str:
         raise NotImplementedError
     
+    # Probably none of these should be exported, should all be used only through apply_edit
+    @abstractmethod
+    def rename_file(self, filepath: str, new_filepath: str):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def rename_directory(self, path: str, new_path: str):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def delete_file(self, filepath: str):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def delete_directory(self, path: str):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def add_directory(self, path: str):
+        raise NotImplementedError
+    
     @abstractmethod
     def apply_file_edit(self, edit: FileEdit):
         raise NotImplementedError
     
     @abstractmethod
-    def reverse_file_edit(self, diff: EditDiff):
+    def apply_edit(self, edit: FileSystemEdit) -> EditDiff:
+        """Apply edit to filesystem, calculate the reverse edit, and return and EditDiff"""
         raise NotImplementedError
     
     @classmethod
@@ -64,11 +86,23 @@ class FileSystem(ABC):
         before_lines = lines[:edit.range.start.line]
         after_lines = lines[edit.range.end.line + 1:]
         between_str = lines[edit.range.start.line][:edit.range.start.character] + edit.replacement + lines[edit.range.end.line][edit.range.end.character + 1:]
+
+        new_range = Range(
+            start=edit.range.start,
+            end=Position(
+                line=edit.range.start.line + len(edit.replacement.splitlines()) - 1,
+                character=edit.range.start.character + len(edit.replacement.splitlines()[-1])
+            )
+        )
         
         lines = before_lines + between_str.splitlines() + after_lines
         return "\n".join(lines), EditDiff(
-            edit=edit,
-            original=original
+            forward=edit,
+            backward=FileEdit(
+                filepath=edit.filepath,
+                range=new_range,
+                replacement=original
+            )
         )
     
     @classmethod
@@ -92,6 +126,55 @@ class FileSystem(ABC):
         
         lines = before_lines + between_str.splitlines() + after_lines
         return "\n".join(lines)
+    
+    @classmethod
+    def apply_edit(self, edit: FileSystemEdit) -> EditDiff:
+        backward = None
+        if isinstance(edit, FileEdit):
+            backward = self.apply_file_edit(edit)
+        elif isinstance(edit, AddFile):
+            self.write(edit.filepath, edit.content)
+            backward = DeleteFile(edit.filepath)
+        elif isinstance(edit, DeleteFile):
+            contents = self.read(edit.filepath)
+            backward = AddFile(edit.filepath, contents)
+            self.delete_file(edit.filepath)
+        elif isinstance(edit, RenameFile):
+            self.rename_file(edit.filepath, edit.new_filepath)
+            backward = RenameFile(filepath=edit.new_filepath, new_filepath=edit.filepath)
+        elif isinstance(edit, AddDirectory):
+            self.add_directory(edit.path)
+            backward = DeleteDirectory(edit.path)
+        elif isinstance(edit, DeleteDirectory):
+            # This isn't atomic!
+            backward_edits = []
+            for root, dirs, files in os.walk(edit.path, topdown=False):
+                for f in files:
+                    path = os.path.join(root, f)
+                    backward_edits.append(self.apply_edit(DeleteFile(path)))
+                for d in dirs:
+                    path = os.path.join(root, d)
+                    backward_edits.append(self.apply_edit(DeleteDirectory(path)))
+
+            backward_edits.append(self.apply_edit(DeleteDirectory(edit.path)))
+            backward_edits.reverse()
+            backward = SequentialFileSystemEdit(edits=backward_edits)
+        elif isinstance(edit, RenameDirectory):
+            self.rename_directory(edit.path, edit.new_path)
+            backward = RenameDirectory(path=edit.new_path, new_path=edit.path)
+        elif isinstance(edit, FileSystemEdit):
+            backward_edits = []
+            for edit in edit.next_edit():
+                backward_edits.append(self.apply_edit(edit))
+            backward_edits.reverse()
+            backward = SequentialFileSystemEdit(edits=backward_edits)
+        else:
+            raise TypeError("Unknown FileSystemEdit type: " + str(type(edit)))
+
+        return EditDiff(
+            forward=edit,
+            backward=backward
+        )
 
 class RealFileSystem(FileSystem):
     """A filesystem that reads/writes from the actual filesystem."""
@@ -113,16 +196,27 @@ class RealFileSystem(FileSystem):
     def read_range_in_file(self, r: RangeInFile) -> str:
         return FileSystem.read_range_in_str(self.read(r.filepath), r.range)
     
+    def rename_file(self, filepath: str, new_filepath: str):
+        os.rename(filepath, new_filepath)
+    
+    def rename_directory(self, path: str, new_path: str):
+        os.rename(path, new_path)
+    
+    def delete_file(self, filepath: str):
+        os.remove(filepath)
+    
+    @abstractmethod
+    def delete_directory(self, path: str):
+        raise NotImplementedError
+    
+    def add_directory(self, path: str):
+        os.makedirs(path)
+    
     def apply_file_edit(self, edit: FileEdit) -> EditDiff:
         old_content = self.read(edit.filepath)
         new_content, diff = FileSystem.apply_edit_to_str(old_content, edit)
         self.write(edit.filepath, new_content)
         return diff
-
-    def reverse_file_edit(self, diff: EditDiff):
-        old_content = self.read(diff.edit.filepath)
-        new_content = FileSystem.reverse_edit_on_str(old_content, diff)
-        self.write(diff.edit.filepath, new_content)
     
 class VirtualFileSystem(FileSystem):
     """A simulated filesystem from a mapping of filepath to file contents."""
@@ -145,6 +239,27 @@ class VirtualFileSystem(FileSystem):
     def read_range_in_file(self, r: RangeInFile) -> str:
         return FileSystem.read_range_in_str(self.read(r.filepath), r.range)
     
+    def rename_file(self, filepath: str, new_filepath: str):
+        self.files[new_filepath] = self.files[filepath]
+        del self.files[filepath]
+    
+    def rename_directory(self, path: str, new_path: str):
+        for filepath in self.files:
+            if filepath.startswith(path):
+                new_filepath = new_path + filepath[len(path):]
+                self.files[new_filepath] = self.files[filepath]
+                del self.files[filepath]
+    
+    def delete_file(self, filepath: str):
+        del self.files[filepath]
+    
+    @abstractmethod
+    def delete_directory(self, path: str):
+        raise NotImplementedError
+    
+    def add_directory(self, path: str):
+        pass # For reasons as seen here and in delete_directory, a Dict[str, str] might not be the best represntation. Could just preprocess to something better upon __init__
+    
     def apply_file_edit(self, edit: FileEdit) -> EditDiff:
         old_content = self.read(edit.filepath)
         new_content, original = FileSystem.apply_edit_to_str(old_content, edit)
@@ -154,7 +269,4 @@ class VirtualFileSystem(FileSystem):
             original=original
         )
     
-    def reverse_file_edit(self, diff: EditDiff):
-        old_content = self.read(diff.edit.filepath)
-        new_content = FileSystem.reverse_edit_on_str(old_content, diff)
-        self.write(diff.edit.filepath, new_content)
+# A big todo in this file is to have uniform errors thrown by any FileSystem subclass.

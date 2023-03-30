@@ -1,4 +1,6 @@
-from typing import Dict, List
+from abc import abstractmethod
+import os
+from typing import Dict, Generator, List
 from pydantic import BaseModel
 import difflib
 
@@ -97,13 +99,68 @@ class Traceback(BaseModel):
             full_traceback=tbutil_parsed_exc.to_string(),
         )
     
-class FileEdit(BaseModel):
+class FileSystemEdit(BaseModel):
+    @abstractmethod
+    def next_edit(self) -> Generator["FileSystemEdit"]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def describe(self) -> str: # This will be used by LLM to generate summaries. This might be a good reason for creation of many Edit classes
+        raise NotImplementedError
+
+class AtomicFileSystemEdit(FileSystemEdit):
+    def next_edit(self) -> Generator["FileSystemEdit"]:
+        yield self
+
+class FileEdit(AtomicFileSystemEdit):
     filepath: str
     range: Range
     replacement: str
-        
+
+class AddFile(AtomicFileSystemEdit):
+    filepath: str
+    content: str
+
+class DeleteFile(AtomicFileSystemEdit):
+    filepath: str
+
+class RenameFile(AtomicFileSystemEdit):
+    filepath: str
+    new_filepath: str
+
+class AddDirectory(AtomicFileSystemEdit):
+    path: str
+
+class DeleteDirectory(AtomicFileSystemEdit):
+    path: str
+    
+class RenameDirectory(AtomicFileSystemEdit):
+    path: str
+    new_path: str
+
+# You now have the atomic edits, and any other class needs to provide a generator which emits only these
+class DeleteDirectoryRecursive(FileSystemEdit):
+    path: str
+
+    # The thing about this...you need access to a filesystem. And hard to think of what other high-level edits people might invent.
+    # This might just be really unecessary
+    def next_edit(self) -> Generator[FileSystemEdit]:
+        yield DeleteDirectory(path=self.path)
+        for child in os.listdir(self.path):
+            child_path = os.path.join(self.path, child)
+            if os.path.isdir(child_path):
+                yield DeleteDirectoryRecursive(path=child_path)
+            else:
+                yield DeleteFile(filepath=child_path)
+
+class SequentialFileSystemEdit(FileSystemEdit):
+    edits: List[FileSystemEdit]
+
+    def next_edit(self) -> Generator[FileSystemEdit]:
+        for edit in self.edits:
+            yield from edit.next_edit()
 
 class EditDiff(BaseModel):
     """A reversible edit that can be applied to a file."""
-    edit: FileEdit
-    original: str
+    forward: FileSystemEdit
+    backward: FileSystemEdit
