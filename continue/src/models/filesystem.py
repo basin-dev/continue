@@ -45,6 +45,10 @@ class FileSystem(ABC):
     def apply_file_edit(self, edit: FileEdit):
         raise NotImplementedError
     
+    @abstractmethod
+    def reverse_file_edit(self, diff: EditDiff):
+        raise NotImplementedError
+    
     @classmethod
     def read_range_in_str(self, s: str, r: Range) -> str:
         lines = s.splitlines()[r.start.line:r.end.line + 1]

@@ -1,7 +1,8 @@
 from typing import List
 
 from .libs.actions.main import SolveTracebackAction
-from .libs.main import Action, Agent, Artifact, PytestValidator, PythonTracebackValidator, Router
+from .libs.main import Action, Agent, Artifact, Router
+from .libs.validators.python import PythonTracebackValidator, PytestValidator
 from .libs.actions.llm.openai import OpenAI
 from .models.filesystem import RealFileSystem
 import os

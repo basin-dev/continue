@@ -55,61 +55,43 @@ class Validator(ABC):
     @abstractmethod
     def run(self, fs: FileSystem) -> Tuple[bool, Artifact]:
         raise NotImplementedError
-    
-# Might want to separate the parser ("Snooper") from the thing that runs the python program and receives stdout
-# And might want to separate the traceback parser, because what if they are different for different python versions or something?
-class PythonTracebackValidator(Validator):
-    def __init__(self, cmd: str, cwd: str):
-        self.cmd = cmd
-        self.cwd = cwd
-
-    def run(self, fs: FileSystem) -> Tuple[bool, Artifact]:
-        # Run the python file
-        result = subprocess.run(self.cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.cwd)
-        stdout = result.stdout.decode("utf-8")
-        stderr = result.stderr.decode("utf-8")
-        print(stdout, stderr)
-
-        # If it fails, return the error
-        tb = parse_python_traceback(stdout) or parse_python_traceback(stderr)
-        if tb:
-            return False, Artifact(artifact_type="traceback", data=tb)
-        
-        # If it succeeds, return None
-        return True, None
-    
-# Things get weird if you have to set up an environment to run. Make this part of cmd, the class, or the agent?
-# Do you want to pass some context about the traceback and where it came from?
-class PytestValidator(Validator):
-    def __init__(self, cwd: str):
-        self.cwd = cwd
-
-    def run(self, fs: FileSystem) -> Tuple[bool, Artifact]:
-        # Run the python file
-        result = subprocess.run(["pytest", "--tb=native"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.cwd)
-        stdout = result.stdout.decode("utf-8")
-        stderr = result.stderr.decode("utf-8")
-
-        stdout_tb = parse_python_traceback(stdout)
-        stderr_tb = parse_python_traceback(stderr)
-
-        # If it fails, return the error
-        if stdout_tb or stderr_tb:
-            return False, Artifact(artifact_type="traceback", data=stdout_tb or stderr_tb)
-        
-        # If it succeeds, return None
-        return True, None
 
 class Router(ABC):
     @abstractmethod
     def next_action(self, artifacts: List[Artifact]) -> Action | None: # Might do better than None by having a special Action type to represent being done and successful
         raise NotImplementedError()
 
+class HistoryState(BaseModel):
+    action_taken: Action
+    diffs: List[EditDiff]
+
+class History(BaseModel):
+    states: List[HistoryState]
+    current_state_idx: int = 0
+    filesystem: FileSystem
+
+    def add(self, state: HistoryState):
+        if self.current_state_idx < len(self.states) - 1:
+            self.states = self.states[:self.current_state_idx + 1]
+
+        self.states.append(state)
+        self.current_state_idx += 1
+
+    def revert_to_state(self, idx_in_history: int):
+        for i in range(len(self.states) - 1, idx_in_history - 1, -1):
+            diff = self.states[i].diff
+            self.filesystem.reverse_file_edit(diff)
+            self.states.pop()
+
+        self.current_state_idx = idx_in_history
+
 class Agent:
-    history: List[EditDiff] = []
+    history: History
     llm: LLM
     filesystem: FileSystem
     router: Router
+
+    # Agent should maybe have locks
 
     def __init__(self, llm: LLM, validators: List[Validator], filesystem: FileSystem, router: Router, max_runs_per_validator: int = 1):
         self.llm = llm
@@ -117,16 +99,45 @@ class Agent:
         self.filesystem = filesystem
         self.router = router
         self.max_runs_per_validator = max_runs_per_validator
+        self.history = History(states=[], filesystem=filesystem)
 
-    def _run_action(self, action: Action):
-        edits = action.run(ActionParams(filesystem=self.filesystem, llm=self.llm))
+    def _get_action_params(self) -> ActionParams:
+        return ActionParams(
+            llm=self.llm,
+            filesystem=self.filesystem
+        )
+    
+    def _apply_action(self, action: Action) -> List[EditDiff]:
+        edits = action.run(self._get_action_params())
+        diffs = []
         for edit in edits:
             # Should replace this with something inherent to EditDiff, this is slow. Also, do you want to use real diffs, or this, which is better for making suggestions?
             if edit.replacement == self.filesystem.read_range_in_file(RangeInFile(filepath=edit.filepath, range=edit.range)):
                 continue
-            print("Applying edit: ", edit)
-            diff = self.filesystem.apply_file_edit(edit)
-            self.history.append(diff)
+            diffs.append(self.filesystem.apply_file_edit(edit))
+        return diffs
+
+    def act(self, action: Action):
+        diffs = self._apply_action(action)
+        self.history.add(HistoryState(action_taken=action, diffs=diffs))
+
+    def _rerun_current_action(self):
+        idx_in_history = self.history.current_state_idx
+
+        diffs = self._apply_action(self.history.states[idx_in_history].action_taken)
+        self.history.states[idx_in_history].diffs = diffs
+
+    def rerun_from_state(self, idx_in_history: int):
+        # To do this, you need to know the actions that were taken.
+        # An interesting thing is if you run again and don't get the same errors.
+        # So you need to know which actions were in response to fixing validation errors.
+
+        # This is bad...there's too much intimate understanding between Agent and History
+        self.history.revert_to_state(idx_in_history)
+
+        for i in range(idx_in_history, len(self.history.states)):
+            self._rerun_current_action()
+            self.history.current_state_idx = i
 
     # Shouldn't it be able to run and check recursively? And keep track of the global number of loops?
     def run_and_check(self, action: Action) -> bool:
