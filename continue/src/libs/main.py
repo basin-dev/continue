@@ -1,12 +1,11 @@
-from typing import Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 from ..models.main import FileEdit, EditDiff, Traceback
-from ..models.filesystem import FileSystem
-from .main import Agent
+from ..models.filesystem import FileSystem, RangeInFile
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
 import subprocess
 from .traceback_parsers import parse_python_traceback
-from .actions.llm import LLM
+from .actions.llm.main import LLM
 
 # Edits must be atomic, do we ever want multiple agents working on the code at once?? This is tough because hard to know when things interact with each other.
 # Source -> subscriber -> agent -> check policy, ask if needed -> perform edit -> record edit in workflow -> redo the action
@@ -31,20 +30,26 @@ from .actions.llm import LLM
 
 class Artifact(BaseModel):
     artifact_type: str
-    data: any
+    data: Any
 
-Action = Callable[[Agent, any], FileEdit]
+class ActionParams:
+    filesystem: FileSystem
+    llm: LLM
 
+    def __init__(self, filesystem: FileSystem, llm: LLM):
+        self.filesystem = filesystem
+        self.llm = llm
+
+class Action(ABC):
+    @abstractmethod
+    def run(self, params: ActionParams) -> List[FileEdit]:
+        raise NotImplementedError()
 
 # Enrichers!!!!
 # This is what collects the debug context. You might start with a traceback, but then you run deterministic tools to enrich.
 # Is an enricher different from an action? An enricher COULD just be an action, but it might be easier to read if separate.
 
 Enricher = Callable[[Artifact], Artifact]
-
-class Hook(BaseModel):
-    artifact_type: str
-    action: Action
 
 class Validator(ABC):
     @abstractmethod
@@ -63,13 +68,12 @@ class PythonTracebackValidator(Validator):
         result = subprocess.run(self.cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.cwd)
         stdout = result.stdout.decode("utf-8")
         stderr = result.stderr.decode("utf-8")
-
-        stdout_tb = parse_python_traceback(stdout)
-        stderr_tb = parse_python_traceback(stderr)
+        print(stdout, stderr)
 
         # If it fails, return the error
-        if stdout_tb or stderr_tb:
-            return False, Artifact(artifact_type="traceback", data=stdout_tb or stderr_tb)
+        tb = parse_python_traceback(stdout) or parse_python_traceback(stderr)
+        if tb:
+            return False, Artifact(artifact_type="traceback", data=tb)
         
         # If it succeeds, return None
         return True, None
@@ -96,59 +100,77 @@ class PytestValidator(Validator):
         # If it succeeds, return None
         return True, None
 
+class Router(ABC):
+    @abstractmethod
+    def next_action(self, artifacts: List[Artifact]) -> Action | None: # Might do better than None by having a special Action type to represent being done and successful
+        raise NotImplementedError()
+
 class Agent:
-    hook_registry: Dict[str, Action] = {}
     history: List[EditDiff] = []
     llm: LLM
+    filesystem: FileSystem
+    router: Router
 
-    def __init__(self, llm: LLM, validators: List[Validator], hooks: List[Hook], max_runs_per_validator: int = 5):
+    def __init__(self, llm: LLM, validators: List[Validator], filesystem: FileSystem, router: Router, max_runs_per_validator: int = 1):
         self.llm = llm
         self.validators = validators
-        for hook in hooks:
-            self.hook_registry[hook.artifact_type] = hook.action
+        self.filesystem = filesystem
+        self.router = router
         self.max_runs_per_validator = max_runs_per_validator
 
-    def _run_action(self, fs: FileSystem, action: Action, data: any):
-        edit = action(fs, data)
-        diff = fs.apply_file_edit(edit)
-        self.history.append(diff)
+    def _run_action(self, action: Action):
+        edits = action.run(ActionParams(filesystem=self.filesystem, llm=self.llm))
+        for edit in edits:
+            # Should replace this with something inherent to EditDiff, this is slow. Also, do you want to use real diffs, or this, which is better for making suggestions?
+            if edit.replacement == self.filesystem.read_range_in_file(RangeInFile(filepath=edit.filepath, range=edit.range)):
+                continue
+            print("Applying edit: ", edit)
+            diff = self.filesystem.apply_file_edit(edit)
+            self.history.append(diff)
 
     # Shouldn't it be able to run and check recursively? And keep track of the global number of loops?
-    def run_and_check(self, fs: FileSystem, action: Action, data: any) -> bool:
+    def run_and_check(self, action: Action) -> bool:
         """Run the agent, returning whether successful."""
-        self._run_action(fs, action, data)
-        success = self.fix_validators(fs)
-
+        self._run_action(action)
+        success = self.fix_validators()
         return success
+    
+    def fix_validator(self, validator: Validator) -> bool:
+        i = 0
+        passed = False
+        while i < self.max_runs_per_validator and not passed:
+            passed, artifact = validator.run(self.filesystem)
+            print("------------- Validator: ", passed, artifact)
 
-    def fix_validators(self, fs: FileSystem) -> bool:
+            if passed:
+                passed = True
+            else:
+                # Run the action that can fix this artifact
+                next_action = self.router.next_action([artifact])
+                
+                if next_action is None:
+                    return False
+                
+                self._run_action(next_action)
+
+                # Then the validator is rerun --^
+
+        return passed
+
+    def fix_validators(self) -> bool:
         """Attempt to run and fix all validators, returning whether successful."""
-        """ Should probably also return WHY it was unsuccessful."""
-
+        # Should probably also return WHY it was unsuccessful
         a_validator_failed = False
         for validator in self.validators:
-            i = 0
-            passed = False
-            while i < self.max_runs_per_validator and not passed:
-                passed, artifact = validator.run(fs)
-
-                if passed:
-                    passed = True
-                else:
-                    # Run the action that can fix this artifact
-                    if artifact.artifact_type not in self.hook_registry:
-                        raise Exception("No hook found for artifact type: " + artifact.artifact_type)
-                    
-                    # Apply the action and keep track of the diff
-                    action = self.hook_registry[artifact.artifact_type]
-                    self._run_action(fs, action, artifact.data)
-
-                    # Then the validator is rerun --^
-            
+            passed = self.fix_validator(validator)
             if not passed:
                 a_validator_failed = True
                 break
 
         return a_validator_failed
-
-# Maybe hooks better termed "routers" because validators are already doing most of the work
+    
+    def print_history(self):
+        for diff in self.history:
+            print("---------------------------------")
+            print(f"File: {diff.edit.filepath}\n{diff.edit.replacement}")
+            print("---------------------------------")

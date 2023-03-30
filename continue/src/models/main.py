@@ -1,6 +1,6 @@
 from typing import Dict, List
 from pydantic import BaseModel
-from enum import Enum
+import difflib
 
 class Position(BaseModel):
     line: int
@@ -50,13 +50,20 @@ class Range(BaseModel):
 
     def overlaps_with(self, other: "Range") -> bool:
         return not (self.end < other.start or self.start > other.end)
+    
+    @staticmethod
+    def from_shorthand(start_line: int, start_char: int, end_line: int, end_char: int) -> "Range":
+        return Range(
+            start=Position(
+                line=start_line,
+                character=start_char
+            ),
+            end=Position(
+                line=end_line,
+                character=end_char
+            )
+        )
 
-class RangeInFile(BaseModel):
-    filepath: str
-    range: Range
-
-    def __hash__(self):
-        return hash((self.filepath, self.range))
 
 class TracebackFrame(BaseModel):
     filepath: str
@@ -94,6 +101,7 @@ class FileEdit(BaseModel):
     filepath: str
     range: Range
     replacement: str
+        
 
 class EditDiff(BaseModel):
     """A reversible edit that can be applied to a file."""

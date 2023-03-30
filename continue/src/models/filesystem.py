@@ -1,7 +1,23 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple
 import os
-from ..models.main import EditDiff, Position, RangeInFile, Range, FileEdit
+from ..models.main import EditDiff, Position, Range, FileEdit
+from pydantic import BaseModel
+
+class RangeInFile(BaseModel):
+    filepath: str
+    range: Range
+
+    def __hash__(self):
+        return hash((self.filepath, self.range))
+    
+    @staticmethod
+    def from_entire_file(filepath: str, filesystem: "FileSystem") -> "RangeInFile":
+        lines = filesystem.readlines(filepath)
+        return RangeInFile(
+            filepath=filepath,
+            range=Range.from_shorthand(0, 0, len(lines) - 1, len(lines[-1]) - 1)
+        )
 
 class FileSystem(ABC):
     """An abstract filesystem that can read/write from a set of files."""
@@ -95,12 +111,9 @@ class RealFileSystem(FileSystem):
     
     def apply_file_edit(self, edit: FileEdit) -> EditDiff:
         old_content = self.read(edit.filepath)
-        new_content, original = FileSystem.apply_edit_to_str(old_content, edit)
+        new_content, diff = FileSystem.apply_edit_to_str(old_content, edit)
         self.write(edit.filepath, new_content)
-        return EditDiff(
-            edit=edit,
-            original=original
-        )
+        return diff
 
     def reverse_file_edit(self, diff: EditDiff):
         old_content = self.read(diff.edit.filepath)
