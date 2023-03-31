@@ -101,7 +101,7 @@ class Traceback(BaseModel):
     
 class FileSystemEdit(BaseModel):
     @abstractmethod
-    def next_edit(self) -> Generator["FileSystemEdit"]:
+    def next_edit(self) -> Generator["FileSystemEdit", None, None]:
         raise NotImplementedError
 
     @abstractmethod
@@ -109,7 +109,7 @@ class FileSystemEdit(BaseModel):
         raise NotImplementedError
 
 class AtomicFileSystemEdit(FileSystemEdit):
-    def next_edit(self) -> Generator["FileSystemEdit"]:
+    def next_edit(self) -> Generator["FileSystemEdit", None, None]:
         yield self
 
 class FileEdit(AtomicFileSystemEdit):
@@ -144,7 +144,7 @@ class DeleteDirectoryRecursive(FileSystemEdit):
 
     # The thing about this...you need access to a filesystem. And hard to think of what other high-level edits people might invent.
     # This might just be really unecessary
-    def next_edit(self) -> Generator[FileSystemEdit]:
+    def next_edit(self) -> Generator[FileSystemEdit, None, None]:
         yield DeleteDirectory(path=self.path)
         for child in os.listdir(self.path):
             child_path = os.path.join(self.path, child)
@@ -156,7 +156,7 @@ class DeleteDirectoryRecursive(FileSystemEdit):
 class SequentialFileSystemEdit(FileSystemEdit):
     edits: List[FileSystemEdit]
 
-    def next_edit(self) -> Generator[FileSystemEdit]:
+    def next_edit(self) -> Generator[FileSystemEdit, None, None]:
         for edit in self.edits:
             yield from edit.next_edit()
 
