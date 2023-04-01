@@ -1,19 +1,25 @@
+from typing import Union
 from ..models.main import *
 from ..models.filesystem import *
 from ..libs.main import History, HistoryState, Action
 from pydantic import schema_json_of
 import os
 
+FileSystemEdit = Union[AddFile, DeleteFile, RenameFile, AddDirectory, DeleteDirectory, RenameDirectory, EditDiff]
+
+# Can be a pydantic type, or a tuple of (title, pydantic type)
 MODELS_TO_GENERATE = [
     Position, Range, Traceback, TracebackFrame
 ] + [
-    RangeInFile, FileSystemEdit, FileEdit, AddFile, DeleteFile, RenameFile, AddDirectory, DeleteDirectory, RenameDirectory, EditDiff
+    RangeInFile, FileEdit, AddFile, DeleteFile, RenameFile, AddDirectory, DeleteDirectory, RenameDirectory, EditDiff
 ] + [
     History, HistoryState, Action
+] + [
+    ("FileSystemEdit", FileSystemEdit)
 ]
 
 RENAMES = {
-    # "SerializedDebugContext": "DebugContext"
+    "SerializedDebugContext": "DebugContext"
 }
 
 SCHEMA_DIR = "schema/json"
@@ -26,7 +32,11 @@ def clear_schemas():
 if __name__ == "__main__":
     clear_schemas()
     for model in MODELS_TO_GENERATE:
-        title = RENAMES.get(model.__name__, model.__name__)
+        if type(model) == tuple:
+            title = model[0]
+            model = model[1]
+        else:
+            title = model.__name__
         try:
             json = schema_json_of(model, indent=2, title=title)
         except Exception as e:

@@ -1,0 +1,24 @@
+{
+  "title": "AddFile",
+  "$ref": "#/definitions/src__models__main__AddFile",
+  "definitions": {
+    "src__models__main__AddFile": {
+      "title": "AddFile",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filepath",
+        "content"
+      ]
+    }
+  }
+}

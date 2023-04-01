@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple
 import os
-from ..models.main import EditDiff, Position, Range, FileEdit, FileSystemEdit, AddFile, DeleteFile, RenameFile, AddDirectory, RenameDirectory, DeleteDirectory, SequentialFileSystemEdit
+from ..models.main import EditDiff, Position, Range, FileEdit, FileSystemEdit, AddFile, DeleteFile, RenameFile, AddDirectory, RenameDirectory, DeleteDirectory, SequentialFileSystemEdit, AbstractModel
 from pydantic import BaseModel
 
 class RangeInFile(BaseModel):
@@ -19,7 +19,7 @@ class RangeInFile(BaseModel):
             range=Range.from_shorthand(0, 0, len(lines) - 1, len(lines[-1]) - 1)
         )
 
-class FileSystem(ABC):
+class FileSystem(AbstractModel):
     """An abstract filesystem that can read/write from a set of files."""
     @abstractmethod
     def read(self, path) -> str:

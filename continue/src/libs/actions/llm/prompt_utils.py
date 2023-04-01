@@ -1,11 +1,13 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Dict, List
-from ....models.main import FileEdit
+
+from pydantic import BaseModel
+from ....models.main import FileEdit, AbstractModel
 from ....models.filesystem import FileSystem, RangeInFile
 
 # Even better, you define an encoder/decoder class so people can play around with different ways of doing this. And it can be stateful.
 
-class FileContentsEncoderDecoder(ABC):
+class FileContentsEncoderDecoder(AbstractModel):
     filesystem: FileSystem
     range_in_files: List[RangeInFile]
 

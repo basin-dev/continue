@@ -1,7 +1,7 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import os
 from typing import Dict, Generator, List
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 import difflib
 
 class Position(BaseModel):
@@ -66,6 +66,11 @@ class Range(BaseModel):
             )
         )
 
+class AbstractModel(ABC, BaseModel):
+    @root_validator(pre=True)
+    def check_is_subclass(cls, values):
+        if not issubclass(cls, AbstractModel):
+            raise TypeError("AbstractModel subclasses must be subclasses of AbstractModel")
 
 class TracebackFrame(BaseModel):
     filepath: str

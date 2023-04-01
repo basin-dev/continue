@@ -1,0 +1,19 @@
+{
+  "title": "DeleteDirectory",
+  "$ref": "#/definitions/src__models__main__DeleteDirectory",
+  "definitions": {
+    "src__models__main__DeleteDirectory": {
+      "title": "DeleteDirectory",
+      "type": "object",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    }
+  }
+}

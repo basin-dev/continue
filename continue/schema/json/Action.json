@@ -1,0 +1,12 @@
+{
+  "title": "Action",
+  "$ref": "#/definitions/src__libs__main__Action",
+  "definitions": {
+    "src__libs__main__Action": {
+      "title": "Action",
+      "description": "Helper class that provides a standard way to create an ABC using\ninheritance.",
+      "type": "object",
+      "properties": {}
+    }
+  }
+}

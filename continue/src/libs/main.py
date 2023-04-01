@@ -1,8 +1,8 @@
 from typing import Any, Callable, Dict, List, Tuple
-from ..models.main import FileEdit, EditDiff, Traceback
+from ..models.main import FileEdit, EditDiff, Traceback, AbstractModel
 from ..models.filesystem import FileSystem, RangeInFile
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 import subprocess
 from .traceback_parsers import parse_python_traceback
 from .actions.llm.main import LLM
@@ -40,7 +40,7 @@ class ActionParams:
         self.filesystem = filesystem
         self.llm = llm
 
-class Action(ABC):
+class Action(AbstractModel):
     @abstractmethod
     def run(self, params: ActionParams) -> List[FileEdit]:
         raise NotImplementedError()
@@ -51,12 +51,12 @@ class Action(ABC):
 
 Enricher = Callable[[Artifact], Artifact]
 
-class Validator(ABC):
+class Validator(AbstractModel):
     @abstractmethod
     def run(self, fs: FileSystem) -> Tuple[bool, Artifact]:
         raise NotImplementedError
 
-class Router(ABC):
+class Router(AbstractModel):
     @abstractmethod
     def next_action(self, artifacts: List[Artifact]) -> Action | None: # Might do better than None by having a special Action type to represent being done and successful
         raise NotImplementedError()
