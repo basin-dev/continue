@@ -1,7 +1,7 @@
 from typing import List
 
 from .libs.actions.main import SolveTracebackAction
-from .libs.main import Action, Agent, Artifact, Router
+from .libs.main import Action, Agent, Artifact, Router, BasicRouter
 from .libs.validators.python import PythonTracebackValidator, PytestValidator
 from .libs.actions.llm.openai import OpenAI
 from .models.filesystem import RealFileSystem
@@ -10,19 +10,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
-
-class BasicRouter(Router):
-    def next_action(self, artifacts: List[Artifact]) -> Action | None:
-        traceback = None
-        for artifact in artifacts:
-            if artifact.artifact_type == "traceback":
-                traceback = artifact.data
-                break
-        
-        if traceback is None:
-            return None
-
-        return SolveTracebackAction(traceback)
 
 if __name__ == "__main__":
     cwd = "/Users/natesesti/Desktop/continue/extension/examples/python"

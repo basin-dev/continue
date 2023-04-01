@@ -1,5 +1,5 @@
 from typing import List
-from ...models.main import FileEdit, Traceback, Range
+from ...models.main import FileEdit, FileSystemEdit, Traceback, Range
 from ...models.filesystem import RangeInFile
 from ..main import Action, ActionParams
 from .llm.prompters import FormatStringPrompter
@@ -39,6 +39,16 @@ class SolveTracebackAction(Action):
         print(file_edits)
         print("****************")
         return file_edits
+
+class ManualEditAction(Action):
+    edit: FileSystemEdit
+
+    def __init__(self, edit: FileSystemEdit):
+        self.edit = edit
+
+    def run(self, params: ActionParams) -> List[FileEdit]:
+        params.filesystem.apply_edit(self.edit)
+        
 
 # Instead of having to define a class, should be a create_action function, or Action.from()
 # There should be an entire langauge-agnostic pipeline through the 1. running command, 2. parsing traceback, 3. generating edit
