@@ -2,8 +2,8 @@ from abc import abstractmethod
 from typing import Dict, List
 
 from pydantic import BaseModel
-from ....models.main import FileEdit, AbstractModel
-from ....models.filesystem import FileSystem, RangeInFile
+from ...models.main import FileEdit, AbstractModel
+from ...models.filesystem import FileSystem, RangeInFile
 
 # Even better, you define an encoder/decoder class so people can play around with different ways of doing this. And it can be stateful.
 

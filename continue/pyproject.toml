@@ -17,6 +17,7 @@ numpy = "^1.24.2"
 ruff = "^0.0.260"
 fastapi = "^0.95.0"
 watchdog = "^3.0.0"
+pluggy = "^1.0.0"
 
 
 [build-system]
