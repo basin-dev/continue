@@ -4,11 +4,29 @@ sidebar_position: 4
 
 # Thoughts
 
+## Steps, actions, or tasks
+
+Step vs. action vs. task: Add GitHub issue
+
+Actions should be decompoable, drill around thinking, make that entire workflow an action / step in a more complex step
+
+only way composability is achieved rn is to call another action within the action
+
+pick up on this in runtime, I wonder if there is a more structured way, would we want a more strucutred way?
+
+all state should be managed in continue, need to sync that really well, something we mgiht use for this, could generate that code from open API: https://redux-toolkit.js.org/rtk-query/usage/code-generation
+
+## What is the fundamental question we are asking?
+
+Is Git sufficient in a world where foundation models automated a lot of coding?
+
 ## Playing with different names
 
 **Agents** are an ordered set of **actions** and **validators**, which are extended by a **router**
 
 **Sequences** are an ordered set of **steps** and **events**, which are extended by a **generator**
+
+**Workflows** are an ordered set of **tasks** and **events**, which are extended by a **generator**
 
 ## Notes from conversation with Nate
 
