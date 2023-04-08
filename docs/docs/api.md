@@ -17,3 +17,7 @@ GET state/history/stuff. But might also want to sync through websockets. This an
 all state should be managed in continue, need to sync that really well, something we mgiht use for this, could generate that code from open API: https://redux-toolkit.js.org/rtk-query/usage/code-generation
 
 discussing/researching how we will sync/communicate server/client
+
+what is the agent?
+what is the permission thing?
+If we need two way communication, then it should most likely be through WebSockets
