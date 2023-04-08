@@ -5,8 +5,12 @@ from pydantic import BaseModel
 from ...models.main import FileEdit, AbstractModel
 from ...models.filesystem import FileSystem, RangeInFile
 
-# Even better, you define an encoder/decoder class so people can play around with different ways of doing this. And it can be stateful.
+# TODO: EncoderDecoders should be more general things, like guardrails: https://github.com/ShreyaR/guardrails/blob/main/guardrails/guard.py
+# Can return any type, but is just a subclass of Prompter.
+# Make Prompter generic in its return type, then EncoderDecoders can just specify this type with a pydantic model.
+# That also makes it easier for people to create their own EncoderDecoders.
 
+# Even better, you define an encoder/decoder class so people can play around with different ways of doing this. And it can be stateful.
 class FileContentsEncoderDecoder(AbstractModel):
     filesystem: FileSystem
     range_in_files: List[RangeInFile]

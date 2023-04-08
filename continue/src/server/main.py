@@ -28,6 +28,9 @@ class StartSessionBody(BaseModel):
 class StartSessionResp(BaseModel):
 	session_id: str
 
+# THIS IS ALL OUTDATED, DON'T FEEL COMPELLED TO KEEP ANY OF IT
+# mostly doesn't even work
+
 @app.post("/session")
 def start_session(body: StartSessionBody) -> StartSessionResp:
 	session = Session(body.config_file_path)
@@ -50,3 +53,15 @@ def post_artifacts(artifacts: List[Artifact], session=Depends(session)):
 	session.agent.run_and_check(action)
 	return "Success"	
 
+
+
+
+
+"""
+Communication we might need:
+- Server -> Client: Ask for permission to perform an action
+- POST send an observation (like traceback) to kick off a new agent. It's policy will decide what to do with the observation.
+- POST request to go back in time / edit a step
+- POST request to directly run a specified action
+- GET state/history/stuff. But might also want to sync through websockets. This and the permission thing will be slightly tricky
+"""

@@ -4,19 +4,15 @@ from typing import Dict, Generator, List
 from pydantic import BaseModel, root_validator
 import difflib
 from ..libs.map_path import map_path
+from functools import total_ordering
 
+@total_ordering
 class Position(BaseModel):
     line: int
     character: int
 
     def __hash__(self):
         return hash((self.line, self.character))
-
-    def __le__(self, other: "Position") -> bool:
-        return self < other or self == other
-    
-    def __ge__(self, other: "Position") -> bool:
-        return self > other or self == other
 
     def __eq__(self, other: "Position") -> bool:
         return self.line == other.line and self.character == other.character
@@ -28,15 +24,7 @@ class Position(BaseModel):
             return self.character < other.character
         else:
             return False
-        
-    def __gt__(self, other: "Position") -> bool:
-        if self.line > other.line:
-            return True
-        elif self.line == other.line:
-            return self.character > other.character
-        else:
-            return False
-        
+
     @staticmethod
     def from_index(string: str, index: int) -> "Position":
         """Convert index in string to line and character"""

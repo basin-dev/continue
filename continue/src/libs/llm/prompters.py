@@ -39,6 +39,9 @@ class Prompter:
         prompt, prefix, suffix = self._compile_prompt(inp)
         resp = self.llm.complete(prompt + prefix, suffix=suffix, **kwargs)
         return prefix + resp + (suffix or "")
+    
+    def __call__(self, inp: Any, **kwargs) -> str:
+        return self.complete(inp, **kwargs)
 
     def parallel_complete(self, inps: List[Any]) -> List[str]:
         prompts = []
