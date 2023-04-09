@@ -1,67 +1,74 @@
-from fastapi import FastAPI, Depends, Header
+from fastapi import FastAPI, Depends, Header, WebSocket
 from typing import Dict, List
 from uuid import uuid4
 from pydantic import BaseModel
-from ..libs.main import Agent, Artifact, History, Action
+from ..libs.agent import Agent, DemoAgent
+from ..libs.steps import Step
+from ..libs.observation import Observation
 
 app = FastAPI()
 
-class Session:
-	id: str
-	agent: Agent
-	def __init__(self, config_file_path: str):
-		self.id = str(uuid4())
-		self.agent = Agent.from_config_file(config_file_path)
+class AgentManager:
+	agents: Dict[str, Agent] = {}
 
-sessions: Dict[str, Session] = {}
+	def get_agent(self, agent_id: str) -> Agent:
+		if agent_id not in self.agents:
+			raise KeyError("Agent ID not recognized")
+		return self.agents[agent_id]
+	
+	def add_agent(self, agent: Agent) -> str:
+		agent_id = str(uuid4())
+		self.agents[agent_id] = agent
+		return agent_id
+	
+	def remove_agent(self, agent_id: str):
+		del self.agents[agent_id]
 
-def session(x_continue_session_id: str = Header("anonymous")) -> Session:
-	if x_continue_session_id not in sessions:
-		raise KeyError("Session ID not recognized")
-	return sessions[x_continue_session_id]
+agent_manager = AgentManager()
 
-# For now, just one history, but later, one per workspace/branch?
+def agent(x_continue_agent_id: str = Header("anonymous")) -> Agent:
+	return agent_manager.get_agent(x_continue_agent_id)
 
-class StartSessionBody(BaseModel):
+class StartAgentBody(BaseModel):
 	config_file_path: str
 
-class StartSessionResp(BaseModel):
+class StartAgentResp(BaseModel):
 	session_id: str
 
-# THIS IS ALL OUTDATED, DON'T FEEL COMPELLED TO KEEP ANY OF IT
-# mostly doesn't even work
+@app.post("/agent")
+def start_agent(body: StartAgentBody) -> StartAgentResp:
+	"""Create a new agent and return its ID"""
+	agent = DemoAgent()
+	agent_id = agent_manager.add_agent(agent)
+	return StartAgentResp(agent_id)
 
-@app.post("/session")
-def start_session(body: StartSessionBody) -> StartSessionResp:
-	session = Session(body.config_file_path)
-	sessions.append(session)
-	
-	return StartSessionResp(session.id)
-
-@app.get("/history")
-def get_history(session=Depends(session)) -> History:
-    return session.agent.history
-
-@app.post("/act")
-def request_act(action: Action, session=Depends(session)):
-	session.agent.act(action)
+@app.post("/run")
+def request_run(step: Step, agent=Depends(agent)):
+	"""Tell an agent to take a specific action."""
+	agent.run_from_step(step)
 	return "Success"
 
-@app.post("/artifacts")
-def post_artifacts(artifacts: List[Artifact], session=Depends(session)):
-	action = session.agent.router.next_action(artifacts)
-	session.agent.run_and_check(action)
-	return "Success"	
+@app.get("/history")
+def get_history(agent=Depends(agent)) -> History:
+    return agent.agent.history
 
+@app.post("/observation")
+def post_observation(observation: Observation, agent=Depends(agent)):
+	agent.run_from_observation(observation)
+	return "Success"
 
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        data = await websocket.recieve_json()
+        await websocket.send_text(f"Message JSON was: {data}")
 
-
-
-"""
-Communication we might need:
-- Server -> Client: Ask for permission to perform an action
-- POST send an observation (like traceback) to kick off a new agent. It's policy will decide what to do with the observation.
-- POST request to go back in time / edit a step
-- POST request to directly run a specified action
-- GET state/history/stuff. But might also want to sync through websockets. This and the permission thing will be slightly tricky
-"""
+		# Send messages whenever there is an update to the history
+		# ws.send_json(history)
+		
+# History - for now just a list
+# History updates through websockets - do this later with RTK Query
+# agent.run
+# agent.run_from_observation
+# agent.from_config_file, but for now just start with a default config

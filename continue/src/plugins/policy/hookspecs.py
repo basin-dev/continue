@@ -1,6 +1,6 @@
 from typing import List, Tuple
 import pluggy
-from ...policy import Policy, Step
+from ...libs.policy import Policy, Step
 
 hookspec = pluggy.HookspecMarker("continue.policy")
 

@@ -5,10 +5,11 @@ from textwrap import dedent
 from typing import Generator, List
 from ..models.main import AbstractModel
 from .steps import Step
+from .observation import Observation
 
 class Policy(AbstractModel):
     @abstractmethod
-    def next(self) -> Step:
+    def next(self, observation: Observation | None=None) -> Step: # Should probably be a list of observations, or perhaps just an observation subclass representing multiple observations
         raise NotImplementedError
     
 class DemoPolicy(Policy):

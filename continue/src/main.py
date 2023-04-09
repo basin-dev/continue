@@ -1,6 +1,6 @@
 from typing import List
 
-from .libs.actions.main import SolveTracebackAction
+from .libs.steps.main import SolveTracebackAction
 from .libs.main import Action, Artifact, Router, BasicRouter
 from .libs.agent import Agent
 from .models.filesystem import RealFileSystem

@@ -1,16 +1,20 @@
 from typing import List
 from ...models.main import FileEdit, FileSystemEdit, Traceback, Range
 from ...models.filesystem import RangeInFile
-from ..main import Action, ActionParams
-from .llm.prompters import FormatStringPrompter
-from .llm.prompt_utils import MarkdownStyleEncoderDecoder
+from ..llm.prompters import FormatStringPrompter
+from ..llm.prompt_utils import MarkdownStyleEncoderDecoder
 from textwrap import dedent
+from ..steps import Step, StepParams
 
-class SolveTracebackAction(Action):
+class SolveTracebackStep(Step):
     def __init__(self, traceback: Traceback):
         self.traceback = traceback
 
-    def run(self, params: ActionParams) -> List[FileEdit]:
+    # Step registers itself before as reversible/not
+    # Step returns a plan (Edit/FileEdit/Action/Plan) that is marked as reversible/not
+    # Both?
+
+    def run(self, params: StepParams) -> List[FileEdit]:
         prompter = FormatStringPrompter(dedent("""I ran into this problem with my Python code:
 
         {traceback}

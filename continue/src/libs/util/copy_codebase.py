@@ -7,7 +7,7 @@ from ..models.main import FileEdit, DeleteDirectory, DeleteFile, AddDirectory, A
 from ..models.filesystem import FileSystem
 from ..libs.main import Agent
 from ..libs.map_path import map_path
-from ..libs.actions.main import ManualEditAction
+from ..libs.steps.main import ManualEditAction
 import shutil
 import difflib
 
