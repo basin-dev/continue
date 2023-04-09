@@ -1,0 +1,24 @@
+{
+  "unversionedId": "concepts/workflows",
+  "id": "concepts/workflows",
+  "title": "Workflows",
+  "description": "A workflow is a reversible record of a series of actions that have been performed. Workflows are actually just actions, because actions are composable.",
+  "source": "@site/docs/concepts/workflows.md",
+  "sourceDirName": "concepts",
+  "slug": "/concepts/workflows",
+  "permalink": "/docs/concepts/workflows",
+  "draft": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/concepts/workflows.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Resources",
+    "permalink": "/docs/concepts/resources"
+  },
+  "next": {
+    "title": "Tutorial - Extras",
+    "permalink": "/docs/category/tutorial---extras"
+  }
+}

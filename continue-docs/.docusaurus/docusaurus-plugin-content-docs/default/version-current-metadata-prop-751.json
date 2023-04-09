@@ -1,0 +1,178 @@
+{
+  "pluginId": "default",
+  "version": "current",
+  "label": "Next",
+  "banner": null,
+  "badge": false,
+  "noIndex": false,
+  "className": "docs-version-current",
+  "isLast": true,
+  "docsSidebars": {
+    "tutorialSidebar": [
+      {
+        "type": "link",
+        "label": "Continue",
+        "href": "/docs/intro",
+        "docId": "intro"
+      },
+      {
+        "type": "category",
+        "label": "Concepts",
+        "collapsible": true,
+        "collapsed": true,
+        "items": [
+          {
+            "type": "link",
+            "label": "Markdown Features",
+            "href": "/docs/concepts/markdown-features",
+            "docId": "concepts/markdown-features"
+          },
+          {
+            "type": "link",
+            "label": "Actions",
+            "href": "/docs/concepts/actions",
+            "docId": "concepts/actions"
+          },
+          {
+            "type": "link",
+            "label": "Agents",
+            "href": "/docs/concepts/agents",
+            "docId": "concepts/agents"
+          },
+          {
+            "type": "link",
+            "label": "Filesystem",
+            "href": "/docs/concepts/filesystem",
+            "docId": "concepts/filesystem"
+          },
+          {
+            "type": "link",
+            "label": "Hooks",
+            "href": "/docs/concepts/hooks",
+            "docId": "concepts/hooks"
+          },
+          {
+            "type": "link",
+            "label": "Notes",
+            "href": "/docs/concepts/notes",
+            "docId": "concepts/notes"
+          },
+          {
+            "type": "link",
+            "label": "Other Concepts",
+            "href": "/docs/concepts/other",
+            "docId": "concepts/other"
+          },
+          {
+            "type": "link",
+            "label": "Resources",
+            "href": "/docs/concepts/resources",
+            "docId": "concepts/resources"
+          },
+          {
+            "type": "link",
+            "label": "Workflows",
+            "href": "/docs/concepts/workflows",
+            "docId": "concepts/workflows"
+          }
+        ],
+        "href": "/docs/category/concepts"
+      },
+      {
+        "type": "category",
+        "label": "Tutorial - Extras",
+        "collapsible": true,
+        "collapsed": true,
+        "items": [
+          {
+            "type": "link",
+            "label": "Manage Docs Versions",
+            "href": "/docs/tutorial-extras/manage-docs-versions",
+            "docId": "tutorial-extras/manage-docs-versions"
+          },
+          {
+            "type": "link",
+            "label": "Translate your site",
+            "href": "/docs/tutorial-extras/translate-your-site",
+            "docId": "tutorial-extras/translate-your-site"
+          }
+        ],
+        "href": "/docs/category/tutorial---extras"
+      }
+    ]
+  },
+  "docs": {
+    "concepts/actions": {
+      "id": "concepts/actions",
+      "title": "Actions",
+      "description": "Actions are the actual tasks that AI can complete for you. They take inputs that specify how the action is to be performed, perform the action on a resource, and then optionally emit an artifact that can be caught by a hook.",
+      "sidebar": "tutorialSidebar"
+    },
+    "concepts/agents": {
+      "id": "concepts/agents",
+      "title": "Agents",
+      "description": "An agent is an AI endowed with a series of resources to act on, and a set of hooks that define when it will take such actions.",
+      "sidebar": "tutorialSidebar"
+    },
+    "concepts/filesystem": {
+      "id": "concepts/filesystem",
+      "title": "Filesystem",
+      "description": "A filesystem is an abstraction over local filesystems, remote machines connected by SSH, or any other source of files. A filesystem is a resource rooted at some absolute filepath.",
+      "sidebar": "tutorialSidebar"
+    },
+    "concepts/hooks": {
+      "id": "concepts/hooks",
+      "title": "Hooks",
+      "description": "Hooks let you specify when AI should jump into action and complete a task for you. They can connect to your filesystem, a stdout stream, or any other external source.",
+      "sidebar": "tutorialSidebar"
+    },
+    "concepts/markdown-features": {
+      "id": "concepts/markdown-features",
+      "title": "Markdown Features",
+      "description": "Docusaurus supports Markdown and a few additional features.",
+      "sidebar": "tutorialSidebar"
+    },
+    "concepts/notes": {
+      "id": "concepts/notes",
+      "title": "Notes",
+      "description": "A central challenge of this library is representing things such that they can be viewed by the user even as the agent is taking actions. For example, writing to a file should optionally be viewable as a streaming text input into a VS Code text editor, or a command being run should be viewable in a VS Code terminal.",
+      "sidebar": "tutorialSidebar"
+    },
+    "concepts/other": {
+      "id": "concepts/other",
+      "title": "Other Concepts",
+      "description": "These are other programming-related concepts central to Continue.",
+      "sidebar": "tutorialSidebar"
+    },
+    "concepts/resources": {
+      "id": "concepts/resources",
+      "title": "Resources",
+      "description": "Resources represent objects that the AI has permission to act on. For example, you might specify a certain folder on which automated actions are allowed to take place.",
+      "sidebar": "tutorialSidebar"
+    },
+    "concepts/workflows": {
+      "id": "concepts/workflows",
+      "title": "Workflows",
+      "description": "A workflow is a reversible record of a series of actions that have been performed. Workflows are actually just actions, because actions are composable.",
+      "sidebar": "tutorialSidebar"
+    },
+    "intro": {
+      "id": "intro",
+      "title": "Continue",
+      "description": "Let's discover Docusaurus in less than 5 minutes.",
+      "sidebar": "tutorialSidebar"
+    },
+    "tutorial-extras/manage-docs-versions": {
+      "id": "tutorial-extras/manage-docs-versions",
+      "title": "Manage Docs Versions",
+      "description": "Docusaurus can manage multiple versions of your docs.",
+      "sidebar": "tutorialSidebar"
+    },
+    "tutorial-extras/translate-your-site": {
+      "id": "tutorial-extras/translate-your-site",
+      "title": "Translate your site",
+      "description": "Let's translate docs/intro.md to French.",
+      "sidebar": "tutorialSidebar"
+    }
+  }
+}

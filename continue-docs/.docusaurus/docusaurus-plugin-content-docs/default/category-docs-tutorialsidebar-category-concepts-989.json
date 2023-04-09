@@ -1,0 +1,16 @@
+{
+  "title": "Concepts",
+  "description": "5 minutes to learn the most important Docusaurus concepts.",
+  "slug": "/category/concepts",
+  "permalink": "/docs/category/concepts",
+  "navigation": {
+    "previous": {
+      "title": "Continue",
+      "permalink": "/docs/intro"
+    },
+    "next": {
+      "title": "Markdown Features",
+      "permalink": "/docs/concepts/markdown-features"
+    }
+  }
+}
