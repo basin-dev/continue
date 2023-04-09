@@ -1,5 +1,20 @@
 # `dlt` Plugin
 
+`dlt` agent
+
+Policies
+- `CreatePipelinePolicy`
+
+Actions
+- "Runs code + if error: fix and run again in loop" action
+- "Passes natural language instructions to OpenAI model" action (for open-ended refinements)
+- "Accepts `dlt` commands and runs them" action
+- "If `init` command: kickoff create a pipeline steps" action
+- then "What API should I use?" action
+- then "Waiting for you to add your API key" action
+- then "API success? if so: remove exit()" action
+- then "success to DuckDB" action
+
 1. User enters: `dlt init weather duckdb` into the notebook-like GUI
 
 2. `dlt` autopilot triggers `createPipelinePolicy` to assist the user in building their `dlt` pipeline
@@ -90,7 +105,9 @@ if __name__=='__main__':
     print(load_info)
 ```
 
-6. The OpenAI API responds to the action with the following:
+6. Wait and ask what API to use?
+
+7. The OpenAI API responds to the action with the following:
 
 Sure, I can help you with that. Here's my plan:
 

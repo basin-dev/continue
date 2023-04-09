@@ -1,8 +1,17 @@
 # API
 
-Client: notebook-like UI
+Client: notebook-like GUI in a web app, notebook-like GUI in a VS code extension, some chatbot GUI someone builds, etc.
 
 Server: continue framework server
+
+The server is created using FastAPI. It uses websockets to send history updates to a client.
+
+Endpoints
+- `/agent`: create a new agent and return its ID
+- `/run`: tell an agent to take a specific action
+- `/history`: returns the history of the agent
+- `/observation`: expects you to add an observation
+- `/ws`: websocket that send messages whenever there is an update to the history
 
 Send traceback to an endpoint that will kick off a new "loop" (is this what we want to call it? New "agent"?). This is the kind of thing that the agent did not ask for. Maybe a POST /observation endpoint or something.
 
@@ -21,3 +30,6 @@ discussing/researching how we will sync/communicate server/client
 what is the agent?
 what is the permission thing?
 If we need two way communication, then it should most likely be through WebSockets
+
+FastAPI very capable of websockets, and looks super easy to do! https://fastapi.tiangolo.com/advanced/websockets/
+
