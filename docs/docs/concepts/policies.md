@@ -6,6 +6,7 @@
 - makes things more flexible
 - we just build out structure that is a subclass of that
 - everything is a policy that calls an action and everything is an action
+- sequential policy with validators
 
 ## DemoPolicy
 

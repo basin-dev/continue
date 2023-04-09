@@ -4,6 +4,8 @@
 
 Why observations?
 
+passed back to policy to make next choice
+
 ## Artifacts
 
 What is an artifact?
@@ -24,10 +26,3 @@ Resources are defined by
 1. a resource identifier,
 2. a set of actions that can be taken on the resource,
 3. a set of permissions that the AI must follow.
-
-## Validators
-
-What is a validator?
-- See 1, 2, and 3 above
-- it runs code, runs typechecker, linter, it will return an artifact
-- better name, triggers, hooks, might be better, maybe separate concepts?

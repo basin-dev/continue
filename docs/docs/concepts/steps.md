@@ -1,5 +1,15 @@
 # Steps
 
+The thing that you do
+A policy will tell you what step to take next, what the agent will do
+The egg that contains everything needed to run that step
+Includes a run method that carries out the step
+When you carry out step, it makes changes
+returns 1) observation and 2) action
+ideal way would be just to have people outline steps
+Step could be run policy until x
+SequentialStep([
+
 ## Steps, actions, or tasks
 
 Step vs. action vs. task: Add GitHub issue

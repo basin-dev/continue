@@ -2,10 +2,12 @@
 
 `dlt` agent
 
-Policies
+Policy
 - `CreatePipelinePolicy`
 
-Actions
+dlt_policy = SequentialPolicyWithValidators([WritePipelineStep(), AddAPIKeyStep(), ...], validators=[PythonTracebackValidator(), TypeCheckerValidator()])
+
+Steps
 - "Runs code + if error: fix and run again in loop" action
 - "Passes natural language instructions to OpenAI model" action (for open-ended refinements)
 - "Accepts `dlt` commands and runs them" action

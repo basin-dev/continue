@@ -1,6 +1,6 @@
 # `Airbyte` Plugin
 
-1. Check out a new branch
+1. Check out a new branch (what if changes?)
 2. Make all tests and connectors available to model
 3. Check for bypasses in the tests
 4. Remove every bypass discovered
@@ -14,4 +14,4 @@
 Thoughts
 - Is this a one off thing? would you really write a plugin for this?
 - Is this something that someone could pick up and tweak for their similar situation?
-- Or maybe this plugin is a composed out of a bunch of smaller tasks?
+- Or maybe this plugin is a composed out of a bunch of smaller steps?
