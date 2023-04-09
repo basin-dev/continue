@@ -1,4 +1,4 @@
-# Other Concepts
+# Additional Concepts
 
 These are other programming-related concepts central to Continue.
 

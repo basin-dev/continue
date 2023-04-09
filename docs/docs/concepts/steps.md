@@ -1,0 +1,19 @@
+# Steps
+
+## Steps, actions, or tasks
+
+Step vs. action vs. task: Add GitHub issue
+
+Actions should be decomposable, drill around thinking, make that entire workflow an action / step in a more complex step
+
+only way composability is achieved rn is to call another action within the action
+
+pick up on this in runtime, I wonder if there is a more structured way, would we want a more strucutred way?
+
+## Routers
+
+What is a router?
+- chooses what tool to use
+- I have this artifact and this validation
+- language model choosing tools could come in later here
+- router is maybe a great place let the language model talk its way into action
