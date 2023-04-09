@@ -25,7 +25,7 @@ const sidebars = {
       type: 'category',
       label: 'Concepts',
       items: [
-        'concepts/agents',
+        'concepts/autopilots',
         'concepts/policies',
         'concepts/observations',
         'concepts/actions',
