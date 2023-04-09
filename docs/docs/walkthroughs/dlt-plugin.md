@@ -162,4 +162,12 @@ if __name__=='__main__':
 
 13. Maybe policy also print out DuckDB tables, writes a SQL query based on the table, and sees if it works?
 
-14. Then, leaves it open ended for the user to describe how they want to evolve this further (add pagination, more API endpoints, refactor for performance, change to incremental loading, etc.)
+14. Then, leaves it open ended for the user to describe how they want to evolve this further (add pagination, more API endpoints, refactor for performance, change to incremental loading, add docstrings, get more parameters from API, add code to transform data before loading it into dlt, etc.)
+
+Other thoughts
+- In between any of these steps, it should run to see if there are errors and then fix automatically (but what about API rate limits???)
+- In between any of these steps, it should be possible to go on tangents to refine code with natural language instructions
+- There probably needs to be a `refinePipelinePolicy`, `prepForProdPipelinePolicy`, etc.
+- How are policies selected? Now we are getting into the problem of dialogue management
+- How to let foundation model decide when it has more to do?
+- See this for how I did this was OpenAI Playground chat mode interface: https://github.com/basin-dev/model-coding-ux-experiments/tree/main/making-a-dlt-pipeline
