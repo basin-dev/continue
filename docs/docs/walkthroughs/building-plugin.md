@@ -123,3 +123,16 @@ class PolicyWithGreeting(Policy):
 ```
 
 There are built-in ways to do certain things like this. In `continue/src/libs/policy.py`, there are the `ObservationTypePolicy` (which does something similar to this, except for some arbitrary observation type and step type) and the `PolicyWrappedWithValidators`, which runs a set of checks between every step.
+
+# Questions
+
+- [ ] What are step params?
+- [ ] How do I know when something should be one or two steps?
+- [ ] why is the decorator a @step.hookimpl? does the function name need to be named run with the step params as the argument?
+- [ ] Where do I call the foundation model?
+- [ ] Where do I specify the prompt?
+- [ ] Where do I set the system message?
+- [ ] How does the context window slide and the max response length adjust?
+- [ ] I have to create a file for every step?
+- [ ] what does a step with side-effects not get a runner? how do you define a side-effect?
+- [ ] where is the natural language input at any time represented?
