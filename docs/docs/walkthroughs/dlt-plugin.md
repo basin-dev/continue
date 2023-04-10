@@ -1,11 +1,102 @@
 # `dlt` Plugin
 
+```python
+
+from plugins import step
+from ....libs.steps import StepParams
+from ??? import ModelNamePipelineStep
+
+class SetupGPT4Step(Step):
+
+    @step.hookimpl
+    def run(params: StepParams) -> Observation:
+        params.runner.run(SetSystemMessageStep(...))
+        params.runner.run(SetDynamicContextWindowStep(...))
+        params.runner.run(SetDynamicMaxResponseLengthStep(...))
+
+```
+
+```python
+
+from plugins import step
+from ....libs.steps import StepParams
+from ??? import ModelNamePipelineStep
+
+class AskAPIStep(Step):
+
+    @step.hookimpl
+    def run(params: StepParams) -> Observation:
+        # should pause and wait until user provides an answer
+        return "What API do I want to load data from? The destination of the dlt pipeline will be DuckDB"
+
+```
+
+```python
+
+from plugins import step
+from ....libs.steps import StepParams
+from ??? import ModelNamePipelineStep
+
+class InitPipelineStep(Step):
+
+    @step.hookimpl
+    def run(params: StepParams) -> Observation:
+        requested_api = # how can I pass in the API name in from the user?
+        source_name = params.runner.run(NamePipelineStep(requested_api))
+        params.runner.run(CLICommand('dlt init {source_name} duckdb')
+        params.runner.run(GPT4Step('...') # but I want to append it to the what API to use?
+        
+```
+
+
+```python
+
+from plugins import step
+from ....libs.steps import StepParams
+from ??? import CLICommand
+
+class AddAPIKeyStep(Step):
+
+    @step.hookimpl
+    def run(params: StepParams) -> Observation:
+        # should pause until user takes manual action to add API key to the secrets.toml file
+        return "Please add the API key to the `secrets.toml` file. I will continue working on the pipeline once it is there"
+
+```
+
+```python
+
+from plugins import step
+from ....libs.steps import StepParams
+from ??? import CLICommand
+
+class CheckAPIReturnsStep(Step):
+
+    @step.hookimpl
+    def run(params: StepParams) -> Observation:
+        # runs once there is an api key in `secrets.toml`
+        output = params.runner.run(CLICommand('python3 {source_name}.py')
+        params.runner.run(CheckAPISuccessStep(output))
+
+```
+
+```python
+
+class createPipelinePolicy(Policy):
+
+    def __init__(self, base_policy: Policy):
+        SequentialPolicyWithValidators([SetUpGPT4Step(), SelectAPIStep(), InitPipelineStep(), AddAPIKeyStep(), CheckAPIReturnsStep(), CheckLoadWorksStep(), RefinementStep()], validators=[PythonTracebackValidator()]
+
+```
+
+# Old
+
 `dlt` agent
 
 Policy
 - `CreatePipelinePolicy`
 
-dlt_policy = SequentialPolicyWithValidators([WritePipelineStep(), AddAPIKeyStep(), ...], validators=[PythonTracebackValidator(), TypeCheckerValidator()])
+dlt_policy = )
 
 Steps
 - "Runs code + if error: fix and run again in loop" action
