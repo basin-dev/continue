@@ -2,7 +2,8 @@ from abc import abstractmethod
 from typing import Dict, List
 
 from pydantic import BaseModel
-from ...models.main import FileEdit, AbstractModel
+from ...models.main import AbstractModel
+from ..actions import FileEdit
 from ...models.filesystem import FileSystem, RangeInFile
 
 # TODO: EncoderDecoders should be more general things, like guardrails: https://github.com/ShreyaR/guardrails/blob/main/guardrails/guard.py

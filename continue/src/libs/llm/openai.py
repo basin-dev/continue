@@ -10,7 +10,7 @@ from typing import Any, Generator, List
 import openai
 import aiohttp
 import numpy as np
-from .main import LLM
+from ..llm import LLM
 
 class OpenAI(LLM):
     completion_count: int = 0

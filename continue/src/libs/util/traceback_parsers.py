@@ -1,4 +1,4 @@
-from ..models.main import Traceback
+from ...models.main import Traceback
 from boltons import tbutils
 
 def parse_python_traceback(stdout: str) -> Traceback | None:

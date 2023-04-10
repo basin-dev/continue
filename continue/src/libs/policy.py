@@ -2,15 +2,24 @@ from abc import ABC, abstractmethod
 from .llm import LLM
 from .llm.prompters import FormatStringPrompter
 from textwrap import dedent
-from typing import Generator, List
-from ..models.main import AbstractModel
-from .steps import Step
-from .observation import Observation
+from typing import Generator, List, Tuple, Type
+from ..models.main import AbstractModel, Traceback
+from .steps import Step, DoneStep, Validator
+from .observation import Observation, TracebackObservation
+from .steps.main import SolveTracebackStep, RunCodeStep
 
 class Policy(AbstractModel):
     @abstractmethod
     def next(self, observation: Observation | None=None) -> Step: # Should probably be a list of observations, or perhaps just an observation subclass representing multiple observations
         raise NotImplementedError
+    
+    def with_validators(self, pairs: List[Tuple[Validator, Type[Step]]]) -> "PolicyWrappedWithValidators":
+        """Create a policy that is the same except follows each step by running the validators and fixing with the matched step types."""
+        return PolicyWrappedWithValidators(self, pairs)
+    
+    def with_observation_type(self, observation_type: Type[Observation], step_type: Type[Step]) -> "ObservationTypePolicy":
+        """Create a policy that is the same except always responds to this observation type with the specified step type."""
+        return ObservationTypePolicy(self, observation_type, step_type)
     
 class DemoPolicy(Policy):
     """
@@ -18,32 +27,91 @@ class DemoPolicy(Policy):
     Will alternate between running and fixing code.
     """
     ran_code_last: bool = False
+    cmd: str
 
-    def next(self) -> Step:
+    def __init__(self, cmd: str):
+        self.cmd = cmd
+
+    def next(self, observation: Observation | None=None) -> Step:
         if self.ran_code_last:
-            self.ran_code_last = False
-            return FixCodeStep()
+            # A nicer way to define this with the Continue SDK: continue_sdk.on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
+            # This is a way to iteratively define policies.
+            """
+            policy = BasePolicy().on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
+                .on_observation_type(OtherObservation, SolveOtherStep, lambda obs: obs.other)
+                .with_validators([Validator1, Validator2])
+                ...etc...
+            """
+            if observation is not None and isinstance(observation, TracebackObservation): # This is a really akward way to have to check the observation type.
+                self.ran_code_last = False
+                return SolveTracebackStep(observation.traceback)
+            else:
+                return DoneStep()
         else:
             self.ran_code_last = True
-            return RunCodeStep()
+            return RunCodeStep(cmd=self.cmd)
 
-# Validator = Step # For now. Should be a subclass of Step
+class ObservationTypePolicy(Policy):
+    def __init__(self, base_policy: Policy, observation_type: Type[Observation], step_type: Type[Step]):
+        self.observation_type = observation_type
+        self.step_type = step_type
+        self.base_policy = base_policy
 
-# class PolicyWithValidators(Policy):
-#     """Default is to stop, unless the validator tells what to do next"""
+    def next(self, observation: Observation | None=None) -> Step:
+        if isinstance(observation, self.observation_type):
+                return self.step_type(observation)
+        return self.base_policy.next(observation)
 
-#     def __init__(self, validators: List[Validator]):
-#         self.validators = validators
+class PolicyWrappedWithValidators(Policy):
+    """Default is to stop, unless the validator tells what to do next"""
+    index: int
+    stage: int
 
-#     def next(self) -> Step:
-#         a_validator_failed = False
-#         for validator in self.validators:
-#             passed = self.fix_validator(validator)
-#             if not passed:
-#                 a_validator_failed = True
-#                 break
+    def __init__(self, base_policy: Policy, pairs: List[Tuple[Validator, Type[Step]]]):
+        self.pairs = pairs # Want to pass Type[Validator], or just the Validator? Question of where params are coming from.
+        self.index = len(pairs)
+        self.validating = 0
+        self.base_policy = base_policy
 
-#         return a_validator_failed
+    def next(self, observation: Observation | None=None) -> Step:
+        if self.index == len(self.pairs):
+            self.index = 0
+            return self.base_policy.next(observation)
+        
+        if self.stage == 0:
+            # Running the validator at the current index for the first time
+            validator, step = self.pairs[self.index]
+            self.stage = 1
+            return validator
+        elif self.stage == 1:
+            # Previously ran the validator at the current index, now receiving its ValidatorObservation
+            if observation.passed:
+                self.stage = 0
+                self.index += 1
+                if self.index == len(self.pairs):
+                    self.index = 0
+                    return self.base_policy.next(observation)
+                else:
+                    return self.pairs[self.index][0]
+            else:
+                _, step = self.pairs[self.index]
+                return step(observation)
+
+# Problem is how to yield a Step while also getting its observation. You'd have to run the step within the policy in order to get its observation.
+# This can be done from within a step, right?
+# It was really ugly to write the above class, and ideally it would look like the below:
+
+# @validator_from_generator
+# def policy_with_validator(validators: List[Type[Validator]]):
+#     a_validator_failed = False
+#     for validator in validators:
+#         passed = yield validator
+#         passed = self.fix_validator(validator)
+#         if not passed:
+#             a_validator_failed = True
+#             break
+
+#     return a_validator_failed
 
 # class ReActPolicy(Policy):
 #     llm: LLM

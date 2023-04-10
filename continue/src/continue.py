@@ -1,32 +1,20 @@
-from typing import List
-
-from .libs.steps.main import SolveTracebackAction
-from .libs.main import Action, Artifact, Router, BasicRouter
-from .libs.agent import Agent
-from .models.filesystem import RealFileSystem
+from .libs.agent import DemoAgent
 import os
 from dotenv import load_dotenv
+from typer import Typer
+
+app = Typer()
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
+@app.command()
+def main(cmd: str="python3 /Users/natesesti/Desktop/continue/extension/examples/python/main.py"):
+    agent = DemoAgent(cmd)
+    # agent.print_history()
+
 if __name__ == "__main__":
-    cwd = "/Users/natesesti/Desktop/continue/extension/examples/python"
-    filesystem = RealFileSystem() # FileSystem should probably be where permissions are ensured
-    tb_validator = PythonTracebackValidator("python3 main.py", cwd)
-
-    agent = Agent(
-        llm=OpenAI(api_key=openai_api_key),
-        validators=[
-            tb_validator,
-            PytestValidator(cwd=cwd)
-        ],
-        router=BasicRouter(),
-        filesystem=filesystem
-    )
-
-    agent.fix_validator(tb_validator) # "Fix" isn't the right word: something more like address
-    agent.print_history()
+    app()
 
 # Instead of hooks, potentially have routers: functions that take a list of artifacts and choose a next action to address them.
 # Routers maybe also should be stateful

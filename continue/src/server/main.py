@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from ..libs.agent import Agent, DemoAgent
 from ..libs.steps import Step
 from ..libs.observation import Observation
+from ..libs.history import History
 
 app = FastAPI()
 

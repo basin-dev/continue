@@ -12,7 +12,7 @@
 
 import ast
 from typing import Any, Callable, List, Tuple
-from .main import LLM
+from ..llm import LLM
 from .openai import OpenAI
 
 # Helpers

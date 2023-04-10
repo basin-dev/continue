@@ -1,14 +1,14 @@
 from typing import List
 import pluggy
-from action import hookspecs
-from action.libs import hello_world
+from .step import hookspecs
+from .step.libs import hello_world
 
 builtin_libs = [hello_world]
 
 def get_plugin_manager(use_plugins: List[str]) -> pluggy.PluginManager:
-    pm = pluggy.PluginManager("continue.action")
+    pm = pluggy.PluginManager("continue.step")
     pm.add_hookspecs(hookspecs)
-    pm.load_setuptools_entrypoints("continue.action")
+    pm.load_setuptools_entrypoints("continue.step")
 
     # Only use plugins that are specified in the config file
     for plugin, name in pm.list_name_plugin():

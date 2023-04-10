@@ -1,4 +1,6 @@
-class LLM:
+from ...models.main import AbstractModel
+
+class LLM(AbstractModel):
     def complete(self, prompt: str, **kwargs):
         """Return the completion of the text with the given temperature."""
         raise 
