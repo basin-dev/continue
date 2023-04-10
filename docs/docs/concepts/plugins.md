@@ -1,5 +1,11 @@
 # Plugins
 
+follows an interface, so that Continue knows how to find it and interact with it
+
+Policy Plugins
+Step Plugins
+Validator Plugins
+
 What are plugins?
 
 Plugin is a more general word, which subsumes validator plugins, tool plugins, what else?

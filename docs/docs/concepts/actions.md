@@ -2,6 +2,13 @@
 
 Actions are the actual tasks that AI can complete for you. They take inputs that specify how the action is to be performed, perform the action on a resource, and then optionally emit an artifact that can be caught by a hook.
 
+record of what has happened (maybe recording instead?)
+can be replayed (step)
+if step add three files, wrote text to one, deleted fourth: action would describe all of this
+actions should be reversible whenever possible
+filesystem action (add file, edit file, delete directory)
+maybe should be merged with steps?
+
 ### Built-In Actions
 
 What are actions?
