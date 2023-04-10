@@ -1,5 +1,16 @@
 # Examples
 
+## Plugins for potential users
+
+- Marcin (dltHub): creating a dlt pipeline (instead of using chatgpt)
+- Nick (Den): fixing errors / natural language refinements to code (instead of using chatgpt)
+- Ray (UMich): creating plots for his papers (instead of using chatgpt)
+- Ella (Airbyte): adding types to connector columns (instead of adding bypasses to tests)
+- Anish (Ramp): creating unit tests (instead of manually doing it / failing to use chatgpt for it)
+- Phil (W&B): adding W&B experiment tracking to your ML model code (instead of using chatgpt)
+- Alan (Rasa): creating a rasa bot (instead of using chatgpt)
+- Shukri (Weviate): debugging through many unfamiliar abstractions (instead of having to step through all with a debugger)
+
 ## Ideas for plug-ins
 
 - I want to be able to give natural language commands to make changes to a file (where it waits for me to approve / reject)
@@ -16,3 +27,4 @@
 - Automatically write tests for new functions they write, then edit until the tests pass
 - If generated JSON doesn’t pass type checker, read and fix the error
 - Generating pytests
+- Data labelling and classification tasks (https://twitter.com/jackclarkSF/status/1645221542148837376?s=20)
