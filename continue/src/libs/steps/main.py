@@ -1,4 +1,4 @@
-from typing import List
+from typing import Callable, List
 from ...models.main import Traceback, Range
 from ..actions import FileSystemAction, FileEdit
 from ...models.filesystem import RangeInFile
@@ -26,8 +26,24 @@ class RunCodeStep(AtomicStep):
             return TracebackObservation(traceback=tb), None
         else:
             return None, None
+        
+class EditCodeStep(AtomicStep):
+    # Might make an even more specific atomic step, which is "apply file edit"
+    range_in_files: List[RangeInFile]
+    build_prompt: Callable[[str], str] # Function taking the code formatted as a string and generates the whole prompt. See SolveTracebackStep for an example.
 
-class SolveTracebackStep(AtomicStep):
+    def run(self, params: StepParams) -> StepOutput:
+        enc_dec = MarkdownStyleEncoderDecoder(filesystem=params.filesystem, range_in_files=self.range_in_files)
+        code_string = enc_dec.encode()
+        prompt = self.build_prompt(code_string)
+        completion = params.llm.complete(prompt)
+        file_edits = enc_dec.decode(completion)
+        for file_edit in file_edits:
+            file_edit.apply()
+
+        return None, SequentialAction(actions=file_edits)
+
+class SolveTracebackStep(Step):
     traceback: Traceback
 
     # Step registers itself before as reversible/not
@@ -49,36 +65,25 @@ class SolveTracebackStep(AtomicStep):
     # I think there is no question as to whether you want Action and ReversibleAction. Only question is whether application is the responsibility of the Step
     # or the Runner. For now I'm going to go with the latter.
 
-    def run(self, params: StepParams) -> StepOutput:
-        prompter = FormatStringPrompter(dedent("""I ran into this problem with my Python code:
+    def run(self, params: StepParams) -> Observation:
+        def build_prompt(code_string: str) -> str:
+            return dedent("""I ran into this problem with my Python code:
 
-        {traceback}
+                    {traceback}
 
-        Below are the files that might need to be fixed:
+                    Below are the files that might need to be fixed:
 
-        {code}
+                    {code}
 
-        This is what the code should be in order to avoid the problem:
-    """), llm=params.llm)
+                    This is what the code should be in order to avoid the problem:
+                """).format(traceback=self.traceback.full_traceback, code=code_string)
         
         range_in_files = []
         for frame in self.traceback.frames:
             range_in_files.append(RangeInFile.from_entire_file(frame.filepath, params.filesystem))
 
-        print("Traceback frames: ", self.traceback.frames)
-        print("Range in files: ", range_in_files)
-
-        enc_dec = MarkdownStyleEncoderDecoder(filesystem=params.filesystem, range_in_files=range_in_files)
-        completion = prompter.complete({
-            "code": enc_dec.encode(),
-            "traceback": self.traceback.full_traceback
-        })
-
-        file_edits = enc_dec.decode(completion)
-        for file_edit in file_edits:
-            print("Applying file edit: ", file_edit)
-            file_edit.apply()
-        return None, SequentialAction(actions=file_edits)
+        params.runner.run(EditCodeStep(range_in_files=range_in_files, build_prompt=build_prompt))
+        return None
 
 class ManualEditStep(Step):
     edit: FileSystemAction

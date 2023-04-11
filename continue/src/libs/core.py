@@ -6,12 +6,12 @@ from .llm import LLM
 from .observation import Observation
 
 class Policy(BaseModel):
-    def next(self, observation: Observation | None=None) -> "Step": # Should probably be a list of observations, or perhaps just an observation subclass representing multiple observations
+    def next(self, observation: Observation | None=None) -> "Step":
         raise NotImplementedError
 
 class Agent(BaseModel):
     llm: LLM
-    filesystem: FileSystem
+    filesystem: FileSystem = RealFileSystem()
     active: bool = False
     policy: Policy
 
