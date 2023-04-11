@@ -1,12 +1,7 @@
-from abc import ABC, abstractmethod
 from typing import Generator, List, Tuple, Type
 from .core import Step, DoneStep, Validator, Policy
 from .observation import Observation, TracebackObservation
 from .steps.main import SolveTracebackStep, RunCodeStep
-from pydantic import BaseModel
-
-class GeneratorPolicy(Policy):
-    generator: Generator[Step, None, None]
 
 class DemoPolicy(Policy):
     """
