@@ -32,7 +32,8 @@ run_with_lock().
 
 Reverse
 """
-
-@step.hookimpl
-def run(params: StepParams):
-    print("Thinking...")
+class ThoughtStep:
+    """A Step that thinks."""
+    @step.hookimpl
+    def run(params: StepParams):
+        print("Thinking...")
