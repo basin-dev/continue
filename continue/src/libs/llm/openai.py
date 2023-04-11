@@ -11,16 +11,17 @@ import openai
 import aiohttp
 import numpy as np
 from ..llm import LLM
+from pydantic import BaseModel, validator
 
 class OpenAI(LLM):
-    completion_count: int = 0
-    default_model: str
     api_key: str
+    completion_count: int = 0
+    default_model: str = "text-davinci-003"
 
-    def __init__(self, api_key: str, model: str="text-davinci-003"):
-        self.default_model = model
-        openai.api_key = api_key
-        self.api_key = api_key
+    @validator("api_key", pre=True, always=True)
+    def validate_api_key(cls, v):
+        openai.api_key = v
+        return v
 
     def stream_chat(self, messages, **kwargs) -> Generator[Any | list | dict, None, None] | Any | list | dict:
         self.completion_count += 1

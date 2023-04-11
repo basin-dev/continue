@@ -5,17 +5,17 @@ from ...models.filesystem import RangeInFile
 from ..llm.prompters import FormatStringPrompter
 from ..llm.prompt_utils import MarkdownStyleEncoderDecoder
 from textwrap import dedent
-from ..steps import Step, StepParams, StepOutput
+from ..core import Step, StepParams, StepOutput, AtomicStep, Observation
 import subprocess
 from ..util.traceback_parsers import parse_python_traceback
 from ..observation import TracebackObservation
+from ..actions import SequentialAction
 
-class RunCodeStep(Step):
-    def __init__(self, cmd: str):
-        self.cmd = cmd
+class RunCodeStep(AtomicStep):
+    cmd: str
 
     def run(self, params: StepParams) -> StepOutput:
-        result = subprocess.run(params.run_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=params.root_dir)
+        result = subprocess.run(self.cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout = result.stdout.decode("utf-8")
         stderr = result.stderr.decode("utf-8")
         print(stdout, stderr)
@@ -27,9 +27,8 @@ class RunCodeStep(Step):
         else:
             return None, None
 
-class SolveTracebackStep(Step):
-    def __init__(self, traceback: Traceback):
-        self.traceback = traceback
+class SolveTracebackStep(AtomicStep):
+    traceback: Traceback
 
     # Step registers itself before as reversible/not
     # Step returns a plan (Edit/FileEdit/Action/Plan) that is marked as reversible/not
@@ -69,16 +68,17 @@ class SolveTracebackStep(Step):
         print("Traceback frames: ", self.traceback.frames)
         print("Range in files: ", range_in_files)
 
-        enc_dec = MarkdownStyleEncoderDecoder(params.filesystem, range_in_files)
+        enc_dec = MarkdownStyleEncoderDecoder(filesystem=params.filesystem, range_in_files=range_in_files)
         completion = prompter.complete({
             "code": enc_dec.encode(),
             "traceback": self.traceback.full_traceback
         })
-        print(completion)
+
         file_edits = enc_dec.decode(completion)
-        print(file_edits)
-        print("****************")
-        return file_edits
+        for file_edit in file_edits:
+            print("Applying file edit: ", file_edit)
+            file_edit.apply()
+        return None, SequentialAction(actions=file_edits)
 
 class ManualEditStep(Step):
     edit: FileSystemAction

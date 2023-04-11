@@ -1,26 +1,10 @@
 from abc import ABC, abstractmethod
-from .llm import LLM
-from .llm.prompters import FormatStringPrompter
-from textwrap import dedent
 from typing import Generator, List, Tuple, Type
-from ..models.main import AbstractModel, Traceback
-from .steps import Step, DoneStep, Validator
+from .core import Step, DoneStep, Validator, Policy
 from .observation import Observation, TracebackObservation
 from .steps.main import SolveTracebackStep, RunCodeStep
+from pydantic import BaseModel
 
-class Policy(AbstractModel):
-    @abstractmethod
-    def next(self, observation: Observation | None=None) -> Step: # Should probably be a list of observations, or perhaps just an observation subclass representing multiple observations
-        raise NotImplementedError
-    
-    def with_validators(self, pairs: List[Tuple[Validator, Type[Step]]]) -> "PolicyWrappedWithValidators":
-        """Create a policy that is the same except follows each step by running the validators and fixing with the matched step types."""
-        return PolicyWrappedWithValidators(self, pairs)
-    
-    def with_observation_type(self, observation_type: Type[Observation], step_type: Type[Step]) -> "ObservationTypePolicy":
-        """Create a policy that is the same except always responds to this observation type with the specified step type."""
-        return ObservationTypePolicy(self, observation_type, step_type)
-    
 class DemoPolicy(Policy):
     """
     This is the simplest policy I can think of.
@@ -28,9 +12,6 @@ class DemoPolicy(Policy):
     """
     ran_code_last: bool = False
     cmd: str
-
-    def __init__(self, cmd: str):
-        self.cmd = cmd
 
     def next(self, observation: Observation | None=None) -> Step:
         if self.ran_code_last:
@@ -44,7 +25,7 @@ class DemoPolicy(Policy):
             """
             if observation is not None and isinstance(observation, TracebackObservation): # This is a really akward way to have to check the observation type.
                 self.ran_code_last = False
-                return SolveTracebackStep(observation.traceback)
+                return SolveTracebackStep(traceback=observation.traceback)
             else:
                 return DoneStep()
         else:

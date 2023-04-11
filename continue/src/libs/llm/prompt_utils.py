@@ -12,13 +12,9 @@ from ...models.filesystem import FileSystem, RangeInFile
 # That also makes it easier for people to create their own EncoderDecoders.
 
 # Even better, you define an encoder/decoder class so people can play around with different ways of doing this. And it can be stateful.
-class FileContentsEncoderDecoder(AbstractModel):
+class FileContentsEncoderDecoder(BaseModel):
     filesystem: FileSystem
     range_in_files: List[RangeInFile]
-
-    def __init__(self, filesystem: FileSystem, range_in_files: List[RangeInFile]):
-        self.filesystem = filesystem
-        self.range_in_files = range_in_files
 
     @abstractmethod
     def encode() -> str:
@@ -37,7 +33,8 @@ class FileContentsEncoderDecoder(AbstractModel):
                 file_edits.append(FileEdit(
                     range=range_in_file.range,
                     filepath=range_in_file.filepath,
-                    replacement=suggestion
+                    replacement=suggestion,
+                    filesystem=self.filesystem
                 ))
 
         return file_edits

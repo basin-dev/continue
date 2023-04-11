@@ -1,5 +1,5 @@
 import pluggy
-from ...libs.steps import StepParams, Step, StepOutput
+from ...libs.agent import StepParams, Step, StepOutput
 
 hookspec = pluggy.HookspecMarker("continue.step")
 

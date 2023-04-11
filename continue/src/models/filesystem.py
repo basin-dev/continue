@@ -108,7 +108,6 @@ class RealFileSystem(FileSystem):
     def delete_file(self, filepath: str):
         os.remove(filepath)
     
-    @abstractmethod
     def delete_directory(self, path: str):
         raise NotImplementedError
     
@@ -150,7 +149,6 @@ class VirtualFileSystem(FileSystem):
     def delete_file(self, filepath: str):
         del self.files[filepath]
     
-    @abstractmethod
     def delete_directory(self, path: str):
         raise NotImplementedError
     

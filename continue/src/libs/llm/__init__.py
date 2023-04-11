@@ -1,6 +1,7 @@
 from ...models.main import AbstractModel
+from pydantic import BaseModel
 
-class LLM(AbstractModel):
+class LLM(BaseModel):
     def complete(self, prompt: str, **kwargs):
         """Return the completion of the text with the given temperature."""
         raise 

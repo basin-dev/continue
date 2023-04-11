@@ -1,4 +1,5 @@
-from .libs.agent import DemoAgent
+from .libs.steps.main import RunCodeStep
+from .libs.agents import DemoAgent
 import os
 from dotenv import load_dotenv
 from typer import Typer
@@ -11,6 +12,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 @app.command()
 def main(cmd: str="python3 /Users/natesesti/Desktop/continue/extension/examples/python/main.py"):
     agent = DemoAgent(cmd)
+    agent.run_from_step(RunCodeStep(cmd=cmd))
     # agent.print_history()
 
 if __name__ == "__main__":
