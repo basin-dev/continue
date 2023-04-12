@@ -1,5 +1,15 @@
 # Policies
 
+class MyPolicy(Policy):
+  
+  next(observation: Observation | None=None) ->
+    Step:
+      yield SetUpGPT4Step()
+      requested_api = yield SelectAPIStep()
+      yield InitPipelineStep(requested_api)
+      
+policies have to keep track of state
+
 - given my history and set observations, next set of actions (how do I loop)
 - same as RL, dialogue management
 - nice and general, no special concept of validators, where you are running all of them every time

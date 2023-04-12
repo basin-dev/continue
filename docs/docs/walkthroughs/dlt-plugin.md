@@ -6,6 +6,10 @@ from plugins import step
 from ....libs.steps import StepParams
 from ??? import ModelNamePipelineStep
 
+params.llm
+
+params.runner.run(NaturalLanguageUserInputStep(“…question…?”))
+
 class SetupGPT4Step(Step):
 
     @step.hookimpl

@@ -10,6 +10,8 @@ ideal way would be just to have people outline steps
 Step could be run policy until x
 SequentialStep([
 
+DoneStep
+
 ## Steps, actions, or tasks
 
 Step vs. action vs. task: Add GitHub issue
