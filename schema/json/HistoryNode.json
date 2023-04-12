@@ -1,0 +1,54 @@
+{
+  "title": "HistoryNode",
+  "$ref": "#/definitions/continue__src__libs__core__HistoryNode",
+  "definitions": {
+    "Step": {
+      "title": "Step",
+      "type": "object",
+      "properties": {}
+    },
+    "Observation": {
+      "title": "Observation",
+      "type": "object",
+      "properties": {}
+    },
+    "Action": {
+      "title": "Action",
+      "type": "object",
+      "properties": {
+        "reversible": {
+          "title": "Reversible",
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    },
+    "continue__src__libs__core__HistoryNode": {
+      "title": "HistoryNode",
+      "description": "A node in a DAG",
+      "type": "object",
+      "properties": {
+        "step": {
+          "$ref": "#/definitions/Step"
+        },
+        "output": {
+          "title": "Output",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": [
+            {
+              "$ref": "#/definitions/Observation"
+            },
+            {
+              "$ref": "#/definitions/Action"
+            }
+          ]
+        }
+      },
+      "required": [
+        "step"
+      ]
+    }
+  }
+}

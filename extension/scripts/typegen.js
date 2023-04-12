@@ -23,6 +23,7 @@ function generateTypesForFile(inputPath, outputPath) {
 }
 
 function generateAllSchemas(inputDir, outputDir) {
+  // get the current directory
   try {
     fs.readdirSync(inputDir).forEach((file) => {
       if (file.endsWith(".json")) {

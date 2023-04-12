@@ -2,6 +2,6 @@
 from sum import sum
 
 first = 1
-second = "two"
+second = 2
 
 print(sum(first, second))

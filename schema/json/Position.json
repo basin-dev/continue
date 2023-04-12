@@ -1,8 +1,8 @@
 {
   "title": "Position",
-  "$ref": "#/definitions/package__libs__models__main__Position",
+  "$ref": "#/definitions/continue__src__models__main__Position",
   "definitions": {
-    "package__libs__models__main__Position": {
+    "continue__src__models__main__Position": {
       "title": "Position",
       "type": "object",
       "properties": {
@@ -18,8 +18,7 @@
       "required": [
         "line",
         "character"
-      ],
-      "additionalProperties": false
+      ]
     }
   }
 }

@@ -1,0 +1,76 @@
+{
+  "title": "History",
+  "$ref": "#/definitions/continue__src__libs__core__History",
+  "definitions": {
+    "Step": {
+      "title": "Step",
+      "type": "object",
+      "properties": {}
+    },
+    "Observation": {
+      "title": "Observation",
+      "type": "object",
+      "properties": {}
+    },
+    "Action": {
+      "title": "Action",
+      "type": "object",
+      "properties": {
+        "reversible": {
+          "title": "Reversible",
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    },
+    "HistoryNode": {
+      "title": "HistoryNode",
+      "description": "A node in a DAG",
+      "type": "object",
+      "properties": {
+        "step": {
+          "$ref": "#/definitions/Step"
+        },
+        "output": {
+          "title": "Output",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": [
+            {
+              "$ref": "#/definitions/Observation"
+            },
+            {
+              "$ref": "#/definitions/Action"
+            }
+          ]
+        }
+      },
+      "required": [
+        "step"
+      ]
+    },
+    "continue__src__libs__core__History": {
+      "title": "History",
+      "description": "A history of actions taken",
+      "type": "object",
+      "properties": {
+        "timeline": {
+          "title": "Timeline",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/HistoryNode"
+          }
+        },
+        "current_index": {
+          "title": "Current Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "timeline",
+        "current_index"
+      ]
+    }
+  }
+}

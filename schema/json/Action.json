@@ -1,0 +1,17 @@
+{
+  "title": "Action",
+  "$ref": "#/definitions/continue__src__libs__core__Action",
+  "definitions": {
+    "continue__src__libs__core__Action": {
+      "title": "Action",
+      "type": "object",
+      "properties": {
+        "reversible": {
+          "title": "Reversible",
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

@@ -4,20 +4,23 @@ import { Provider } from "react-redux";
 import store from "./redux/store";
 import WelcomeTab from "./tabs/welcome";
 import ChatTab from "./tabs/chat";
-import TestPage from "./TestPage";
+import Notebook from "./tabs/notebook";
 
 function App() {
   return (
     <>
       <Provider store={store}>
-        {/* <DebugPanel
+        <DebugPanel
           tabs={[
             { element: <MainTab />, title: "Debug Panel" },
             { element: <WelcomeTab />, title: "Welcome" },
             { element: <ChatTab />, title: "Chat" },
+            {
+              element: <Notebook apiBaseUrl="http://localhost:8000" />,
+              title: "Notebook",
+            },
           ]}
-        ></DebugPanel> */}
-        <TestPage />
+        ></DebugPanel>
       </Provider>
     </>
   );

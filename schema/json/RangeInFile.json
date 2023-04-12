@@ -1,6 +1,6 @@
 {
   "title": "RangeInFile",
-  "$ref": "#/definitions/package__libs__models__main__RangeInFile",
+  "$ref": "#/definitions/continue__src__models__filesystem__RangeInFile",
   "definitions": {
     "Position": {
       "title": "Position",
@@ -18,8 +18,7 @@
       "required": [
         "line",
         "character"
-      ],
-      "additionalProperties": false
+      ]
     },
     "Range": {
       "title": "Range",
@@ -36,10 +35,9 @@
       "required": [
         "start",
         "end"
-      ],
-      "additionalProperties": false
+      ]
     },
-    "package__libs__models__main__RangeInFile": {
+    "continue__src__models__filesystem__RangeInFile": {
       "title": "RangeInFile",
       "type": "object",
       "properties": {
@@ -54,8 +52,7 @@
       "required": [
         "filepath",
         "range"
-      ],
-      "additionalProperties": false
+      ]
     }
   }
 }

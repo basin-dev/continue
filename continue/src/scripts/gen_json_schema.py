@@ -1,22 +1,23 @@
 from typing import Union
 from ..models.main import *
 from ..models.filesystem import *
-from ..libs.main import History, HistoryState, Action
+from ..libs.core import History, HistoryNode, Action, Observation
 from pydantic import schema_json_of
 import os
 
-FileSystemEdit = Union[AddFile, DeleteFile, RenameFile, AddDirectory, DeleteDirectory, RenameDirectory, EditDiff]
+# FileSystemEdit = Union[AddFile, DeleteFile, RenameFile, AddDirectory, DeleteDirectory, RenameDirectory, EditDiff]
 
 # Can be a pydantic type, or a tuple of (title, pydantic type)
 MODELS_TO_GENERATE = [
     Position, Range, Traceback, TracebackFrame
 ] + [
-    RangeInFile, FileEdit, AddFile, DeleteFile, RenameFile, AddDirectory, DeleteDirectory, RenameDirectory, EditDiff
+    RangeInFile, # FileEdit, AddFile, DeleteFile, RenameFile, AddDirectory, DeleteDirectory, RenameDirectory, EditDiff
 ] + [
-    History, HistoryState, Action
-] + [
-    ("FileSystemEdit", FileSystemEdit)
+    History, HistoryNode, Action, Observation
 ]
+# + [
+#     ("FileSystemEdit", FileSystemEdit)
+# ]
 
 RENAMES = {
     "SerializedDebugContext": "DebugContext"

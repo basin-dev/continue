@@ -42,6 +42,9 @@ class EditCodeStep(AtomicStep):
             file_edit.apply()
 
         return None, SequentialAction(actions=file_edits)
+    
+class UserInputStep(Step):
+    user_input: str
 
 class SolveTracebackStep(Step):
     traceback: Traceback

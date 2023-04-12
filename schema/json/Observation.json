@@ -1,0 +1,11 @@
+{
+  "title": "Observation",
+  "$ref": "#/definitions/continue__src__libs__observation__Observation",
+  "definitions": {
+    "continue__src__libs__observation__Observation": {
+      "title": "Observation",
+      "type": "object",
+      "properties": {}
+    }
+  }
+}
