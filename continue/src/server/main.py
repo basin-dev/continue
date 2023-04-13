@@ -4,8 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Any, Dict, List
 from uuid import uuid4
 from pydantic import BaseModel
+from uvicorn.main import Server
 from ..libs.policy import DemoPolicy
-from ..libs.steps.main import RunCodeStep, UserInputStep
+from ..libs.steps.main import RunCodeStep, RunPolicyUntilDoneStep, UserInputStep
 from ..libs.core import Agent, History, Step
 from ..libs.observation import Observation
 from dotenv import load_dotenv
@@ -19,6 +20,22 @@ load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
+
+# Graceful shutdown by closing websockets
+original_handler = Server.handle_exit
+
+
+class AppStatus:
+    should_exit = False
+
+    @staticmethod
+    def handle_exit(*args, **kwargs):
+        AppStatus.should_exit = True
+        print("Shutting down")
+        original_handler(*args, **kwargs)
+
+
+Server.handle_exit = AppStatus.handle_exit
 
 # Add CORS support
 app.add_middleware(
@@ -70,16 +87,18 @@ class SessionManager:
         async def a():
             print("Sending data to websocket", data,
                   self.sessions[session_id].ws)
-            resp = await self.sessions[session_id].ws.send_text("hey")
+            await self.sessions[session_id].ws.send_json(data)
+            print("Sent!")
         # Run coroutine in background
         if self._event_loop is None or self._event_loop.is_closed():
             print("Creating event loop")
             self._event_loop = asyncio.new_event_loop()
-            self._event_loop.create_task(a())
-            self._event_loop.run_forever()
+            self._event_loop.run_until_complete(a())
+            self._event_loop.close()
         else:
             print("Using existing event loop")
-            self._event_loop.create_task(a())
+            self._event_loop.run_until_complete(a())
+            self._event_loop.close()
 
 
 session_manager = SessionManager()
@@ -112,9 +131,10 @@ def start_session() -> StartSessionResp:
     session_id = session_manager.add_session(agent)
 
     def on_step(step: Step):
+        print("History: ", agent.history.dict())
         session_manager.send_ws_data(session_id, {
             "type": "history",
-            "history": agent.history.json()
+            "history": agent.history.dict()
         })
 
     agent.on_step(on_step)
@@ -126,43 +146,24 @@ async def websocket_endpoint(websocket: WebSocket, session: Session = Depends(we
     await websocket.accept()
 
     session_manager.register_websocket(session.session_id, websocket)
-    time.sleep(3)
-    session.agent.run_from_step(RunCodeStep(cmd=cmd))
-    while True:
+    data = await websocket.receive_text()
+    print("Session started", data)
+    session.agent.run_policy()
+    while AppStatus.should_exit is False:
         data = await websocket.receive_text()
-        print("Received data", data)
 
         if "type" not in data:
             continue
         messageType = data["type"]
-        if messageType == "mainInput":
+        if messageType == "main_input":
             # Do something with user input
             session.agent.run_from_step(
                 UserInputStep(user_input=data["value"]))
-        elif messageType == "moveInTimeline":
+        elif messageType == "reverse":
             # Reverse the history to the given index
-            session.agent.history.move_to_index(data["index"])
-
-    # data = await websocket.receive_text()  # Wait for acknowledgment
-
-    # session_manager.register_websocket(session.session_id, websocket)
-    # websocket.send_text("Connected to session")
-    # session.agent.run_from_step(RunCodeStep(cmd=cmd))
-    # while True:
-    #     await websocket.send_text(f"Message JSON was: {data}")
-    #     if "type" not in data:
-    #         continue
-    #     messageType = data["type"]
-    #     if messageType == "mainInput":
-    #         # Do something with user input
-    #         session.agent.run_from_step(
-    #             UserInputStep(user_input=data["value"]))
-    #     elif messageType == "moveInTimeline":
-    #         # Reverse the history to the given index
-    #         session.agent.history.move_to_index(data["index"])
-
-    #     data = await websocket.receive_text()
-    #     print("Received data", data)
+            session.agent.history.reverse_to_index(data["index"])
+    print("Closing websocket")
+    await websocket.close()
 
 
 @app.post("/run")

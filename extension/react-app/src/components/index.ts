@@ -105,3 +105,13 @@ export const GradientBorder = styled.div<{ borderWidth?: string }>`
     #ffb215 110.45%
   );
 `;
+
+export const MainTextInput = styled.input`
+  padding: 8px;
+  font-size: 16px;
+  border-radius: ${defaultBorderRadius};
+  border: 1px solid #ccc;
+  margin: 8px 8px;
+  background-color: ${vscBackground};
+  color: white;
+`;

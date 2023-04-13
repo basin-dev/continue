@@ -3,7 +3,7 @@ import inspect
 import asyncio
 from typing import Callable, Generator, List, Tuple, Union
 from ..models.filesystem import FileSystem, RangeInFile, RealFileSystem
-from pydantic import BaseModel, parse_file_as
+from pydantic import BaseModel, parse_file_as, validator
 from .llm import LLM
 from .observation import Observation
 
@@ -48,8 +48,13 @@ class Agent(BaseModel):
         # Make it a generator!
         while not (next_step is None or isinstance(next_step, DoneStep)):
             # Should the runner be the thing keeping track of history from outputs?
+            print("running step: ", next_step)
             observation = runner.run(next_step)
             next_step = self.policy.next(observation)
+
+    def run_policy(self):
+        first_step = self.policy.next(None)
+        self.run_from_step(first_step)
 
     def run_from_observation(self, observation: Observation):
         next_step = self.policy.next(observation)
@@ -63,6 +68,32 @@ class StepParams(BaseModel):
 
 
 class Step(BaseModel):
+    name: str = None
+    _manual_description: str | None = None
+
+    def describe(self) -> str:
+        if self._manual_description is not None:
+            return self._manual_description
+        return "Running step: " + self.name
+
+    def _set_description(self, description: str):
+        self._manual_description = description
+
+    def dict(self, *args, **kwargs):
+        d = super().dict(*args, **kwargs)
+        if self._manual_description is not None:
+            d["description"] = self._manual_description
+        else:
+            d["description"] = self.describe()
+        return d
+
+    @validator("name", pre=True, always=True)
+    def name_is_class_name(cls, name):
+        print("Name is ", name)
+        if name is None:
+            return cls.__name__
+        return name
+
     def run(self, params: StepParams) -> Observation:
         raise NotImplementedError
 

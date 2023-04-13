@@ -3,6 +3,7 @@ from .core import Step, DoneStep, Validator, Policy
 from .observation import Observation, TracebackObservation
 from .steps.main import SolveTracebackStep, RunCodeStep
 
+
 class DemoPolicy(Policy):
     """
     This is the simplest policy I can think of.
@@ -11,7 +12,7 @@ class DemoPolicy(Policy):
     ran_code_last: bool = False
     cmd: str
 
-    def next(self, observation: Observation | None=None) -> Step:
+    def next(self, observation: Observation | None = None) -> Step:
         if self.ran_code_last:
             # A nicer way to define this with the Continue SDK: continue_sdk.on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
             # This is a way to iteratively define policies.
@@ -21,7 +22,7 @@ class DemoPolicy(Policy):
                 .with_validators([Validator1, Validator2])
                 ...etc...
             """
-            if observation is not None and isinstance(observation, TracebackObservation): # This is a really akward way to have to check the observation type.
+            if observation is not None and isinstance(observation, TracebackObservation):  # This is a really akward way to have to check the observation type.
                 self.ran_code_last = False
                 return SolveTracebackStep(traceback=observation.traceback)
             else:
@@ -30,16 +31,18 @@ class DemoPolicy(Policy):
             self.ran_code_last = True
             return RunCodeStep(cmd=self.cmd)
 
+
 class ObservationTypePolicy(Policy):
     def __init__(self, base_policy: Policy, observation_type: Type[Observation], step_type: Type[Step]):
         self.observation_type = observation_type
         self.step_type = step_type
         self.base_policy = base_policy
 
-    def next(self, observation: Observation | None=None) -> Step:
+    def next(self, observation: Observation | None = None) -> Step:
         if isinstance(observation, self.observation_type):
-                return self.step_type(observation)
+            return self.step_type(observation)
         return self.base_policy.next(observation)
+
 
 class PolicyWrappedWithValidators(Policy):
     """Default is to stop, unless the validator tells what to do next"""
@@ -47,16 +50,17 @@ class PolicyWrappedWithValidators(Policy):
     stage: int
 
     def __init__(self, base_policy: Policy, pairs: List[Tuple[Validator, Type[Step]]]):
-        self.pairs = pairs # Want to pass Type[Validator], or just the Validator? Question of where params are coming from.
+        # Want to pass Type[Validator], or just the Validator? Question of where params are coming from.
+        self.pairs = pairs
         self.index = len(pairs)
         self.validating = 0
         self.base_policy = base_policy
 
-    def next(self, observation: Observation | None=None) -> Step:
+    def next(self, observation: Observation | None = None) -> Step:
         if self.index == len(self.pairs):
             self.index = 0
             return self.base_policy.next(observation)
-        
+
         if self.stage == 0:
             # Running the validator at the current index for the first time
             validator, step = self.pairs[self.index]
@@ -96,7 +100,7 @@ class PolicyWrappedWithValidators(Policy):
 #     llm: LLM
 #     prompt: str = dedent("""The available actions are:
 #             {actions}
-            
+
 #             The next action I should take is:
 #     """)
 
