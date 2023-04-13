@@ -8,7 +8,7 @@ import {
 } from "../components";
 import IterationContainer from "../components/IterationContainer";
 import ContinueButton from "../components/ContinueButton";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { History } from "../../../schema/History";
 import { HistoryNode } from "../../../schema/HistoryNode";
 import StepContainer from "../components/StepContainer";
@@ -205,6 +205,17 @@ function Notebook(props: NotebookProps) {
     }
   }, [mainTextInputRef]);
 
+  const onMainTextInput = useCallback(() => {
+    if (websocket && mainTextInputRef.current) {
+      websocket.send(
+        JSON.stringify({
+          type: "main_input",
+          value: mainTextInputRef.current.value,
+        })
+      );
+    }
+  }, [websocket]);
+
   // const iterations = useSelector(selectIterations);
   return (
     <TopNotebookDiv>
@@ -226,17 +237,12 @@ function Notebook(props: NotebookProps) {
       <MainTextInput
         ref={mainTextInputRef}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && websocket) {
-            websocket.send(
-              JSON.stringify({
-                type: "main_input",
-                value: e.currentTarget.value,
-              })
-            );
+          if (e.key === "Enter") {
+            onMainTextInput();
           }
         }}
       ></MainTextInput>
-      <ContinueButton></ContinueButton>
+      <ContinueButton onClick={onMainTextInput}></ContinueButton>
     </TopNotebookDiv>
   );
 }

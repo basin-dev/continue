@@ -1,5 +1,5 @@
 from typing import Generator, List, Tuple, Type
-from .core import Step, DoneStep, Validator, Policy
+from .core import Step, DoneStep, Validator, Policy, History
 from .observation import Observation, TracebackObservation
 from .steps.main import SolveTracebackStep, RunCodeStep
 
@@ -12,24 +12,36 @@ class DemoPolicy(Policy):
     ran_code_last: bool = False
     cmd: str
 
-    def next(self, observation: Observation | None = None) -> Step:
-        if self.ran_code_last:
-            # A nicer way to define this with the Continue SDK: continue_sdk.on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
-            # This is a way to iteratively define policies.
-            """
-            policy = BasePolicy().on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
-                .on_observation_type(OtherObservation, SolveOtherStep, lambda obs: obs.other)
-                .with_validators([Validator1, Validator2])
-                ...etc...
-            """
-            if observation is not None and isinstance(observation, TracebackObservation):  # This is a really akward way to have to check the observation type.
-                self.ran_code_last = False
-                return SolveTracebackStep(traceback=observation.traceback)
-            else:
-                return DoneStep()
-        else:
+    def next(self, history: History) -> Step:
+        state = history.get_current()
+        if state is None or not self.ran_code_last:
             self.ran_code_last = True
             return RunCodeStep(cmd=self.cmd)
+
+        observation = history.last_observation()
+        if observation is not None and isinstance(observation, TracebackObservation):
+            self.ran_code_last = False
+            return SolveTracebackStep(traceback=observation.traceback)
+        else:
+            return DoneStep()
+        # if self.ran_code_last:
+        #     # A nicer way to define this with the Continue SDK: continue_sdk.on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
+        #     # This is a way to iteratively define policies.
+        #     """
+        #     policy = BasePolicy().on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
+        #         .on_observation_type(OtherObservation, SolveOtherStep, lambda obs: obs.other)
+        #         .with_validators([Validator1, Validator2])
+        #         ...etc...
+        #     """
+        #     # This is a really akward way to have to check the observation type.
+        #     if observation is not None and isinstance(observation, TracebackObservation):
+        #         self.ran_code_last = False
+        #         return SolveTracebackStep(traceback=observation.traceback)
+        #     else:
+        #         return DoneStep()
+        # else:
+        #     self.ran_code_last = True
+        #     return RunCodeStep(cmd=self.cmd)
 
 
 class ObservationTypePolicy(Policy):
@@ -38,10 +50,11 @@ class ObservationTypePolicy(Policy):
         self.step_type = step_type
         self.base_policy = base_policy
 
-    def next(self, observation: Observation | None = None) -> Step:
-        if isinstance(observation, self.observation_type):
+    def next(self, history: History) -> Step:
+        observation = history.last_observation()
+        if observation is not None and isinstance(observation, self.observation_type):
             return self.step_type(observation)
-        return self.base_policy.next(observation)
+        return self.base_policy.next(history)
 
 
 class PolicyWrappedWithValidators(Policy):
@@ -56,10 +69,10 @@ class PolicyWrappedWithValidators(Policy):
         self.validating = 0
         self.base_policy = base_policy
 
-    def next(self, observation: Observation | None = None) -> Step:
+    def next(self, history: History) -> Step:
         if self.index == len(self.pairs):
             self.index = 0
-            return self.base_policy.next(observation)
+            return self.base_policy.next(history)
 
         if self.stage == 0:
             # Running the validator at the current index for the first time
@@ -68,12 +81,13 @@ class PolicyWrappedWithValidators(Policy):
             return validator
         elif self.stage == 1:
             # Previously ran the validator at the current index, now receiving its ValidatorObservation
+            observation = history.last_observation()
             if observation.passed:
                 self.stage = 0
                 self.index += 1
                 if self.index == len(self.pairs):
                     self.index = 0
-                    return self.base_policy.next(observation)
+                    return self.base_policy.next(history)
                 else:
                     return self.pairs[self.index][0]
             else:

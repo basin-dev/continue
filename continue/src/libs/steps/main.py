@@ -16,10 +16,10 @@ class RunPolicyUntilDoneStep(Step):
     policy: "Policy"
 
     def run(self, params: StepParams) -> Observation:
-        next_step = self.policy.next()
+        next_step = self.policy.next(params.get_history())
         while next_step is not None and not isinstance(next_step, DoneStep):
             observation = params.run_step(next_step)
-            next_step = self.policy.next(observation)
+            next_step = self.policy.next(params.get_history())
         return observation
 
 

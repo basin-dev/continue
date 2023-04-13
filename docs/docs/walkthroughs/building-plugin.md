@@ -94,7 +94,7 @@ class AlternatingPolicy:
         self.last_was_first = False
 
     @policy.hookimpl
-    def next(self, observation: Observation | None=None) -> Step:
+    def next(self, history: History) -> Step:
         if self.last_was_first:
             self.last_was_first = False
             return self.second
@@ -116,10 +116,11 @@ class PolicyWithGreeting(Policy):
     def __init__(self, base_policy: Policy):
         self.base_policy = base_policy
 
-    def next(self, observation: Observation | None=None) -> Step:
+    def next(self, history: History) -> Step:
+        observation = history.last_observation()
         if isinstance(observation, SomeoneSaidHello):
                 return RespondWithGreeting(observation.someone.name)
-        return self.base_policy.next(observation)
+        return self.base_policy.next(history)
 ```
 
 There are built-in ways to do certain things like this. In `continue/src/libs/policy.py`, there are the `ObservationTypePolicy` (which does something similar to this, except for some arbitrary observation type and step type) and the `PolicyWrappedWithValidators`, which runs a set of checks between every step.

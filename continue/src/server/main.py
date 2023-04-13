@@ -157,8 +157,7 @@ async def websocket_endpoint(websocket: WebSocket, session: Session = Depends(we
         messageType = data["type"]
         if messageType == "main_input":
             # Do something with user input
-            session.agent.run_from_step(
-                UserInputStep(user_input=data["value"]))
+            session.agent.accept_user_input(data["value"])
         elif messageType == "reverse":
             # Reverse the history to the given index
             session.agent.history.reverse_to_index(data["index"])
