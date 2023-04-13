@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled, { keyframes } from "styled-components";
 import {
+  appear,
+  buttonColor,
   defaultBorderRadius,
   GradientBorder,
   MainTextInput,
@@ -30,7 +32,7 @@ const MainDiv = styled.div``;
 const StepContainerDiv = styled.div<{ open: boolean }>`
   background-color: ${(props) => (props.open ? vscBackground : secondaryDark)};
   border-radius: ${defaultBorderRadius};
-  padding: ${(props) => (props.open ? "2px" : "8px")};
+  padding: 8px;
 `;
 
 const HeaderDiv = styled.div`
@@ -45,17 +47,12 @@ const HeaderButton = styled.button`
   border-radius: ${defaultBorderRadius};
   padding: 2px;
   cursor: pointer;
-`;
+  color: white;
 
-let appear = keyframes`
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0px);
-    }
+  &:hover {
+    background-color: white;
+    color: black;
+  }
 `;
 
 const OnHoverDiv = styled.div`
@@ -71,6 +68,13 @@ const NaturalLanguageInput = styled(MainTextInput)`
 function StepContainer(props: StepContainerProps) {
   const [open, setOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const naturalLanguageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isHovered) {
+      naturalLanguageInputRef.current?.focus();
+    }
+  }, [isHovered]);
 
   return (
     <MainDiv
@@ -96,11 +100,7 @@ function StepContainer(props: StepContainerProps) {
               {props.historyNode.step.name as any}:
             </h4>
             <HeaderButton>
-              <Backward
-                size="1.6em"
-                color="white"
-                onClick={props.onReverse}
-              ></Backward>
+              <Backward size="1.6em" onClick={props.onReverse}></Backward>
             </HeaderButton>
           </HeaderDiv>
 
@@ -133,7 +133,9 @@ function StepContainer(props: StepContainerProps) {
       </GradientBorder>
 
       <OnHoverDiv hidden={!isHovered && !open}>
-        <NaturalLanguageInput></NaturalLanguageInput>
+        <NaturalLanguageInput
+          ref={naturalLanguageInputRef}
+        ></NaturalLanguageInput>
         <ContinueButton></ContinueButton>
       </OnHoverDiv>
     </MainDiv>

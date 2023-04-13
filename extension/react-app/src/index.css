@@ -10,6 +10,14 @@
   --def-border-radius: 5px;
 }
 
+@font-face {
+  font-family: "Mona Sans";
+  src: url("assets/Mona-Sans.woff2") format("woff2 supports variations"),
+    url("assets/Mona-Sans.woff2") format("woff2-variations");
+  font-weight: 200 900;
+  font-stretch: 75% 85%;
+}
+
 html,
 body,
 #root {
@@ -20,7 +28,7 @@ body {
   background-color: var(--vsc-background);
   padding: 0;
   color: white;
-  font-family: "Arial", sans-serif;
+  font-family: "Mona Sans", "Arial", sans-serif;
   padding: 0px;
   margin: 0px;
 }

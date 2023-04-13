@@ -9,23 +9,26 @@ from .observation import Observation
 
 
 class Policy(BaseModel):
+    """A rule that determines which step to take next"""
+
     def next(self, observation: Observation | None = None) -> "Step":
         raise NotImplementedError
 
 
 class HistoryNode(BaseModel):
-    """A node in a DAG"""
+    """A point in history, a list of which make up History"""
     step: "Step"
     output: Union["StepOutput", None]
 
 
 class History(BaseModel):
-    """A history of actions taken"""
+    """A history of steps taken and their results"""
     timeline: List[HistoryNode]
     current_index: int
 
 
 class StepParams:
+    """The SDK provided as parameters to a step"""
     filesystem: FileSystem
     llm: LLM
     __agent: "Agent"
