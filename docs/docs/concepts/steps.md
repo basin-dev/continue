@@ -1,5 +1,15 @@
 # Steps
 
+Watch the filesystem so as to insert "ManualUserStep"
+
+Accept NL input and do something with it
+- Right now, my thought is that NL input is turned into a UserInputStep, which the policy can then decide what to do with
+- First thing I think we want to be able to do with it is just "write/edit some code in the relevant file
+- which means figuring out which code is relevant, which means probably Chroma
+= which brings up question of where/when are indexings stored
+
+Show suggestion in file. This probably means wait before continuing. One approach is a WaitForUserAcceptStep , wait til user clicks accept, and then apply edit.
+
 The thing that you do
 A policy will tell you what step to take next, what the agent will do
 The egg that contains everything needed to run that step
