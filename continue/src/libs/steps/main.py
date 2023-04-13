@@ -18,7 +18,7 @@ class RunPolicyUntilDoneStep(Step):
     def run(self, params: StepParams) -> Observation:
         next_step = self.policy.next()
         while next_step is not None and not isinstance(next_step, DoneStep):
-            observation = params.runner.run(next_step)
+            observation = params.run_step(next_step)
             next_step = self.policy.next(observation)
         return observation
 
@@ -115,7 +115,7 @@ class SolveTracebackStep(Step):
             range_in_files.append(RangeInFile.from_entire_file(
                 frame.filepath, params.filesystem))
 
-        params.runner.run(EditCodeStep(
+        params.run_step(EditCodeStep(
             range_in_files=range_in_files, prompt=prompt))
         return None
 

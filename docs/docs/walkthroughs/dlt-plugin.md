@@ -8,15 +8,15 @@ from ??? import ModelNamePipelineStep
 
 params.llm
 
-params.runner.run(NaturalLanguageUserInputStep(“…question…?”))
+params.run_step(NaturalLanguageUserInputStep(“…question…?”))
 
 class SetupGPT4Step(Step):
 
     @step.hookimpl
     def run(params: StepParams) -> Observation:
-        params.runner.run(SetSystemMessageStep(...))
-        params.runner.run(SetDynamicContextWindowStep(...))
-        params.runner.run(SetDynamicMaxResponseLengthStep(...))
+        params.run_step(SetSystemMessageStep(...))
+        params.run_step(SetDynamicContextWindowStep(...))
+        params.run_step(SetDynamicMaxResponseLengthStep(...))
 
 ```
 
@@ -46,12 +46,11 @@ class InitPipelineStep(Step):
     @step.hookimpl
     def run(params: StepParams) -> Observation:
         requested_api = # how can I pass in the API name in from the user?
-        source_name = params.runner.run(NamePipelineStep(requested_api))
-        params.runner.run(CLICommand('dlt init {source_name} duckdb')
-        params.runner.run(GPT4Step('...') # but I want to append it to the what API to use?
-        
-```
+        source_name = params.run_step(NamePipelineStep(requested_api))
+        params.run_step(CLICommand('dlt init {source_name} duckdb')
+        params.run_step(GPT4Step('...') # but I want to append it to the what API to use?
 
+```
 
 ```python
 
@@ -79,8 +78,8 @@ class CheckAPIReturnsStep(Step):
     @step.hookimpl
     def run(params: StepParams) -> Observation:
         # runs once there is an api key in `secrets.toml`
-        output = params.runner.run(CLICommand('python3 {source_name}.py')
-        params.runner.run(CheckAPISuccessStep(output))
+        output = params.run_step(CLICommand('python3 {source_name}.py')
+        params.run_step(CheckAPISuccessStep(output))
 
 ```
 
@@ -98,11 +97,13 @@ class createPipelinePolicy(Policy):
 `dlt` agent
 
 Policy
+
 - `CreatePipelinePolicy`
 
 dlt_policy = )
 
 Steps
+
 - "Runs code + if error: fix and run again in loop" action
 - "Passes natural language instructions to OpenAI model" action (for open-ended refinements)
 - "Accepts `dlt` commands and runs them" action
@@ -117,6 +118,7 @@ Steps
 2. `dlt` autopilot triggers `createPipelinePolicy` to assist the user in building their `dlt` pipeline
 
 3. The autopilot uses the `gpt-4` model if possible; otherwise, it falls backs to `gpt-3.5-turbo`. In either case, it uses the following system message:
+
 ```
 [System]
 
@@ -138,17 +140,18 @@ I got started by running the command `dlt init weather duckdb` in the shell.
 
 This created the following directory structure:
 ├── .dlt
-│   ├── .pipelines
-│   ├── config.toml
-│   └── secrets.toml
+│ ├── .pipelines
+│ ├── config.toml
+│ └── secrets.toml
 ├── weather
-│   └── __pycache__
-│   └── __init__.py
+│ └── **pycache**
+│ └── **init**.py
 ├── .gitignore
 ├── weather_pipeline.py
 └── requirements.txt
 
 The `weather_pipeline.py` looks like this to begin:
+
 ```python
 import dlt
 import requests
@@ -279,6 +282,7 @@ if __name__=='__main__':
 14. Then, leaves it open ended for the user to describe how they want to evolve this further (add pagination, more API endpoints, refactor for performance, change to incremental loading, add docstrings, get more parameters from API, add code to transform data before loading it into dlt, etc.)
 
 Other thoughts
+
 - In between any of these steps, it should run to see if there are errors and then fix automatically (but what about API rate limits???)
 - In between any of these steps, it should be possible to go on tangents to refine code with natural language instructions
 - There probably needs to be a `refinePipelinePolicy`, `prepForProdPipelinePolicy`, etc.

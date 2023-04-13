@@ -25,6 +25,20 @@ class History(BaseModel):
     current_index: int
 
 
+class StepParams:
+    filesystem: FileSystem
+    llm: LLM
+    __agent: "Agent"
+
+    def __init__(self, agent: "Agent"):
+        self.filesystem = agent.filesystem
+        self.llm = agent.llm
+        self.__agent = agent
+
+    def run_step(self, step: "Step") -> Observation:
+        return self.__agent._run_singular_step(step)
+
+
 class Agent(BaseModel):
     llm: LLM
     filesystem: FileSystem = RealFileSystem()
@@ -36,35 +50,53 @@ class Agent(BaseModel):
     def on_step(self, callback: Callable[["Step"], None]):
         self._on_step_callbacks.append(callback)
 
-    def run_from_step(self, step: "Step", require_permission: bool = False):
+    def __ask_permission(self, step: "Step") -> bool:
+        return input("Run step? (y/n)") == "y"
+
+    def __get_step_params(self):
+        return StepParams(agent=self)
+
+    def _run_singular_step(self, step: "Step") -> Observation:
+        step_params = self.__get_step_params()
+
+        # Get observation and action from running either Step or AtomicStep
+        if isinstance(step, AtomicStep) or issubclass(step.__class__, AtomicStep):
+            observation, action = step(step_params)
+        else:
+            output = step(step_params)
+            if issubclass(step.__class__, AtomicStep):
+                observation, action = output
+            else:
+                observation = output
+                action = None
+
+        # Update history
+        self.history.timeline.append(
+            HistoryNode(step=step, output=(observation, action)))
+
+        # Call all subscribed callbacks
+        for callback in self._on_step_callbacks:
+            callback(step)
+
+        return observation
+
+    def run_from_step(self, step: "Step"):
         if self.active:
             raise RuntimeError("Agent is already running")
         self.active = True
 
         next_step = step
-        runner = Runner(agent=self)
-        for callback in self._on_step_callbacks:
-            runner.on_step(callback)
-        # Make it a generator!
         while not (next_step is None or isinstance(next_step, DoneStep)):
-            # Should the runner be the thing keeping track of history from outputs?
-            print("running step: ", next_step)
-            observation = runner.run(next_step)
+            observation = self._run_singular_step(next_step)
             next_step = self.policy.next(observation)
-
-    def run_policy(self):
-        first_step = self.policy.next(None)
-        self.run_from_step(first_step)
 
     def run_from_observation(self, observation: Observation):
         next_step = self.policy.next(observation)
         self.run_from_step(next_step)
 
-
-class StepParams(BaseModel):
-    filesystem: FileSystem
-    llm: LLM
-    runner: "Runner"
+    def run_policy(self):
+        first_step = self.policy.next(None)
+        self.run_from_step(first_step)
 
 
 class Step(BaseModel):
@@ -102,7 +134,7 @@ class Step(BaseModel):
 
 
 class AtomicStep(Step):
-    """A step that doesn't get a runner, but can create its own side-effects."""
+    """A step that doesn't get a runner (TODO), but can create its own side-effects."""
 
     def run(self, params: StepParams) -> "StepOutput":
         return self.run_with_side_effects(params.llm, params.filesystem)
@@ -134,43 +166,6 @@ class Validator(Step):
         raise NotImplementedError
 
 
-class RunnerOutput(BaseModel):
-    observations: List["Observation"]
-    history: History
-
-
-class Runner(BaseModel):
-    """The Runner class is like middleware on all steps."""
-    agent: Agent
-    _on_step_callbacks: List[Callable[["Step"], None]] = []
-
-    def on_step(self, callback: Callable[["Step"], None]):
-        self._on_step_callbacks.append(callback)
-
-    def _ask_permission(self, step: "Step") -> bool:
-        return input("Run step? (y/n)") == "y"
-
-    # TODO: require_permission happen elsewhere
-    def run(self, step: "Step", require_permission: bool = False) -> Observation:
-        if isinstance(step, AtomicStep) or issubclass(step.__class__, AtomicStep):
-            observation, action = step(StepParams(
-                filesystem=self.agent.filesystem, llm=self.agent.llm, runner=self))
-        else:
-            output = step(StepParams(
-                filesystem=self.agent.filesystem, llm=self.agent.llm, runner=self))
-            if issubclass(step.__class__, AtomicStep):
-                observation, action = output
-            else:
-                observation = output
-                action = None
-        self.agent.history.timeline.append(
-            HistoryNode(step=step, output=(observation, action)))
-        for callback in self._on_step_callbacks:
-            callback(step)
-        # Don't like how Runner and Agent know about each other's internals. Merge probably
-        return observation
-
-
 class Action(BaseModel):
     reversible: bool = False
 
@@ -183,5 +178,4 @@ class Action(BaseModel):
 
 StepOutput = Tuple[Observation | None, Action | None]
 
-StepParams.update_forward_refs()
 HistoryNode.update_forward_refs()

@@ -48,8 +48,8 @@ from ??? import AddFile, FileEdit
 def run(params: StepParams) -> Observation:
     for i in range(5):
         filename = "file_" + str(i) + ".py"
-        params.runner.run(AddFile(filename))
-        params.runner.run(FileEdit(Range.from_shorthand(0, 0, 0, 0), filename, str(i)))
+        params.run_step(AddFile(filename))
+        params.run_step(FileEdit(Range.from_shorthand(0, 0, 0, 0), filename, str(i)))
 ```
 
 The benefit of calling sub-Steps with the `Runner` is that we automatically keep track of changes for you so that the UI can display them and so that your Step automatically becomes reversible.
