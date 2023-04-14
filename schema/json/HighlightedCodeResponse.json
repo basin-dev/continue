@@ -1,0 +1,79 @@
+{
+  "title": "HighlightedCodeResponse",
+  "$ref": "#/definitions/continue__src__libs__ide__HighlightedCodeResponse",
+  "definitions": {
+    "Position": {
+      "title": "Position",
+      "type": "object",
+      "properties": {
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "character": {
+          "title": "Character",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "character"
+      ]
+    },
+    "Range": {
+      "title": "Range",
+      "description": "A range in a file. 0-indexed.",
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/Position"
+        },
+        "end": {
+          "$ref": "#/definitions/Position"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ]
+    },
+    "RangeInFile": {
+      "title": "RangeInFile",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/definitions/Range"
+        }
+      },
+      "required": [
+        "filepath",
+        "range"
+      ]
+    },
+    "continue__src__libs__ide__HighlightedCodeResponse": {
+      "title": "HighlightedCodeResponse",
+      "type": "object",
+      "properties": {
+        "msg_type": {
+          "title": "Msg Type",
+          "default": "highlightedCode",
+          "type": "string"
+        },
+        "highlightedCode": {
+          "title": "Highlightedcode",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RangeInFile"
+          }
+        }
+      },
+      "required": [
+        "highlightedCode"
+      ]
+    }
+  }
+}

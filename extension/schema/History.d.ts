@@ -6,17 +6,12 @@
  */
 
 export type History = History1;
-/**
- * @minItems 2
- * @maxItems 2
- */
-export type Output = [Observation, Action];
-export type Reversible = boolean;
+export type Name = string;
 export type Timeline = HistoryNode[];
 export type CurrentIndex = number;
 
 /**
- * A history of actions taken
+ * A history of steps taken and their results
  */
 export interface History1 {
   timeline: Timeline;
@@ -24,20 +19,17 @@ export interface History1 {
   [k: string]: unknown;
 }
 /**
- * A node in a DAG
+ * A point in history, a list of which make up History
  */
 export interface HistoryNode {
   step: Step;
-  output?: Output;
+  observation?: Observation;
   [k: string]: unknown;
 }
 export interface Step {
+  name?: Name;
   [k: string]: unknown;
 }
 export interface Observation {
-  [k: string]: unknown;
-}
-export interface Action {
-  reversible?: Reversible;
   [k: string]: unknown;
 }

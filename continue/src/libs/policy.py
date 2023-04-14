@@ -1,7 +1,7 @@
 from typing import Generator, List, Tuple, Type
-from .core import Step, DoneStep, Validator, Policy, History
+from .core import Step, DoneStep, Validator, Policy, History, UserInputStep
 from .observation import Observation, TracebackObservation
-from .steps.main import SolveTracebackStep, RunCodeStep
+from .steps.main import EditCodeStep, SolveTracebackStep, RunCodeStep
 
 
 class DemoPolicy(Policy):
@@ -13,12 +13,16 @@ class DemoPolicy(Policy):
     cmd: str
 
     def next(self, history: History) -> Step:
+        observation = history.last_observation()
+        if observation is not None and isinstance(observation, UserInputStep):
+            # This could be defined with ObservationTypePolicy. Ergonomics not right though.
+            return EditCodeStep(prompt=observation.user_input, range_in_files=[])
+
         state = history.get_current()
         if state is None or not self.ran_code_last:
             self.ran_code_last = True
             return RunCodeStep(cmd=self.cmd)
 
-        observation = history.last_observation()
         if observation is not None and isinstance(observation, TracebackObservation):
             self.ran_code_last = False
             return SolveTracebackStep(traceback=observation.traceback)

@@ -5,10 +5,12 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Action = Action1;
-export type Reversible = boolean;
+export type OpenFilesResponse = OpenFilesResponse1;
+export type MsgType = string;
+export type Openfiles = string[];
 
-export interface Action1 {
-  reversible?: Reversible;
+export interface OpenFilesResponse1 {
+  msg_type?: MsgType;
+  openFiles: Openfiles;
   [k: string]: unknown;
 }

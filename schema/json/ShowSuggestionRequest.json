@@ -1,0 +1,80 @@
+{
+  "title": "ShowSuggestionRequest",
+  "$ref": "#/definitions/continue__src__libs__ide__ShowSuggestionRequest",
+  "definitions": {
+    "Position": {
+      "title": "Position",
+      "type": "object",
+      "properties": {
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "character": {
+          "title": "Character",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "character"
+      ]
+    },
+    "Range": {
+      "title": "Range",
+      "description": "A range in a file. 0-indexed.",
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/Position"
+        },
+        "end": {
+          "$ref": "#/definitions/Position"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ]
+    },
+    "FileEdit": {
+      "title": "FileEdit",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/definitions/Range"
+        },
+        "replacement": {
+          "title": "Replacement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filepath",
+        "range",
+        "replacement"
+      ]
+    },
+    "continue__src__libs__ide__ShowSuggestionRequest": {
+      "title": "ShowSuggestionRequest",
+      "type": "object",
+      "properties": {
+        "msg_type": {
+          "title": "Msg Type",
+          "default": "showSuggestion",
+          "type": "string"
+        },
+        "suggestion": {
+          "$ref": "#/definitions/FileEdit"
+        }
+      },
+      "required": [
+        "suggestion"
+      ]
+    }
+  }
+}

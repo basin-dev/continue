@@ -30,8 +30,7 @@
         }
       },
       "required": [
-        "step",
-        "observation"
+        "step"
       ]
     },
     "continue__src__libs__core__History": {

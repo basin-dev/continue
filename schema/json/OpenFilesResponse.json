@@ -1,0 +1,27 @@
+{
+  "title": "OpenFilesResponse",
+  "$ref": "#/definitions/continue__src__libs__ide__OpenFilesResponse",
+  "definitions": {
+    "continue__src__libs__ide__OpenFilesResponse": {
+      "title": "OpenFilesResponse",
+      "type": "object",
+      "properties": {
+        "msg_type": {
+          "title": "Msg Type",
+          "default": "openFiles",
+          "type": "string"
+        },
+        "openFiles": {
+          "title": "Openfiles",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "openFiles"
+      ]
+    }
+  }
+}

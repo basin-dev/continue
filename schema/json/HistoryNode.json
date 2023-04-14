@@ -30,8 +30,7 @@
         }
       },
       "required": [
-        "step",
-        "observation"
+        "step"
       ]
     }
   }
