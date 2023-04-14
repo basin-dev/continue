@@ -1,15 +1,13 @@
 from typing import Callable, List
 from ...models.main import Traceback, Range
-from ..actions import FileSystemAction, FileEdit
+from ...models.filesystem_edit import EditDiff, FileSystemEdit
 from ...models.filesystem import RangeInFile
-from ..llm.prompters import FormatStringPrompter
 from ..llm.prompt_utils import MarkdownStyleEncoderDecoder
 from textwrap import dedent
-from ..core import Policy, Step, StepParams, StepOutput, AtomicStep, Observation, DoneStep
+from ..core import Policy, ReversibleStep, Step, StepParams, Observation, DoneStep
 import subprocess
 from ..util.traceback_parsers import parse_python_traceback
 from ..observation import TracebackObservation
-from ..actions import SequentialAction
 
 
 class RunPolicyUntilDoneStep(Step):
@@ -23,13 +21,13 @@ class RunPolicyUntilDoneStep(Step):
         return observation
 
 
-class RunCodeStep(AtomicStep):
+class RunCodeStep(Step):
     cmd: str
 
     def describe(self) -> str:
         return f"Run `{self.cmd}`"
 
-    def run(self, params: StepParams) -> StepOutput:
+    def run(self, params: StepParams) -> Observation:
         result = subprocess.run(
             self.cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout = result.stdout.decode("utf-8")
@@ -39,15 +37,17 @@ class RunCodeStep(AtomicStep):
         # If it fails, return the error
         tb = parse_python_traceback(stdout) or parse_python_traceback(stderr)
         if tb:
-            return TracebackObservation(traceback=tb), None
+            return TracebackObservation(traceback=tb)
         else:
-            return None, None
+            return None
 
 
-class EditCodeStep(AtomicStep):
+class EditCodeStep(ReversibleStep):
     # Might make an even more specific atomic step, which is "apply file edit"
     range_in_files: List[RangeInFile]
     prompt: str  # String with {code} somewhere
+
+    _edit_diffs: List[EditDiff]
 
     def describe(self) -> str:
         return "Editing files: " + ", ".join(map(lambda rif: rif.filepath, self.range_in_files))
@@ -59,7 +59,7 @@ class EditCodeStep(AtomicStep):
         # observation = next_step.output.observation
         # This is also nicer because it feels less like you're always taking the last step's observation only.
 
-    def run(self, params: StepParams) -> StepOutput:
+    def run(self, params: StepParams) -> Observation:
         enc_dec = MarkdownStyleEncoderDecoder(
             filesystem=params.filesystem, range_in_files=self.range_in_files)
         code_string = enc_dec.encode()
@@ -67,9 +67,23 @@ class EditCodeStep(AtomicStep):
         completion = params.llm.complete(prompt)
         file_edits = enc_dec.decode(completion)
         for file_edit in file_edits:
-            file_edit.apply()
+            self._edit_diffs.append(params.filesystem.apply_edit(file_edit))
 
-        return None, SequentialAction(actions=file_edits)
+        return None
+
+    def reverse(self, params: StepParams):
+        for edit_diff in self._edit_diffs:
+            params.filesystem.apply_edit(edit_diff.backward)
+
+
+class FindCodeStep(Step):
+    prompt: str
+
+    def describe(self) -> str:
+        return "Finding code"
+
+    def run(self, params: StepParams) -> Observation:
+        params.filesystem.open_files()
 
 
 class UserInputStep(Step):
@@ -78,25 +92,6 @@ class UserInputStep(Step):
 
 class SolveTracebackStep(Step):
     traceback: Traceback
-
-    # Step registers itself before as reversible/not
-    # Step returns a plan (Edit/FileEdit/Action/Plan) that is marked as reversible/not
-    # Both?
-    # Do we ever need to know if a step is reversible BEFORE it is run? If not, fine to
-
-    # So reversibility is the responsibility of the Step if it's doing something separate from FileSystemEdit.
-    # What would this look like? Say making some API call.
-    # It should define a resource?
-    # Or should define an Edit/Action...an Action has an apply method and reverse if ReversibleAction
-
-    # If a step is going to be reversible and call other reversible steps, it must be able to reverse itself after between all other called steps
-    # That's gross, so then a step that uses other steps should just be defined in a special language, at its simplest just an array of steps in sequence.
-    # OR we just say you can only make changes through a proxy, and the proxy "records" all changes. Then doesn't matter how things happen.
-    # The FileSystem is the first example of this, maybe whats called a resource.
-    # This makes it nicer that the Step can both take its actions in the moment AND return the EditDiff (actually probably the runner does this?)
-
-    # I think there is no question as to whether you want Action and ReversibleAction. Only question is whether application is the responsibility of the Step
-    # or the Runner. For now I'm going to go with the latter.
 
     def run(self, params: StepParams) -> Observation:
         prompt = dedent("""I ran into this problem with my Python code:
@@ -120,16 +115,19 @@ class SolveTracebackStep(Step):
         return None
 
 
-class ManualEditStep(Step):
-    edit: FileSystemAction
+class ManualEditStep(ReversibleStep):
+    edit: FileSystemEdit
+    _edit_diff: EditDiff
 
-    def __init__(self, edit: FileSystemAction):
+    def __init__(self, edit: FileSystemEdit):
         self.edit = edit
 
-    def run(self, params: StepParams) -> List[FileEdit]:
-        params.filesystem.apply_edit(self.edit)
+    def run(self, params: StepParams) -> Observation:
+        self._edit_diff = params.filesystem.apply_edit(self.edit)
 
-# Instead of having to define a class, should be a create_action function, or Action.from()
+    def reverse(self, params: StepParams):
+        params.filesystem.apply_edit(self._edit_diff)
+
 # There should be an entire langauge-agnostic pipeline through the 1. running command, 2. parsing traceback, 3. generating edit
 
 

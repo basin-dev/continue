@@ -14,7 +14,7 @@ class ContinueBaseModel(BaseModel):
 class HistoryNode(ContinueBaseModel):
     """A point in history, a list of which make up History"""
     step: "Step"
-    output: Union["StepOutput", None]
+    observation: Observation
 
 
 class History(ContinueBaseModel):
@@ -88,22 +88,11 @@ class Agent(ContinueBaseModel):
         return StepParams(agent=self)
 
     def _run_singular_step(self, step: "Step") -> Observation:
-        step_params = self.__get_step_params()
-
-        # Get observation and action from running either Step or AtomicStep
-        if isinstance(step, AtomicStep) or issubclass(step.__class__, AtomicStep):
-            observation, action = step(step_params)
-        else:
-            output = step(step_params)
-            if issubclass(step.__class__, AtomicStep):
-                observation, action = output
-            else:
-                observation = output
-                action = None
+        # Run step
+        observation = step(step_params=self.__get_step_params())
 
         # Update history
-        self.history.add_node(
-            HistoryNode(step=step, output=(observation, action)))
+        self.history.add_node(HistoryNode(step=step, observation=observation))
 
         # Call all subscribed callbacks
         for callback in self._on_step_callbacks:
@@ -177,6 +166,11 @@ class Step(ContinueBaseModel):
         return self.run(params)
 
 
+class ReversibleStep(Step):
+    def reverse(self, params: StepParams):
+        raise NotImplementedError
+
+
 class UserInputStep(Step):
     user_input: str
     name: str = "User Input"
@@ -188,27 +182,9 @@ class UserInputStep(Step):
         return None
 
 
-class AtomicStep(Step):
-    """A step that doesn't get a runner (TODO), but can create its own side-effects."""
-
-    def run(self, params: StepParams) -> "StepOutput":
-        return self.run_with_side_effects(params.llm, params.filesystem)
-
-    def run_with_side_effects(self, llm: LLM, filesystem: FileSystem) -> "StepOutput":
-        raise NotImplementedError
-
-    # def with_validators(self, pairs: List[Tuple[Validator, Type[Step]]]) -> "PolicyWrappedWithValidators":
-    #     """Create a policy that is the same except follows each step by running the validators and fixing with the matched step types."""
-    #     return PolicyWrappedWithValidators(self, pairs)
-
-    # def with_observation_type(self, observation_type: Type[Observation], step_type: Type[Step]) -> "ObservationTypePolicy":
-    #     """Create a policy that is the same except always responds to this observation type with the specified step type."""
-    #     return ObservationTypePolicy(self, observation_type, step_type)
-
-
-class DoneStep(AtomicStep):
-    def run(self, params: StepParams) -> "StepOutput":
-        return None, None
+class DoneStep(ReversibleStep):
+    def run(self, params: StepParams) -> Observation:
+        return None
 
 
 class ValidatorObservation(Observation):
@@ -220,17 +196,5 @@ class Validator(Step):
     def run(self, params: StepParams) -> ValidatorObservation:
         raise NotImplementedError
 
-
-class Action(ContinueBaseModel):
-    reversible: bool = False
-
-    def next_action(self) -> Generator["Action", None, None]:
-        yield self
-
-    def describe(self) -> str:  # This will be used by LLM to generate summaries. This might be a good reason for creation of many Edit classes
-        return self.__repr__()
-
-
-StepOutput = Tuple[Observation | None, Action | None]
 
 HistoryNode.update_forward_refs()

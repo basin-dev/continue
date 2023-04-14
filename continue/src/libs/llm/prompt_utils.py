@@ -3,7 +3,7 @@ from typing import Dict, List
 
 from pydantic import BaseModel
 from ...models.main import AbstractModel
-from ..actions import FileEdit
+from ...models.filesystem_edit import FileEdit
 from ...models.filesystem import FileSystem, RangeInFile
 
 # TODO: EncoderDecoders should be more general things, like guardrails: https://github.com/ShreyaR/guardrails/blob/main/guardrails/guard.py
@@ -12,6 +12,8 @@ from ...models.filesystem import FileSystem, RangeInFile
 # That also makes it easier for people to create their own EncoderDecoders.
 
 # Even better, you define an encoder/decoder class so people can play around with different ways of doing this. And it can be stateful.
+
+
 class FileContentsEncoderDecoder(BaseModel):
     filesystem: FileSystem
     range_in_files: List[RangeInFile]
@@ -19,15 +21,16 @@ class FileContentsEncoderDecoder(BaseModel):
     @abstractmethod
     def encode() -> str:
         raise NotImplementedError()
-    
+
     @abstractmethod
     def decode(completion: str) -> List[FileEdit]:
         raise NotImplementedError()
-    
+
     def _suggestions_to_file_edits(self, suggestions: Dict[str, str]) -> List[FileEdit]:
         file_edits: List[FileEdit] = []
         for suggestion_filepath, suggestion in suggestions.items():
-            matching_rifs = list(filter(lambda r: r.filepath == suggestion_filepath, self.range_in_files))
+            matching_rifs = list(
+                filter(lambda r: r.filepath == suggestion_filepath, self.range_in_files))
             if (len(matching_rifs) > 0):
                 range_in_file = matching_rifs[0]
                 file_edits.append(FileEdit(
@@ -38,7 +41,8 @@ class FileContentsEncoderDecoder(BaseModel):
                 ))
 
         return file_edits
-    
+
+
 class MarkdownStyleEncoderDecoder(FileContentsEncoderDecoder):
     def encode(self) -> str:
         return "\n\n".join([
@@ -72,14 +76,15 @@ class MarkdownStyleEncoderDecoder(FileContentsEncoderDecoder):
             elif inside_file:
                 if line.startswith("```"):
                     inside_file = False
-                    suggestions[current_filepath] = "\n".join(current_file_lines)
+                    suggestions[current_filepath] = "\n".join(
+                        current_file_lines)
                     current_file_lines = []
                     current_filepath = None
                 else:
                     current_file_lines.append(line)
 
         return suggestions
-    
+
     def decode(self, completion: str) -> List[FileEdit]:
         suggestions = self._decode_to_suggestions(completion)
         file_edits = self._suggestions_to_file_edits(suggestions)

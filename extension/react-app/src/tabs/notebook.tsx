@@ -1,4 +1,3 @@
-import { useSelector } from "react-redux";
 import styled from "styled-components";
 import {
   Button,
@@ -6,7 +5,6 @@ import {
   vscBackground,
   MainTextInput,
 } from "../components";
-import IterationContainer from "../components/IterationContainer";
 import ContinueButton from "../components/ContinueButton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { History } from "../../../schema/History";

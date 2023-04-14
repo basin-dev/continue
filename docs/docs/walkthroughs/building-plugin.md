@@ -56,23 +56,9 @@ The benefit of calling sub-Steps with the `Runner` is that we automatically keep
 
 Note that no `Observation` is returned here...
 
-### Writing Steps with Observations
+### Writing Steps with Observations and Side-Effects
 
 TODO
-
-### Writing Steps with Side-Effects
-
-When you can't find a Step to do what you want, it's time to create your own side-effects. TODO
-
-```python
-class AtomicStep(Step):
-    """A step that doesn't get a runner, but can create its own side-effects."""
-    def run(self, params: StepParams) -> StepOutput:
-        return self.run_with_side_effects(params.llm, params.filesystem)
-
-    def run_with_side_effects(self, llm: LLM, filesystem: FileSystem) -> StepOutput:
-        raise NotImplementedError
-```
 
 ## Tutorial: Building a Policy plugin
 

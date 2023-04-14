@@ -1,15 +1,16 @@
 import pluggy
-from ...libs.agent import StepParams, Step, StepOutput
+from ...libs.core import StepParams, Step, Observation
 
 hookspec = pluggy.HookspecMarker("continue.step")
 
 # Perhaps Actions should be generic about what their inputs must be.
 
-class ActionPlugin(Step):
+
+class StepPlugin(Step):
     @hookspec
-    def run(self, params: StepParams) -> StepOutput:
+    def run(self, params: StepParams) -> Observation:
         """Run"""
-    
+
 # 1. Decide the action to take, which returns an Action *type*
 # 2. Pass situational parameters to the Action type, to create an Action instance
 # 3. Run the action instance by just calling without parameters
@@ -18,6 +19,6 @@ class ActionPlugin(Step):
 # @hookspec
 # def can_handle(artifact_types: List[str]) -> bool:
 #     """Announce whether plugin can handle a combination of artifacts
-    
+
 #     :param artifact_types: List of artifact types
 #     """

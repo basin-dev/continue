@@ -5,54 +5,38 @@
     "Step": {
       "title": "Step",
       "type": "object",
-      "properties": {}
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      }
     },
     "Observation": {
       "title": "Observation",
       "type": "object",
       "properties": {}
     },
-    "Action": {
-      "title": "Action",
-      "type": "object",
-      "properties": {
-        "reversible": {
-          "title": "Reversible",
-          "default": false,
-          "type": "boolean"
-        }
-      }
-    },
     "HistoryNode": {
       "title": "HistoryNode",
-      "description": "A node in a DAG",
+      "description": "A point in history, a list of which make up History",
       "type": "object",
       "properties": {
         "step": {
           "$ref": "#/definitions/Step"
         },
-        "output": {
-          "title": "Output",
-          "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
-          "items": [
-            {
-              "$ref": "#/definitions/Observation"
-            },
-            {
-              "$ref": "#/definitions/Action"
-            }
-          ]
+        "observation": {
+          "$ref": "#/definitions/Observation"
         }
       },
       "required": [
-        "step"
+        "step",
+        "observation"
       ]
     },
     "continue__src__libs__core__History": {
       "title": "History",
-      "description": "A history of actions taken",
+      "description": "A history of steps taken and their results",
       "type": "object",
       "properties": {
         "timeline": {
