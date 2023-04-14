@@ -66,7 +66,7 @@ class FileSystem(AbstractModel):
         raise NotImplementedError
 
     @abstractmethod
-    def apply_file_edit(self, edit: FileEdit):
+    def apply_file_edit(self, edit: FileEdit) -> EditDiff:
         raise NotImplementedError
 
     @abstractmethod
@@ -74,14 +74,16 @@ class FileSystem(AbstractModel):
         """Apply edit to filesystem, calculate the reverse edit, and return and EditDiff"""
         raise NotImplementedError
 
+    @classmethod
     def read_range_in_str(self, s: str, r: Range) -> str:
         lines = s.splitlines()[r.start.line:r.end.line + 1]
         lines[0] = lines[0][r.start.character:]
         lines[-1] = lines[-1][:r.end.character + 1]
         return "\n".join(lines)
 
-    def apply_edit_to_str(self, s: str, edit: FileEdit) -> str:
-        original = self.read_range_in_str(s, edit.range)
+    @classmethod
+    def apply_edit_to_str(cls, s: str, edit: FileEdit) -> str:
+        original = cls.read_range_in_str(s, edit.range)
 
         lines = s.splitlines()
         before_lines = lines[:edit.range.start.line]
@@ -136,7 +138,8 @@ class FileSystem(AbstractModel):
     def apply_edit(self, edit: FileSystemEdit) -> EditDiff:
         backward = None
         if isinstance(edit, FileEdit):
-            backward = self.apply_file_edit(edit)
+            diff = self.apply_file_edit(edit)
+            backward = diff.backward
         elif isinstance(edit, AddFile):
             self.write(edit.filepath, edit.content)
             backward = DeleteFile(edit.filepath)
@@ -178,6 +181,7 @@ class FileSystem(AbstractModel):
         else:
             raise TypeError("Unknown FileSystemEdit type: " + str(type(edit)))
 
+        print("Applied edit: ", backward)
         return EditDiff(
             forward=edit,
             backward=backward

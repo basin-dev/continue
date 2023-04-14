@@ -3,6 +3,7 @@ from typing import Generator, List
 from pydantic import BaseModel
 from .main import Position, Range
 from ..libs.util.map_path import map_path
+import os
 
 
 class FileSystemEdit(BaseModel):
@@ -12,10 +13,6 @@ class FileSystemEdit(BaseModel):
 
     @abstractmethod
     def with_mapped_paths(self, orig_root: str, copy_root: str) -> "FileSystemEdit":
-        raise NotImplementedError
-
-    @abstractmethod
-    def describe(self) -> str:  # This will be used by LLM to generate summaries. This might be a good reason for creation of many Edit classes
         raise NotImplementedError
 
 
@@ -115,7 +112,7 @@ class SequentialFileSystemEdit(FileSystemEdit):
             for edit in self.edits
         ])
 
-    def next_edit(self) -> Generator[FileSystemEdit, None, None]:
+    def next_edit(self) -> Generator["FileSystemEdit", None, None]:
         for edit in self.edits:
             yield from edit.next_edit()
 

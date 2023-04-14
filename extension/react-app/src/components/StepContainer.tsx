@@ -27,7 +27,9 @@ interface StepContainerProps {
   onReverse: () => void;
 }
 
-const MainDiv = styled.div``;
+const MainDiv = styled.div`
+  animation: ${appear} 0.3s ease-in-out;
+`;
 
 const StepContainerDiv = styled.div<{ open: boolean }>`
   background-color: ${(props) => (props.open ? vscBackground : secondaryDark)};
@@ -110,11 +112,7 @@ function StepContainer(props: StepContainerProps) {
 
           {open && (
             <>
-              <SubContainer title="Action">
-                {/* {props.historyNode.output?.[1] || "No action"} */}
-                Action
-              </SubContainer>
-              {props.historyNode.output?.[0] && (
+              {props.historyNode.observation && (
                 <SubContainer title="Error">
                   <CodeBlock>Error Here</CodeBlock>
                 </SubContainer>

@@ -14,7 +14,7 @@ class ContinueBaseModel(BaseModel):
 class HistoryNode(ContinueBaseModel):
     """A point in history, a list of which make up History"""
     step: "Step"
-    observation: Observation
+    observation: Observation | None
 
 
 class History(ContinueBaseModel):
@@ -33,9 +33,9 @@ class History(ContinueBaseModel):
 
     def last_observation(self) -> Observation | None:
         state = self.get_current()
-        if state is None or state.output is None:
+        if state is None:
             return None
-        return state.output[0]
+        return state.observation
 
     @classmethod
     def from_empty(cls):
@@ -89,7 +89,7 @@ class Agent(ContinueBaseModel):
 
     def _run_singular_step(self, step: "Step") -> Observation:
         # Run step
-        observation = step(step_params=self.__get_step_params())
+        observation = step(self.__get_step_params())
 
         # Update history
         self.history.add_node(HistoryNode(step=step, observation=observation))

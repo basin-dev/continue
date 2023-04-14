@@ -36,8 +36,7 @@ class FileContentsEncoderDecoder(BaseModel):
                 file_edits.append(FileEdit(
                     range=range_in_file.range,
                     filepath=range_in_file.filepath,
-                    replacement=suggestion,
-                    filesystem=self.filesystem
+                    replacement=suggestion
                 ))
 
         return file_edits

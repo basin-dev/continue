@@ -47,7 +47,7 @@ class EditCodeStep(ReversibleStep):
     range_in_files: List[RangeInFile]
     prompt: str  # String with {code} somewhere
 
-    _edit_diffs: List[EditDiff]
+    _edit_diffs: List[EditDiff] = []
 
     def describe(self) -> str:
         return "Editing files: " + ", ".join(map(lambda rif: rif.filepath, self.range_in_files))
@@ -56,7 +56,7 @@ class EditCodeStep(ReversibleStep):
         # so something like
         # next_step = SomeStep()
         # yield next_step
-        # observation = next_step.output.observation
+        # observation = next_step.observation
         # This is also nicer because it feels less like you're always taking the last step's observation only.
 
     def run(self, params: StepParams) -> Observation:
