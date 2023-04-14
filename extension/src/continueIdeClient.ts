@@ -1,6 +1,9 @@
 import { ShowSuggestionRequest } from "../schema/ShowSuggestionRequest";
+import { ShowSuggestion } from "./suggestions";
+import { openEditorAndRevealRange } from "./util/vscode";
 import { FileEdit, RangeInFile } from "./client";
 import * as vscode from "vscode";
+import { acceptSuggestionCommand, rejectSuggestionCommand } from "./suggestions";
 
 class IdeProtocolClient {
   private readonly _ws: WebSocket;
@@ -20,11 +23,13 @@ class IdeProtocolClient {
   // On message handlers
 
   showSuggestion(edit: FileEdit) {
-    // showSuggestion
+    // showSuggestion already exists
+    showSuggestion(edit);
   }
 
   openFile(filepath: string) {
-    // TODO
+    // vscode has a builtin open/get open files
+    openEditorAndRevealRange(filepath, undefined, vscode.ViewColumn.One);
   }
 
   // ------------------------------------ //
@@ -36,24 +41,43 @@ class IdeProtocolClient {
   }
 
   openNotebook() {
-    // TODO
+    // Open notebook is straightforward, just see debugPanel for how we do this
+    setupDebugPanel();
   }
 
   acceptRejectSuggestion(accept: boolean) {
-    // TODO
+    // accept/rejectSuggestion already exists
+    acceptSuggestionCommand();
+    rejectSuggestionCommand();
   }
 
   // ------------------------------------ //
   // Respond to request
 
   getOpenFiles(): string[] {
+    // vscode has a builtin open/get open files
     return vscode.window.visibleTextEditors.map((editor) => {
       return editor.document.uri.fsPath;
     });
   }
 
   getHighlightedCode(): RangeInFile[] {
-    // TODO
+    
+    const editor = vscode.window.activeTextEditor;
+    
+    if (!editor) {
+      return;
+    }
+
+    const selection = editor.selection;
+
+    if (selection.isEmpty) {
+      return;
+    }
+
+    const selectedCode = editor.document.getText(selection);
+
+    return selectedCode;
   }
 }
 
