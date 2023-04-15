@@ -87,7 +87,8 @@ let streamManager = new StreamManager();
 export let debugPanelWebview: vscode.Webview | undefined;
 export function setupDebugPanel(
   panel: vscode.WebviewPanel,
-  context: vscode.ExtensionContext | undefined
+  context: vscode.ExtensionContext | undefined,
+  sessionId: string
 ): string {
   debugPanelWebview = panel.webview;
   panel.onDidDispose(() => {
@@ -148,6 +149,7 @@ export function setupDebugPanel(
           type: "onLoad",
           vscMachineId: vscode.env.machineId,
           apiUrl: get_api_url(),
+          sessionId,
         });
         break;
       }

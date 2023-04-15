@@ -154,7 +154,6 @@ class Step(ContinueBaseModel):
 
     @validator("name", pre=True, always=True)
     def name_is_class_name(cls, name):
-        print("Name is ", name)
         if name is None:
             return cls.__name__
         return name

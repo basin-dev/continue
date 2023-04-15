@@ -2,7 +2,7 @@ from typing import Union
 from ..models.main import *
 from ..models.filesystem import *
 from ..libs.core import History, HistoryNode, Observation
-from ..libs.ide import *
+from ..server.ide import *
 from pydantic import schema_json_of
 import os
 
