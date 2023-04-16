@@ -1,9 +1,10 @@
 import time
-from typing import Callable, Generator, List, Tuple, Union
+from typing import Callable, Coroutine, Generator, List, Tuple, Union
 from ..models.filesystem import FileSystem, RangeInFile, RealFileSystem
 from pydantic import BaseModel, parse_file_as, validator
 from .llm import LLM
-from .observation import Observation
+from .observation import Observation, UserInputObservation
+from ..server.ide_protocol import AbstractIdeProtocolServer
 
 
 class ContinueBaseModel(BaseModel):
@@ -54,15 +55,17 @@ class StepParams:
     """The SDK provided as parameters to a step"""
     filesystem: FileSystem
     llm: LLM
+    ide: AbstractIdeProtocolServer
     __agent: "Agent"
 
     def __init__(self, agent: "Agent"):
         self.filesystem = agent.filesystem
         self.llm = agent.llm
+        self.ide = agent.ide
         self.__agent = agent
 
-    def run_step(self, step: "Step") -> Observation:
-        return self.__agent._run_singular_step(step)
+    async def run_step(self, step: "Step") -> Coroutine[Observation, None, None]:
+        return await self.__agent._run_singular_step(step)
 
     def get_history(self) -> History:
         return self.__agent.history
@@ -70,13 +73,17 @@ class StepParams:
 
 class Agent(ContinueBaseModel):
     llm: LLM
-    filesystem: FileSystem = RealFileSystem()
     policy: Policy
+    ide: AbstractIdeProtocolServer
+    filesystem: FileSystem = RealFileSystem()
     history: History = History.from_empty()
     _on_step_callbacks: List[Callable[["Step"], None]] = []
 
     _active: bool = False
     _should_halt: bool = False
+
+    class Config:
+        arbitrary_types_allowed = True
 
     def on_step(self, callback: Callable[["Step"], None]):
         self._on_step_callbacks.append(callback)
@@ -87,9 +94,9 @@ class Agent(ContinueBaseModel):
     def __get_step_params(self):
         return StepParams(agent=self)
 
-    def _run_singular_step(self, step: "Step") -> Observation:
+    async def _run_singular_step(self, step: "Step") -> Coroutine[Observation, None, None]:
         # Run step
-        observation = step(self.__get_step_params())
+        observation = await step(self.__get_step_params())
 
         # Update history
         self.history.add_node(HistoryNode(step=step, observation=observation))
@@ -100,27 +107,27 @@ class Agent(ContinueBaseModel):
 
         return observation
 
-    def run_from_step(self, step: "Step"):
+    async def run_from_step(self, step: "Step"):
         if self._active:
             raise RuntimeError("Agent is already running")
         self._active = True
 
         next_step = step
         while not (next_step is None or isinstance(next_step, DoneStep) or self._should_halt):
-            observation = self._run_singular_step(next_step)
+            observation = await self._run_singular_step(next_step)
             next_step = self.policy.next(self.history)
 
         self._active = False
 
-    def run_from_observation(self, observation: Observation):
+    async def run_from_observation(self, observation: Observation):
         next_step = self.policy.next(self.history)
-        self.run_from_step(next_step)
+        await self.run_from_step(next_step)
 
-    def run_policy(self):
+    async def run_policy(self):
         first_step = self.policy.next(self.history)
-        self.run_from_step(first_step)
+        await self.run_from_step(first_step)
 
-    def accept_user_input(self, user_input: str):
+    async def accept_user_input(self, user_input: str):
         if self._active:
             self._should_halt = True
             while self._active:
@@ -129,7 +136,7 @@ class Agent(ContinueBaseModel):
 
         # Just run the step that takes user input, and
         # then up to the policy to decide how to deal with it.
-        self.run_from_step(UserInputStep(user_input=user_input))
+        await self.run_from_step(UserInputStep(user_input=user_input))
 
 
 class Step(ContinueBaseModel):
@@ -158,11 +165,11 @@ class Step(ContinueBaseModel):
             return cls.__name__
         return name
 
-    def run(self, params: StepParams) -> Observation:
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         raise NotImplementedError
 
-    def __call__(self, params: StepParams) -> Observation:
-        return self.run(params)
+    async def __call__(self, params: StepParams) -> Coroutine[Observation, None, None]:
+        return await self.run(params)
 
 
 class ReversibleStep(Step):
@@ -177,12 +184,12 @@ class UserInputStep(Step):
     def describe(self) -> str:
         return self.user_input
 
-    def run(self, params: StepParams) -> Observation:
-        return None
+    async def run(self, params: StepParams) -> Coroutine[UserInputObservation, None, None]:
+        return UserInputObservation(user_input=self.user_input)
 
 
 class DoneStep(ReversibleStep):
-    def run(self, params: StepParams) -> Observation:
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         return None
 
 

@@ -1,7 +1,8 @@
 from typing import Generator, List, Tuple, Type
-from .core import Step, DoneStep, Validator, Policy, History, UserInputStep
-from .observation import Observation, TracebackObservation
-from .steps.main import EditCodeStep, SolveTracebackStep, RunCodeStep
+
+from .core import Agent, Step, DoneStep, Validator, Policy, History, UserInputStep
+from .observation import Observation, TracebackObservation, UserInputObservation
+from .steps.main import EditCodeStep, EditHighlightedCodeStep, SolveTracebackStep, RunCodeStep
 
 
 class DemoPolicy(Policy):
@@ -14,9 +15,9 @@ class DemoPolicy(Policy):
 
     def next(self, history: History) -> Step:
         observation = history.last_observation()
-        if observation is not None and isinstance(observation, UserInputStep):
+        if observation is not None and isinstance(observation, UserInputObservation):
             # This could be defined with ObservationTypePolicy. Ergonomics not right though.
-            return EditCodeStep(prompt=observation.user_input, range_in_files=[])
+            return EditHighlightedCodeStep(user_input=observation.user_input)
 
         state = history.get_current()
         if state is None or not self.ran_code_last:
@@ -95,8 +96,8 @@ class PolicyWrappedWithValidators(Policy):
                 else:
                     return self.pairs[self.index][0]
             else:
-                _, step = self.pairs[self.index]
-                return step(observation)
+                _, step_type = self.pairs[self.index]
+                return step_type(observation)
 
 # Problem is how to yield a Step while also getting its observation. You'd have to run the step within the policy in order to get its observation.
 # This can be done from within a step, right?

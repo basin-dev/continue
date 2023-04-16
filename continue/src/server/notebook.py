@@ -11,6 +11,7 @@ from ..libs.core import Agent, History, Step
 from ..libs.observation import Observation
 from dotenv import load_dotenv
 from ..libs.llm.openai import OpenAI
+from .ide_protocol import AbstractIdeProtocolServer
 import os
 import asyncio
 import nest_asyncio
@@ -58,7 +59,10 @@ class SessionManager:
             raise KeyError("Session ID not recognized")
         return self.sessions[session_id]
 
-    def new_session(self, agent: Agent) -> str:
+    def new_session(self, ide: AbstractIdeProtocolServer) -> str:
+        cmd = "python3 /Users/natesesti/Desktop/continue/extension/examples/python/main.py"
+        agent = Agent(llm=OpenAI(api_key=openai_api_key),
+                      policy=DemoPolicy(cmd=cmd), ide=ide)
         session_id = str(uuid4())
         session = Session(session_id=session_id, agent=agent)
         self.sessions[session_id] = session
@@ -71,6 +75,7 @@ class SessionManager:
             })
 
         agent.on_step(on_step)
+        asyncio.create_task(agent.run_policy())
         return session_id
 
     def remove_session(self, session_id: str):
@@ -134,14 +139,14 @@ async def websocket_endpoint(websocket: WebSocket, session: Session = Depends(we
     })
     print("Session started", data)
     while AppStatus.should_exit is False:
-        data = await websocket.receive_text()
+        data = await websocket.receive_json()
 
         if "messageType" not in data:
             continue
         messageType = data["messageType"]
         if messageType == "main_input":
             # Do something with user input
-            session.agent.accept_user_input(data["value"])
+            asyncio.create_task(session.agent.accept_user_input(data["value"]))
         elif messageType == "reverse":
             # Reverse the history to the given index
             session.agent.history.reverse_to_index(data["index"])
@@ -152,7 +157,7 @@ async def websocket_endpoint(websocket: WebSocket, session: Session = Depends(we
 @router.post("/run")
 def request_run(step: Step, session=Depends(session)):
     """Tell an agent to take a specific action."""
-    session.agent.run_from_step(step)
+    asyncio.create_task(session.agent.run_from_step(step))
     return "Success"
 
 
@@ -163,5 +168,5 @@ def get_history(session=Depends(session)) -> History:
 
 @router.post("/observation")
 def post_observation(observation: Observation, session=Depends(session)):
-    session.agent.run_from_observation(observation)
+    asyncio.create_task(session.agent.run_from_observation(observation))
     return "Success"

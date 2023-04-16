@@ -202,6 +202,7 @@ function Notebook(props: NotebookProps) {
           value: mainTextInputRef.current.value,
         })
       );
+      mainTextInputRef.current.value = "";
     }
   }, [websocket]);
 

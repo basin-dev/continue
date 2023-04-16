@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, Coroutine, List
 from ...models.main import Traceback, Range
 from ...models.filesystem_edit import EditDiff, FileSystemEdit
 from ...models.filesystem import RangeInFile
@@ -13,10 +13,10 @@ from ..observation import TracebackObservation
 class RunPolicyUntilDoneStep(Step):
     policy: "Policy"
 
-    def run(self, params: StepParams) -> Observation:
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         next_step = self.policy.next(params.get_history())
         while next_step is not None and not isinstance(next_step, DoneStep):
-            observation = params.run_step(next_step)
+            observation = await params.run_step(next_step)
             next_step = self.policy.next(params.get_history())
         return observation
 
@@ -27,7 +27,7 @@ class RunCodeStep(Step):
     def describe(self) -> str:
         return f"Run `{self.cmd}`"
 
-    def run(self, params: StepParams) -> Observation:
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         result = subprocess.run(
             self.cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout = result.stdout.decode("utf-8")
@@ -59,7 +59,7 @@ class EditCodeStep(ReversibleStep):
         # observation = next_step.observation
         # This is also nicer because it feels less like you're always taking the last step's observation only.
 
-    def run(self, params: StepParams) -> Observation:
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         enc_dec = MarkdownStyleEncoderDecoder(
             filesystem=params.filesystem, range_in_files=self.range_in_files)
         code_string = enc_dec.encode()
@@ -76,13 +76,35 @@ class EditCodeStep(ReversibleStep):
             params.filesystem.apply_edit(edit_diff.backward)
 
 
+class EditHighlightedCodeStep(Step):
+    user_input: str
+    _prompt: str = dedent("""Below is the code that you will change:
+
+                {code}
+
+                This is the user request:
+
+                {user_input}
+
+                Please rewrite the code such that it perfectly satisfies the user request:
+            """)
+
+    def describe(self) -> str:
+        return "Editing highlighted code"
+
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+        range_in_files = await params.ide.getHighlightedCode()
+        await params.run_step(EditCodeStep(
+            range_in_files=range_in_files, prompt=self._prompt.format(code="{code}", user_input=self.user_input)))
+
+
 class FindCodeStep(Step):
     prompt: str
 
     def describe(self) -> str:
         return "Finding code"
 
-    def run(self, params: StepParams) -> Observation:
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         params.filesystem.open_files()
 
 
@@ -93,7 +115,7 @@ class UserInputStep(Step):
 class SolveTracebackStep(Step):
     traceback: Traceback
 
-    def run(self, params: StepParams) -> Observation:
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         prompt = dedent("""I ran into this problem with my Python code:
 
                 {traceback}
@@ -110,7 +132,7 @@ class SolveTracebackStep(Step):
             range_in_files.append(RangeInFile.from_entire_file(
                 frame.filepath, params.filesystem))
 
-        params.run_step(EditCodeStep(
+        await params.run_step(EditCodeStep(
             range_in_files=range_in_files, prompt=prompt))
         return None
 
@@ -122,7 +144,7 @@ class ManualEditStep(ReversibleStep):
     def __init__(self, edit: FileSystemEdit):
         self.edit = edit
 
-    def run(self, params: StepParams) -> Observation:
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         self._edit_diff = params.filesystem.apply_edit(self.edit)
 
     def reverse(self, params: StepParams):

@@ -1,0 +1,58 @@
+from typing import Any, List
+from abc import ABC, abstractmethod
+
+from pydantic import BaseModel
+
+from ..models.main import Traceback
+from ..models.filesystem_edit import FileEdit, FileSystemEdit
+from ..models.filesystem import RangeInFile
+
+
+class AbstractIdeProtocolServer(ABC):
+    @abstractmethod
+    async def handle_json(self, data: Any):
+        """Handle a json message"""
+
+    @abstractmethod
+    def showSuggestion():
+        """Show a suggestion to the user"""
+
+    @abstractmethod
+    async def setFileOpen(self, filepath: str, open: bool):
+        """Set whether a file is open"""
+
+    @abstractmethod
+    async def openNotebook(self):
+        """Open a notebook"""
+
+    @abstractmethod
+    async def showSuggestionsAndWait(self, suggestions: List[FileEdit]) -> bool:
+        """Show suggestions to the user and wait for a response"""
+
+    @abstractmethod
+    def onAcceptRejectSuggestion(self, suggestionId: str, accepted: bool):
+        """Called when the user accepts or rejects a suggestion"""
+
+    @abstractmethod
+    def onTraceback(self, traceback: Traceback):
+        """Called when a traceback is received"""
+
+    @abstractmethod
+    def onFileSystemUpdate(self, update: FileSystemEdit):
+        """Called when a file system update is received"""
+
+    @abstractmethod
+    def onCloseNotebook(self, session_id: str):
+        """Called when a notebook is closed"""
+
+    @abstractmethod
+    def onOpenNotebookRequest(self):
+        """Called when a notebook is requested to be opened"""
+
+    @abstractmethod
+    async def getOpenFiles(self) -> List[str]:
+        """Get a list of open files"""
+
+    @abstractmethod
+    async def getHighlightedCode(self) -> List[RangeInFile]:
+        """Get a list of highlighted code"""

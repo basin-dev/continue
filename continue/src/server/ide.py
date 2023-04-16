@@ -1,5 +1,7 @@
 # This is a separate server from server/main.py
-from typing import Any, List, Type, TypeVar, Union
+import asyncio
+from typing import Any, Dict, List, Type, TypeVar, Union
+import uuid
 from fastapi import WebSocket, Body, APIRouter
 from uvicorn.main import Server
 from ..models.filesystem import RangeInFile
@@ -7,20 +9,7 @@ from ..models.main import Traceback
 from ..models.filesystem_edit import FileSystemEdit, FileEdit
 from pydantic import BaseModel
 from .notebook import SessionManager, session_manager
-from ..libs.core import Agent
-from ..libs.llm.openai import OpenAI
-from ..libs.policy import DemoPolicy
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
-
-
-def create_demo_agent(ide: "IdeProtocolServer") -> Agent:
-    cmd = "python3 /Users/natesesti/Desktop/continue/extension/examples/python/main.py"
-    return Agent(llm=OpenAI(api_key=openai_api_key),
-                 policy=DemoPolicy(cmd=cmd), ide=ide)
+from .ide_protocol import AbstractIdeProtocolServer
 
 
 router = APIRouter(prefix="/ide", tags=["ide"])
@@ -60,26 +49,46 @@ class ShowSuggestionRequest(BaseModel):
     suggestion: FileEdit
 
 
+class ShowSuggestionResponse(BaseModel):
+    messageType: str = "showSuggestion"
+    suggestion: FileEdit
+    accepted: bool
+
+
+class AsyncSubscriptionQueue:
+    queues: Dict[str, asyncio.Queue] = {}
+
+    def post(self, messageType: str, data: any):
+        if messageType not in self.queues:
+            self.queues.update({messageType: asyncio.Queue()})
+        self.queues[messageType].put_nowait(data)
+
+    async def get(self, message_type: str) -> any:
+        if message_type not in self.queues:
+            self.queues.update({message_type: asyncio.Queue()})
+        return await self.queues[message_type].get()
+
+
 T = TypeVar("T", bound=BaseModel)
 
 
-class IdeProtocolServer:
+class IdeProtocolServer(AbstractIdeProtocolServer):
     websocket: WebSocket
     session_manager: SessionManager
+    sub_queue: AsyncSubscriptionQueue = AsyncSubscriptionQueue()
 
     def __init__(self, session_manager: SessionManager):
         self.session_manager = session_manager
 
     async def _send_json(self, data: Any):
-        print("Sending: ", data)
         await self.websocket.send_json(data)
 
-    async def _receive_json(self) -> Any:
-        return await self.websocket.receive_json()
+    async def _receive_json(self, message_type: str) -> Any:
+        return await self.sub_queue.get(message_type)
 
-    async def _send_and_receive_json(self, data: Any, resp_model: Type[T]) -> T:
+    async def _send_and_receive_json(self, data: Any, resp_model: Type[T], message_type: str) -> T:
         await self._send_json(data)
-        resp = await self._receive_json()
+        resp = await self._receive_json(message_type)
         return resp_model.parse_obj(resp)
 
     async def handle_json(self, data: Any):
@@ -88,6 +97,8 @@ class IdeProtocolServer:
             await self.openNotebook()
         elif t == "setFileOpen":
             await self.setFileOpen(data["filepath"], data["open"])
+        elif t in ["highlightedCode"]:
+            self.sub_queue.post(t, data)
         else:
             raise ValueError("Unknown message type", t)
 
@@ -106,13 +117,27 @@ class IdeProtocolServer:
         })
 
     async def openNotebook(self):
-        agent = create_demo_agent(self)
-        session_id = self.session_manager.new_session(agent)
-        agent.run_policy()
+        session_id = self.session_manager.new_session(self)
         await self._send_json({
             "messageType": "openNotebook",
             "sessionId": session_id
         })
+
+    async def showSuggestionsAndWait(self, suggestions: List[FileEdit]) -> bool:
+        # Python equivalent of Promise.all for each suggestion
+        ids = [str(uuid.uuid4()) for _ in suggestions]
+        for i in range(len(suggestions)):
+            self._send_json({
+                "messageType": "showSuggestion",
+                "suggestion": suggestions[i],
+                "suggestionId": ids[i]
+            })
+        responses = await asyncio.gather(*[
+            self._receive_json(ShowSuggestionResponse)
+            for i in range(len(suggestions))
+        ])  # WORKING ON THIS FLOW HERE. Fine now to just await for response, instead of doing something fancy with a "waiting" state on the agent.
+        # Just need connect the suggestionId to the IDE (and the notebook)
+        return any([r.accepted for r in responses])
 
     # Here needs to pass message onto the Agent OR Agent just subscribes.
     # This is where you might have triggers: plugins can subscribe to certian events
@@ -139,13 +164,13 @@ class IdeProtocolServer:
     async def getOpenFiles(self) -> List[str]:
         resp = await self._send_and_receive_json({
             "messageType": "getOpenFiles"
-        }, OpenFilesResponse)
+        }, OpenFilesResponse, "openFiles")
         return resp.openFiles
 
     async def getHighlightedCode(self) -> List[RangeInFile]:
         resp = await self._send_and_receive_json({
-            "messageType": "getHighlightedCode"
-        }, HighlightedCodeResponse)
+            "messageType": "highlightedCode"
+        }, HighlightedCodeResponse, "highlightedCode")
         return resp.highlightedCode
 
 
@@ -155,12 +180,11 @@ ideProtocolServer = IdeProtocolServer(session_manager)
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    ideProtocolServer.websocket = websocket
+    print("Accepted websocket connection from, ", websocket.client)
     await websocket.send_json({"messageType": "connected"})
-
+    ideProtocolServer.websocket = websocket
     while True:
         data = await websocket.receive_json()
-        print("Received", data)
         await ideProtocolServer.handle_json(data)
 
     await websocket.close()

@@ -8,23 +8,35 @@ const exec = util.promisify(require("child_process").exec);
 const WebSocket = require("ws");
 
 class IdeProtocolClient {
-  private readonly _ws: WebSocket;
+  private _ws: WebSocket | null = null;
+  private readonly _serverUrl: string;
   private readonly _context: vscode.ExtensionContext;
 
   constructor(serverUrl: string, context: vscode.ExtensionContext) {
     this._context = context;
-    this._ws = new WebSocket(serverUrl);
+    this._serverUrl = serverUrl;
+    let ws = new WebSocket(serverUrl);
+    this._ws = ws;
+    ws.onclose = () => {
+      this._ws = null;
+    };
+    ws.on("message", (data: any) => {
+      this.handleMessage(JSON.parse(data));
+    });
     // Setup listeners for any file changes in open editors
     vscode.workspace.onDidChangeTextDocument((event) => {});
   }
 
   async isConnected() {
+    if (this._ws === null) {
+      this._ws = new WebSocket(this._serverUrl);
+    }
     // On open, return a promise
-    if (this._ws.readyState === WebSocket.OPEN) {
+    if (this._ws!.readyState === WebSocket.OPEN) {
       return;
     }
     return new Promise((resolve, reject) => {
-      this._ws.onopen = () => {
+      this._ws!.onopen = () => {
         resolve(null);
       };
     });
@@ -51,7 +63,7 @@ class IdeProtocolClient {
 
   async send(messageType: string, data: object) {
     await this.isConnected();
-    this._ws.send(JSON.stringify({ messageType, ...data }));
+    this._ws!.send(JSON.stringify({ messageType, ...data }));
   }
 
   async receiveMessage(messageType: string): Promise<any> {
@@ -70,10 +82,28 @@ class IdeProtocolClient {
   }
 
   async sendAndReceive(message: any, messageType: string): Promise<any> {
-    console.log("SENDING");
     let resp = await this.send(messageType, message);
-    console.log("SENT");
     return await this.receiveMessage(messageType);
+  }
+
+  async handleMessage(message: any) {
+    switch (message.messageType) {
+      case "highlightedCode":
+        this.send("highlightedCode", {
+          highlightedCode: this.getHighlightedCode(),
+        });
+        break;
+      case "openFiles":
+        this.send("openFiles", {
+          openFiles: this.getOpenFiles(),
+        });
+        break;
+      case "openNotebook":
+      case "connected":
+        break;
+      default:
+        throw Error("Unknown message type:" + message.messageType);
+    }
   }
 
   // ------------------------------------ //
@@ -92,7 +122,6 @@ class IdeProtocolClient {
 
   closeNotebook() {
     // TODO: And close the debug panel webview
-    this._ws.close();
   }
 
   async openNotebook() {
@@ -129,7 +158,27 @@ class IdeProtocolClient {
 
   getHighlightedCode(): RangeInFile[] {
     // TODO
-    return [];
+    let rangeInFiles: RangeInFile[] = [];
+    vscode.window.visibleTextEditors.forEach((editor) => {
+      editor.selections.forEach((selection) => {
+        if (!selection.isEmpty) {
+          rangeInFiles.push({
+            filepath: editor.document.uri.fsPath,
+            range: {
+              start: {
+                line: selection.start.line,
+                character: selection.start.character,
+              },
+              end: {
+                line: selection.end.line,
+                character: selection.end.character,
+              },
+            },
+          });
+        }
+      });
+    });
+    return rangeInFiles;
   }
 }
 
