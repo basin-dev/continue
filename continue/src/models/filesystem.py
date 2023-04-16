@@ -77,6 +77,9 @@ class FileSystem(AbstractModel):
     @classmethod
     def read_range_in_str(self, s: str, r: Range) -> str:
         lines = s.splitlines()[r.start.line:r.end.line + 1]
+        if len(lines) == 0:
+            return ""
+
         lines[0] = lines[0][r.start.character:]
         lines[-1] = lines[-1][:r.end.character + 1]
         return "\n".join(lines)
@@ -98,7 +101,8 @@ class FileSystem(AbstractModel):
                 line=edit.range.start.line +
                 len(edit.replacement.splitlines()) - 1,
                 character=edit.range.start.character +
-                len(edit.replacement.splitlines()[-1])
+                len(edit.replacement.splitlines()
+                    [-1]) if edit.replacement != "" else 0
             )
         )
 
@@ -181,7 +185,6 @@ class FileSystem(AbstractModel):
         else:
             raise TypeError("Unknown FileSystemEdit type: " + str(type(edit)))
 
-        print("Applied edit: ", backward)
         return EditDiff(
             forward=edit,
             backward=backward

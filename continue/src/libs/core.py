@@ -1,3 +1,5 @@
+from textwrap import dedent
+import traceback
 import time
 from typing import Callable, Coroutine, Generator, List, Tuple, Union
 from ..models.filesystem_edit import EditDiff, FileEdit, FileEditWithFullContents
@@ -142,8 +144,13 @@ class Agent(ContinueBaseModel):
 
         next_step = step
         while not (next_step is None or isinstance(next_step, DoneStep) or self._should_halt):
-            observation = await self._run_singular_step(next_step)
-            next_step = self.policy.next(self.history)
+            try:
+                observation = await self._run_singular_step(next_step)
+                next_step = self.policy.next(self.history)
+            except Exception as e:
+                print(
+                    f"Error while running step: \n{''.join(traceback.format_tb(e.__traceback__))}\n{e}")
+                next_step = None
 
         self._active = False
 
@@ -176,7 +183,7 @@ class Step(ContinueBaseModel):
     hide: bool = False
     _description: str | None = None
 
-    async def describe(self, llm: LLM) -> str:
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         if self._description is not None:
             return self._description
         return "Running step: " + self.name
@@ -213,13 +220,27 @@ class ReversibleStep(Step):
 class ManualEditStep(ReversibleStep):
     edit_diff: EditDiff
 
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
+        return "Manual edit step"
+        # TODO - only handling FileEdit here, but need all other types of FileSystemEdits
+        # Also requires the merge_file_edit function
+        # return llm.complete(dedent(f"""This code was replaced:
+
+        #     {self.edit_diff.backward.replacement}
+
+        #     With this code:
+
+        #     {self.edit_diff.forward.replacement}
+
+        #     Maximally concise summary of changes in bullet points (can use markdown):
+        # """))
+
     @classmethod
     def from_sequence(cls, edits: List[FileEditWithFullContents]) -> "ManualEditStep":
         diffs = []
         for edit in edits:
             _, diff = FileSystem.apply_edit_to_str(
                 edit.fileContents, edit.fileEdit)
-            print("Got diff: ", diff)
             diffs.append(diff)
         return cls(edit_diff=EditDiff.from_sequence(diffs))
 
@@ -235,7 +256,7 @@ class UserInputStep(Step):
     name: str = "User Input"
     hide: bool = True
 
-    async def describe(self, llm: LLM) -> str:
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         return self.user_input
 
     async def run(self, params: StepParams) -> Coroutine[UserInputObservation, None, None]:

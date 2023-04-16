@@ -68,7 +68,6 @@ class SessionManager:
         self.sessions[session_id] = session
 
         def on_step(step: Step):
-            print("Sending step to websocket", step)
             session_manager.send_ws_data(session_id, {
                 "messageType": "state",
                 "state": agent.get_full_state().dict()
@@ -91,8 +90,6 @@ class SessionManager:
             return
 
         async def a():
-            print("Sending data to websocket", data,
-                  self.sessions[session_id].ws)
             await self.sessions[session_id].ws.send_json(data)
 
         # Run coroutine in background

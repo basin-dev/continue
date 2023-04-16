@@ -56,7 +56,7 @@ class MarkdownStyleEncoderDecoder(FileContentsEncoderDecoder):
 
         if not '```' in completion:
             completion = "```\n" + completion + "\n```"
-        if completion.splitlines()[0].strip() == '```':
+        if completion.strip().splitlines()[0].strip() == '```':
             first_filepath = self.range_in_files[0].filepath
             completion = f"File ({first_filepath})\n" + completion
 

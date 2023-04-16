@@ -26,7 +26,7 @@ class RunPolicyUntilDoneStep(Step):
 class RunCodeStep(Step):
     cmd: str
 
-    async def describe(self, llm: LLM) -> str:
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         return f"Ran command: `{self.cmd}`"
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
@@ -55,7 +55,7 @@ class EditCodeStep(ReversibleStep):
     _prompt: str | None = None
     _completion: str | None = None
 
-    async def describe(self, llm: LLM) -> str:
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         if self._edit_diffs is None:
             return "Editing files: " + ", ".join(map(lambda rif: rif.filepath, self.range_in_files))
         elif len(self._edit_diffs) == 0:
@@ -103,16 +103,16 @@ class EditHighlightedCodeStep(Step):
     hide = True
     _prompt: str = dedent("""Below is the code before changes:
 
-                {code}
+{code}
 
-                This is the user request:
+This is the user request:
 
-                {user_input}
+{user_input}
 
-                This is the code after being changed to perfectly satisfy the user request:
-            """)
+This is the code after being changed to perfectly satisfy the user request:
+    """)
 
-    async def describe(self, llm: LLM) -> str:
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         return "Editing highlighted code"
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
@@ -140,7 +140,7 @@ class EditHighlightedCodeStep(Step):
 #                 This is the code after being changed to perfectly satisfy the user request:
 #             """)
 
-#     async def describe(self, llm: LLM) -> str:
+#     async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
 #         return "Making suggestion to change highlighted code"
 
 #     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
@@ -158,7 +158,7 @@ class EditHighlightedCodeStep(Step):
 class FindCodeStep(Step):
     prompt: str
 
-    async def describe(self, llm: LLM) -> str:
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         return "Finding code"
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:

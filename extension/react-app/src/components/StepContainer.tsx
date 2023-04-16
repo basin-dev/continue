@@ -131,7 +131,7 @@ function StepContainer(props: StepContainerProps) {
         </StepContainerDiv>
       </GradientBorder>
 
-      <OnHoverDiv hidden={!isHovered && !open}>
+      <OnHoverDiv hidden={!open}>
         <NaturalLanguageInput
           ref={naturalLanguageInputRef}
         ></NaturalLanguageInput>
