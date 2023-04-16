@@ -43,6 +43,12 @@ class History(ContinueBaseModel):
         return cls(timeline=[], current_index=-1)
 
 
+class FullState(ContinueBaseModel):
+    """A full state of the program, including the history"""
+    history: History
+    active: bool
+
+
 class Policy(ContinueBaseModel):
     """A rule that determines which step to take next"""
 
@@ -85,6 +91,9 @@ class Agent(ContinueBaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    def get_full_state(self) -> FullState:
+        return FullState(history=self.history, active=self._active)
+
     def on_step(self, callback: Callable[["Step"], None]):
         self._on_step_callbacks.append(callback)
 
@@ -97,6 +106,9 @@ class Agent(ContinueBaseModel):
     async def _run_singular_step(self, step: "Step") -> Coroutine[Observation, None, None]:
         # Run step
         observation = await step(self.__get_step_params())
+
+        # Update its description
+        step._set_description(await step.describe(self.llm))
 
         # Update history
         self.history.add_node(HistoryNode(step=step, observation=observation))
@@ -118,6 +130,10 @@ class Agent(ContinueBaseModel):
             next_step = self.policy.next(self.history)
 
         self._active = False
+
+        # Doing this so active can make it to the frontend after steps are done. But want better state syncing tools
+        for callback in self._on_step_callbacks:
+            callback(None)
 
     async def run_from_observation(self, observation: Observation):
         next_step = self.policy.next(self.history)
@@ -141,22 +157,23 @@ class Agent(ContinueBaseModel):
 
 class Step(ContinueBaseModel):
     name: str = None
-    _manual_description: str | None = None
+    hide: bool = False
+    _description: str | None = None
 
-    def describe(self) -> str:
-        if self._manual_description is not None:
-            return self._manual_description
+    async def describe(self, llm: LLM) -> str:
+        if self._description is not None:
+            return self._description
         return "Running step: " + self.name
 
     def _set_description(self, description: str):
-        self._manual_description = description
+        self._description = description
 
     def dict(self, *args, **kwargs):
         d = super().dict(*args, **kwargs)
-        if self._manual_description is not None:
-            d["description"] = self._manual_description
+        if self._description is not None:
+            d["description"] = self._description
         else:
-            d["description"] = self.describe()
+            d["description"] = self.name
         return d
 
     @validator("name", pre=True, always=True)
@@ -180,8 +197,9 @@ class ReversibleStep(Step):
 class UserInputStep(Step):
     user_input: str
     name: str = "User Input"
+    hide: bool = True
 
-    def describe(self) -> str:
+    async def describe(self, llm: LLM) -> str:
         return self.user_input
 
     async def run(self, params: StepParams) -> Coroutine[UserInputObservation, None, None]:

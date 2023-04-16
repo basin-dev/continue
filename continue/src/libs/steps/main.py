@@ -1,4 +1,6 @@
 from typing import Callable, Coroutine, List
+
+from ..llm import LLM
 from ...models.main import Traceback, Range
 from ...models.filesystem_edit import EditDiff, FileSystemEdit
 from ...models.filesystem import RangeInFile
@@ -24,8 +26,8 @@ class RunPolicyUntilDoneStep(Step):
 class RunCodeStep(Step):
     cmd: str
 
-    def describe(self) -> str:
-        return f"Run `{self.cmd}`"
+    async def describe(self, llm: LLM) -> str:
+        return f"Ran command: `{self.cmd}`"
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         result = subprocess.run(
@@ -39,6 +41,7 @@ class RunCodeStep(Step):
         if tb:
             return TracebackObservation(traceback=tb)
         else:
+            self.hide = True
             return None
 
 
@@ -46,11 +49,23 @@ class EditCodeStep(ReversibleStep):
     # Might make an even more specific atomic step, which is "apply file edit"
     range_in_files: List[RangeInFile]
     prompt: str  # String with {code} somewhere
+    name: str = "Edit code"
 
-    _edit_diffs: List[EditDiff] = []
+    _edit_diffs: List[EditDiff] | None = None
+    _prompt: str | None = None
+    _completion: str | None = None
 
-    def describe(self) -> str:
-        return "Editing files: " + ", ".join(map(lambda rif: rif.filepath, self.range_in_files))
+    async def describe(self, llm: LLM) -> str:
+        if self._edit_diffs is None:
+            return "Editing files: " + ", ".join(map(lambda rif: rif.filepath, self.range_in_files))
+        elif len(self._edit_diffs) == 0:
+            return "No edits made"
+        else:
+            return llm.complete(dedent(f"""{self._prompt}{self._completion}
+
+                Maximally concise summary of changes in bullet points (can use markdown):
+            """))
+
         # Description should be generated from the sub-steps. That, or can be defined specially by the developer with params.describe
         # To make the generator: By mixing runner and Step, you keep track of the Step's output as properties, which can be accessed after the yield (we can guarantee this)
         # so something like
@@ -65,7 +80,14 @@ class EditCodeStep(ReversibleStep):
         code_string = enc_dec.encode()
         prompt = self.prompt.format(code=code_string)
         completion = params.llm.complete(prompt)
+
+        # Temporarily doing this to generate description.
+        self._prompt = prompt
+        self._completion = completion
+
         file_edits = enc_dec.decode(completion)
+
+        self._edit_diffs = []
         for file_edit in file_edits:
             self._edit_diffs.append(params.filesystem.apply_edit(file_edit))
 
@@ -78,7 +100,8 @@ class EditCodeStep(ReversibleStep):
 
 class EditHighlightedCodeStep(Step):
     user_input: str
-    _prompt: str = dedent("""Below is the code that you will change:
+    hide = True
+    _prompt: str = dedent("""Below is the code before changes:
 
                 {code}
 
@@ -86,22 +109,56 @@ class EditHighlightedCodeStep(Step):
 
                 {user_input}
 
-                Please rewrite the code such that it perfectly satisfies the user request:
+                This is the code after being changed to perfectly satisfy the user request:
             """)
 
-    def describe(self) -> str:
+    async def describe(self, llm: LLM) -> str:
         return "Editing highlighted code"
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         range_in_files = await params.ide.getHighlightedCode()
+        if len(range_in_files) == 0:
+            files = await params.ide.getOpenFiles()
+            range_in_files = [RangeInFile.from_entire_file(
+                filepath, params.filesystem) for filepath in files]
+
         await params.run_step(EditCodeStep(
             range_in_files=range_in_files, prompt=self._prompt.format(code="{code}", user_input=self.user_input)))
+
+
+# class SuggestHighlightedCodeStep(Step):
+#     user_input: str
+#     hide = True
+#     _prompt: str = dedent("""Below is the code before changes:
+
+#                 {code}
+
+#                 This is the user request:
+
+#                 {user_input}
+
+#                 This is the code after being changed to perfectly satisfy the user request:
+#             """)
+
+#     async def describe(self, llm: LLM) -> str:
+#         return "Making suggestion to change highlighted code"
+
+#     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+#         range_in_files = await params.ide.getHighlightedCode()
+#         if len(range_in_files) == 0:
+#             files = await params.ide.getOpenFiles()
+#             range_in_files = [RangeInFile.from_entire_file(
+#                 filepath, params.filesystem) for filepath in files]
+
+#         params.ide.showSuggestion()
+#         await params.run_step(EditCodeStep(
+#             range_in_files=range_in_files, prompt=self._prompt.format(code="{code}", user_input=self.user_input)))
 
 
 class FindCodeStep(Step):
     prompt: str
 
-    def describe(self) -> str:
+    async def describe(self, llm: LLM) -> str:
         return "Finding code"
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:

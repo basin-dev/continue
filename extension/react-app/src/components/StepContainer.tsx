@@ -86,6 +86,7 @@ function StepContainer(props: StepContainerProps) {
       onMouseLeave={() => {
         setIsHovered(false);
       }}
+      hidden={props.historyNode.step.hide as any}
     >
       <GradientBorder className="m-2 overflow-hidden">
         <StepContainerDiv open={open}>

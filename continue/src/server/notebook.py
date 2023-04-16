@@ -70,8 +70,8 @@ class SessionManager:
         def on_step(step: Step):
             print("Sending step to websocket", step)
             session_manager.send_ws_data(session_id, {
-                "messageType": "history",
-                "history": agent.history.dict()
+                "messageType": "state",
+                "state": agent.get_full_state().dict()
             })
 
         agent.on_step(on_step)
@@ -134,8 +134,8 @@ async def websocket_endpoint(websocket: WebSocket, session: Session = Depends(we
     data = await websocket.receive_text()
     # Update any history that may have happened before connection
     await websocket.send_json({
-        "messageType": "history",
-        "history": session_manager.get_session(session.session_id).agent.history.dict()
+        "messageType": "state",
+        "state": session_manager.get_session(session.session_id).agent.get_full_state().dict()
     })
     print("Session started", data)
     while AppStatus.should_exit is False:

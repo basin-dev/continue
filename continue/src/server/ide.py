@@ -97,7 +97,7 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             await self.openNotebook()
         elif t == "setFileOpen":
             await self.setFileOpen(data["filepath"], data["open"])
-        elif t in ["highlightedCode"]:
+        elif t in ["highlightedCode", "openFiles"]:
             self.sub_queue.post(t, data)
         else:
             raise ValueError("Unknown message type", t)
@@ -163,7 +163,7 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
     # Request information. Session doesn't matter.
     async def getOpenFiles(self) -> List[str]:
         resp = await self._send_and_receive_json({
-            "messageType": "getOpenFiles"
+            "messageType": "openFiles"
         }, OpenFilesResponse, "openFiles")
         return resp.openFiles
 

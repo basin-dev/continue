@@ -4,6 +4,7 @@ import {
   defaultBorderRadius,
   vscBackground,
   MainTextInput,
+  Loader,
 } from "../components";
 import ContinueButton from "../components/ContinueButton";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,6 +27,7 @@ interface NotebookProps {
 function Notebook(props: NotebookProps) {
   const sessionId = useSelector((state: RootStore) => state.config.sessionId);
   const [history, setHistory] = useState<History | undefined>();
+  const [waitingForSteps, setWaitingForSteps] = useState(false);
   // {
   // timeline: [
   //   {
@@ -178,9 +180,9 @@ function Notebook(props: NotebookProps) {
       ws.onmessage = (msg) => {
         console.log("Got message", msg);
         let data = JSON.parse(msg.data);
-        if (data.messageType === "history") {
-          console.log(data.history);
-          setHistory(data.history);
+        if (data.messageType === "state") {
+          setWaitingForSteps(data.state.active);
+          setHistory(data.state.history);
         }
       };
     }
@@ -196,6 +198,7 @@ function Notebook(props: NotebookProps) {
 
   const onMainTextInput = useCallback(() => {
     if (websocket && mainTextInputRef.current) {
+      setWaitingForSteps(true);
       websocket.send(
         JSON.stringify({
           messageType: "main_input",
@@ -224,6 +227,7 @@ function Notebook(props: NotebookProps) {
           />
         );
       })}
+      {waitingForSteps && <Loader></Loader>}
       <MainTextInput
         ref={mainTextInputRef}
         onKeyDown={(e) => {
