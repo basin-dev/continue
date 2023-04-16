@@ -6,7 +6,7 @@ from fastapi import WebSocket, Body, APIRouter
 from uvicorn.main import Server
 from ..models.filesystem import RangeInFile
 from ..models.main import Traceback
-from ..models.filesystem_edit import FileSystemEdit, FileEdit
+from ..models.filesystem_edit import FileSystemEdit, FileEdit, FileEditWithFullContents
 from pydantic import BaseModel
 from .notebook import SessionManager, session_manager
 from .ide_protocol import AbstractIdeProtocolServer
@@ -32,6 +32,11 @@ class AppStatus:
 Server.handle_exit = AppStatus.handle_exit
 
 # TYPES #
+
+
+class FileEditsUpdate(BaseModel):
+    messageType: str = "fileEdits"
+    fileEdits: List[FileEditWithFullContents]
 
 
 class OpenFilesResponse(BaseModel):
@@ -97,6 +102,10 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             await self.openNotebook()
         elif t == "setFileOpen":
             await self.setFileOpen(data["filepath"], data["open"])
+        elif t == "fileEdits":
+            fileEdits = list(
+                map(lambda d: FileEditWithFullContents.parse_obj(d), data["fileEdits"]))
+            self.onFileEdits(fileEdits)
         elif t in ["highlightedCode", "openFiles"]:
             self.sub_queue.post(t, data)
         else:
@@ -124,7 +133,6 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
         })
 
     async def showSuggestionsAndWait(self, suggestions: List[FileEdit]) -> bool:
-        # Python equivalent of Promise.all for each suggestion
         ids = [str(uuid.uuid4()) for _ in suggestions]
         for i in range(len(suggestions)):
             self._send_json({
@@ -159,6 +167,12 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
 
     def onOpenNotebookRequest(self):
         pass
+
+    def onFileEdits(self, edits: List[FileEditWithFullContents]):
+        # Send the file edits to ALL agents.
+        # Maybe not ideal behavior
+        for _, session in self.session_manager.sessions.items():
+            session.agent.handle_manual_edits(edits)
 
     # Request information. Session doesn't matter.
     async def getOpenFiles(self) -> List[str]:

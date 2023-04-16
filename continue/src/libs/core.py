@@ -1,5 +1,6 @@
 import time
 from typing import Callable, Coroutine, Generator, List, Tuple, Union
+from ..models.filesystem_edit import EditDiff, FileEdit, FileEditWithFullContents
 from ..models.filesystem import FileSystem, RangeInFile, RealFileSystem
 from pydantic import BaseModel, parse_file_as, validator
 from .llm import LLM
@@ -103,7 +104,22 @@ class Agent(ContinueBaseModel):
     def __get_step_params(self):
         return StepParams(agent=self)
 
+    _manual_edits_buffer: List[FileEditWithFullContents] = []
+
+    def handle_manual_edits(self, edits: List[FileEditWithFullContents]):
+        for edit in edits:
+            self._manual_edits_buffer.append(edit)
+            # Note that you're storing a lot of unecessary data here. Can compress into EditDiffs on the spot, and merge.
+            # self._manual_edits_buffer = merge_file_edit(self._manual_edits_buffer, edit)
+
     async def _run_singular_step(self, step: "Step") -> Coroutine[Observation, None, None]:
+        # Check manual edits buffer, clear out if needed by creating a ManualEditStep
+        if len(self._manual_edits_buffer) > 0:
+            manualEditsStep = ManualEditStep.from_sequence(
+                self._manual_edits_buffer)
+            self._manual_edits_buffer = []
+            await self._run_singular_step(manualEditsStep)
+
         # Run step
         observation = await step(self.__get_step_params())
 
@@ -192,6 +208,26 @@ class Step(ContinueBaseModel):
 class ReversibleStep(Step):
     def reverse(self, params: StepParams):
         raise NotImplementedError
+
+
+class ManualEditStep(ReversibleStep):
+    edit_diff: EditDiff
+
+    @classmethod
+    def from_sequence(cls, edits: List[FileEditWithFullContents]) -> "ManualEditStep":
+        diffs = []
+        for edit in edits:
+            _, diff = FileSystem.apply_edit_to_str(
+                edit.fileContents, edit.fileEdit)
+            print("Got diff: ", diff)
+            diffs.append(diff)
+        return cls(edit_diff=EditDiff.from_sequence(diffs))
+
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+        return None
+
+    def reverse(self, params: StepParams):
+        params.filesystem.apply_edit(self.edit_diff.backward)
 
 
 class UserInputStep(Step):

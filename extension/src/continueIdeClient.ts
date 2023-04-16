@@ -1,4 +1,5 @@
 import { ShowSuggestionRequest } from "../schema/ShowSuggestionRequest";
+import { FileEditWithFullContents } from "../schema/FileEditWithFullContents";
 import { FileEdit, RangeInFile } from "./client";
 import * as vscode from "vscode";
 import { setupDebugPanel } from "./debugPanel";
@@ -24,7 +25,30 @@ class IdeProtocolClient {
       this.handleMessage(JSON.parse(data));
     });
     // Setup listeners for any file changes in open editors
-    vscode.workspace.onDidChangeTextDocument((event) => {});
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      let fileEdits: FileEditWithFullContents[] = event.contentChanges.map(
+        (change) => {
+          return {
+            fileEdit: {
+              filepath: event.document.uri.fsPath,
+              range: {
+                start: {
+                  line: change.range.start.line,
+                  character: change.range.start.character,
+                },
+                end: {
+                  line: change.range.end.line,
+                  character: change.range.end.character,
+                },
+              },
+              replacement: change.text,
+            },
+            fileContents: event.document.getText(),
+          };
+        }
+      );
+      this.send("fileEdits", { fileEdits });
+    });
   }
 
   async isConnected() {

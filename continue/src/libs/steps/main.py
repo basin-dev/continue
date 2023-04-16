@@ -2,7 +2,7 @@ from typing import Callable, Coroutine, List
 
 from ..llm import LLM
 from ...models.main import Traceback, Range
-from ...models.filesystem_edit import EditDiff, FileSystemEdit
+from ...models.filesystem_edit import EditDiff, FileSystemEdit, SequentialFileSystemEdit
 from ...models.filesystem import RangeInFile
 from ..llm.prompt_utils import MarkdownStyleEncoderDecoder
 from textwrap import dedent
@@ -192,20 +192,6 @@ class SolveTracebackStep(Step):
         await params.run_step(EditCodeStep(
             range_in_files=range_in_files, prompt=prompt))
         return None
-
-
-class ManualEditStep(ReversibleStep):
-    edit: FileSystemEdit
-    _edit_diff: EditDiff
-
-    def __init__(self, edit: FileSystemEdit):
-        self.edit = edit
-
-    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
-        self._edit_diff = params.filesystem.apply_edit(self.edit)
-
-    def reverse(self, params: StepParams):
-        params.filesystem.apply_edit(self._edit_diff)
 
 # There should be an entire langauge-agnostic pipeline through the 1. running command, 2. parsing traceback, 3. generating edit
 

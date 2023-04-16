@@ -82,7 +82,7 @@ class FileSystem(AbstractModel):
         return "\n".join(lines)
 
     @classmethod
-    def apply_edit_to_str(cls, s: str, edit: FileEdit) -> str:
+    def apply_edit_to_str(cls, s: str, edit: FileEdit) -> Tuple[str, EditDiff]:
         original = cls.read_range_in_str(s, edit.range)
 
         lines = s.splitlines()
