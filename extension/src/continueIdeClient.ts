@@ -1,9 +1,17 @@
-import { ShowSuggestionRequest } from "../schema/ShowSuggestionRequest";
-import { ShowSuggestion } from "./suggestions";
-import { openEditorAndRevealRange } from "./util/vscode";
+// import { ShowSuggestionRequest } from "../schema/ShowSuggestionRequest";
+import { showSuggestion } from "./suggestions";
+import { openEditorAndRevealRange, getRightViewColumn } from "./util/vscode";
 import { FileEdit, RangeInFile } from "./client";
 import * as vscode from "vscode";
 import { acceptSuggestionCommand, rejectSuggestionCommand } from "./suggestions";
+import { setupDebugPanel } from "./debugPanel";
+
+// should this be moved here, exported by `suggestions.ts`, or just copied?
+interface SuggestionRanges {
+  oldRange: vscode.Range;
+  newRange: vscode.Range;
+  newSelected: boolean;
+}
 
 class IdeProtocolClient {
   private readonly _ws: WebSocket;
@@ -24,7 +32,16 @@ class IdeProtocolClient {
 
   showSuggestion(edit: FileEdit) {
     // showSuggestion already exists
-    showSuggestion(edit);
+    showSuggestion(
+      edit.filepath,
+      new vscode.Range(
+        edit.range.start.line,
+        edit.range.start.character,
+        edit.range.end.line,
+        edit.range.end.character
+      ),
+      edit.replacement
+    )
   }
 
   openFile(filepath: string) {
@@ -36,26 +53,48 @@ class IdeProtocolClient {
   // Initiate Request
 
   closeNotebook() {
-    // TODO: And close the debug panel webview
+    // close the debug panel webview
+    let panel: vscode.WebviewPanel | undefined;
+    if (panel) {
+      panel.dispose();
+    }
     this._ws.close();
   }
 
   openNotebook() {
     // Open notebook is straightforward, just see debugPanel for how we do this
-    setupDebugPanel();
+    // how to reference the notebook? same as the debug panel?
+    (context: vscode.ExtensionContext) => {
+      let column = getRightViewColumn();
+      const panel = vscode.window.createWebviewPanel(
+        "continue.debugPanelView",
+        "Continue",
+        column,
+        {
+          enableScripts: true,
+          retainContextWhenHidden: true,
+        }
+      );
+  
+      // And set its HTML content
+      panel.webview.html = setupDebugPanel(panel, context);
+
+    };
   }
 
-  acceptRejectSuggestion(accept: boolean) {
-    // accept/rejectSuggestion already exists
-    acceptSuggestionCommand();
-    rejectSuggestionCommand();
+  acceptRejectSuggestion(accept: boolean, key: SuggestionRanges) {
+    // or should function definitions from `suggestions.ts` be moved / copied here?
+    if (accept) {
+      acceptSuggestionCommand(key);
+    } else {
+      rejectSuggestionCommand(key);
+    }
   }
 
   // ------------------------------------ //
   // Respond to request
 
   getOpenFiles(): string[] {
-    // vscode has a builtin open/get open files
     return vscode.window.visibleTextEditors.map((editor) => {
       return editor.document.uri.fsPath;
     });
@@ -64,20 +103,28 @@ class IdeProtocolClient {
   getHighlightedCode(): RangeInFile[] {
     
     const editor = vscode.window.activeTextEditor;
-    
     if (!editor) {
-      return;
+      return [];
     }
 
     const selection = editor.selection;
-
     if (selection.isEmpty) {
-      return;
+      return [];
     }
 
-    const selectedCode = editor.document.getText(selection);
+    const selectedCodeRange: RangeInFile = {
+      range: new vscode.Range(
+        selection.start.line,
+        selection.start.character,
+        selection.end.line,
+        selection.end.character,
+      ),
+      filepath: editor.document.fileName,
+    };
 
-    return selectedCode;
+    // 'RangeInFile' is missing the following properties: length, pop, push, concat, and 29 more??
+    return selectedCodeRange;
+
   }
 }
 
