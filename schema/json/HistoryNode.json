@@ -9,6 +9,11 @@
         "name": {
           "title": "Name",
           "type": "string"
+        },
+        "hide": {
+          "title": "Hide",
+          "default": false,
+          "type": "boolean"
         }
       }
     },

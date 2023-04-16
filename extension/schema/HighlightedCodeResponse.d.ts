@@ -6,14 +6,14 @@
  */
 
 export type HighlightedCodeResponse = HighlightedCodeResponse1;
-export type MsgType = string;
+export type Messagetype = string;
 export type Filepath = string;
 export type Line = number;
 export type Character = number;
 export type Highlightedcode = RangeInFile[];
 
 export interface HighlightedCodeResponse1 {
-  msg_type?: MsgType;
+  messageType?: Messagetype;
   highlightedCode: Highlightedcode;
   [k: string]: unknown;
 }

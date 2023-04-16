@@ -5,12 +5,16 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type OpenFilesResponse = OpenFilesResponse1;
-export type Messagetype = string;
-export type Openfiles = string[];
+export type EditDiff = EditDiff1;
 
-export interface OpenFilesResponse1 {
-  messageType?: Messagetype;
-  openFiles: Openfiles;
+/**
+ * A reversible edit that can be applied to a file.
+ */
+export interface EditDiff1 {
+  forward: FileSystemEdit;
+  backward: FileSystemEdit;
+  [k: string]: unknown;
+}
+export interface FileSystemEdit {
   [k: string]: unknown;
 }

@@ -5,12 +5,12 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type OpenFilesResponse = OpenFilesResponse1;
-export type Messagetype = string;
-export type Openfiles = string[];
+export type RenameFile = RenameFile1;
+export type Filepath = string;
+export type NewFilepath = string;
 
-export interface OpenFilesResponse1 {
-  messageType?: Messagetype;
-  openFiles: Openfiles;
+export interface RenameFile1 {
+  filepath: Filepath;
+  new_filepath: NewFilepath;
   [k: string]: unknown;
 }

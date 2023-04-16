@@ -1,6 +1,7 @@
 from typing import Union
 from ..models.main import *
 from ..models.filesystem import *
+from ..models.filesystem_edit import *
 from ..libs.core import History, HistoryNode, Observation
 from ..server.ide import *
 from pydantic import schema_json_of
@@ -12,7 +13,9 @@ import os
 MODELS_TO_GENERATE = [
     Position, Range, Traceback, TracebackFrame
 ] + [
-    RangeInFile,  # FileEdit, AddFile, DeleteFile, RenameFile, AddDirectory, DeleteDirectory, RenameDirectory, EditDiff
+    RangeInFile
+] + [
+    FileEdit, EditDiff, FileEditWithFullContents, FileSystemEdit, AddFile, DeleteFile, RenameFile, AddDirectory, DeleteDirectory, RenameDirectory
 ] + [
     History, HistoryNode, Observation
 ] + [
