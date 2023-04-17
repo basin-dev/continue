@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from uvicorn.main import Server
 from ..libs.policy import DemoPolicy
 from ..libs.steps.main import RunCodeStep, RunPolicyUntilDoneStep, UserInputStep
-from ..libs.core import Agent, History, Step
+from ..libs.core import Agent, FullState, History, Step
 from ..libs.observation import Observation
 from dotenv import load_dotenv
 from ..libs.llm.openai import OpenAI
@@ -67,13 +67,13 @@ class SessionManager:
         session = Session(session_id=session_id, agent=agent)
         self.sessions[session_id] = session
 
-        def on_step(step: Step):
+        def on_update(state: FullState):
             session_manager.send_ws_data(session_id, {
                 "messageType": "state",
                 "state": agent.get_full_state().dict()
             })
 
-        agent.on_step(on_step)
+        agent.on_update(on_update)
         asyncio.create_task(agent.run_policy())
         return session_id
 
@@ -146,7 +146,7 @@ async def websocket_endpoint(websocket: WebSocket, session: Session = Depends(we
             asyncio.create_task(session.agent.accept_user_input(data["value"]))
         elif messageType == "reverse":
             # Reverse the history to the given index
-            session.agent.history.reverse_to_index(data["index"])
+            asyncio.create_task(session.agent.reverse_to_index(data["index"]))
     print("Closing websocket")
     await websocket.close()
 

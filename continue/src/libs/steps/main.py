@@ -45,7 +45,7 @@ class RunCodeStep(Step):
             return None
 
 
-class EditCodeStep(ReversibleStep):
+class EditCodeStep(Step):
     # Might make an even more specific atomic step, which is "apply file edit"
     range_in_files: List[RangeInFile]
     prompt: str  # String with {code} somewhere
@@ -93,17 +93,13 @@ class EditCodeStep(ReversibleStep):
 
         self._edit_diffs = []
         for file_edit in file_edits:
-            diff = await params.ide.applyFileSystemEdit(file_edit)
+            diff = await params.apply_filesystem_edit(file_edit)
             self._edit_diffs.append(diff)
 
         for filepath in set([file_edit.filepath for file_edit in file_edits]):
             await params.ide.saveFile(filepath)
 
         return None
-
-    async def reverse(self, params: StepParams):
-        for edit_diff in self._edit_diffs:
-            await params.ide.applyFileSystemEdit(edit_diff.backward)
 
 
 class EditHighlightedCodeStep(Step):

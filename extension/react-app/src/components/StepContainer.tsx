@@ -25,9 +25,11 @@ import ContinueButton from "./ContinueButton";
 interface StepContainerProps {
   historyNode: HistoryNode;
   onReverse: () => void;
+  inFuture: boolean;
 }
 
 const MainDiv = styled.div`
+  opacity: ${(props: { inFuture: boolean }) => (props.inFuture ? 0.3 : 1)};
   animation: ${appear} 0.3s ease-in-out;
 `;
 
@@ -80,6 +82,7 @@ function StepContainer(props: StepContainerProps) {
 
   return (
     <MainDiv
+      inFuture={props.inFuture}
       onMouseEnter={() => {
         setIsHovered(true);
       }}
@@ -102,7 +105,11 @@ function StepContainer(props: StepContainerProps) {
               )}
               {props.historyNode.step.name as any}:
             </h4>
-            <HeaderButton>
+            <HeaderButton
+              onClick={() => {
+                props.onReverse();
+              }}
+            >
               <Backward size="1.6em" onClick={props.onReverse}></Backward>
             </HeaderButton>
           </HeaderDiv>
