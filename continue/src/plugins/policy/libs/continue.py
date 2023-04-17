@@ -8,12 +8,26 @@ class ContinuePolicy:
     """A policy that helps you write Continue plugins."""
 
     def __init__(self):
-        self.another_step = True
+        self.selection = "user selection"
+        self.initialize = True
 
     @policy.hookimpl
     def next(self, history: History) -> Step:
-        while self.another_step:
-            yield AddStep
-            yield EditCodeStep
-        yield AddPolicyStep
-        yield EditCodeStep
+        if self.initialize:
+            # TODO: add step
+            # TODO: add policy
+            self.initialize = False
+        if self.selection == "add_step":
+            # TODO: add step
+            self.selection = "edit_step"
+        elif self.selection == "edit_step":
+            # rename if step has a generic name
+            # replace if still boilerplate code
+            # edit if not boilerplate code
+            self.selection = None
+        elif self.selection == "edit_policy"
+            # rename if policy has a generic name
+            # replace if still boilerplate code
+            # edit if not boilerplate code
+        else:
+            # TODO: do something
