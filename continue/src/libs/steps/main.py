@@ -130,7 +130,7 @@ This is the code after being changed to perfectly satisfy the user request:
             files = await params.ide.getOpenFiles()
             contents = {}
             for file in files:
-                contents[file] = await params.ide.readFile()
+                contents[file] = await params.ide.readFile(file)
 
             range_in_files = [RangeInFile.from_entire_file(
                 filepath, content) for filepath, content in contents.items()]

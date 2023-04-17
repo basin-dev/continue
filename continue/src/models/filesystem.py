@@ -113,12 +113,24 @@ class FileSystem(AbstractModel):
     def apply_edit_to_str(cls, s: str, edit: FileEdit) -> Tuple[str, EditDiff]:
         original = cls.read_range_in_str(s, edit.range)
 
+        # Split lines and deal with some edge cases (could obviously be nicer)
         lines = s.splitlines()
+        if s.startswith("\n"):
+            lines.insert(0, "")
+        if s.endswith("\n"):
+            lines.append("")
+
+        end = Position(line=edit.range.end.line,
+                       character=edit.range.end.character)
+        if edit.range.end.line == len(lines) and edit.range.end.character == 0:
+            end = Position(line=edit.range.end.line - 1,
+                           character=len(lines[edit.range.end.line - 1]))
+
         before_lines = lines[:edit.range.start.line]
-        after_lines = lines[edit.range.end.line + 1:]
+        after_lines = lines[end.line + 1:]
         between_str = lines[edit.range.start.line][:edit.range.start.character] + \
             edit.replacement + \
-            lines[edit.range.end.line][edit.range.end.character + 1:]
+            lines[end.line][end.character + 1:]
 
         new_range = Range(
             start=edit.range.start,
