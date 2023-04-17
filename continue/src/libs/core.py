@@ -39,8 +39,8 @@ class History(ContinueBaseModel):
         return self.current_index
     
     def pop(self):
-        self.timeline.pop()
         self.current_index -= 1
+        return self.timeline.pop()
 
     def last_observation(self) -> Observation | None:
         state = self.get_current()
@@ -114,7 +114,7 @@ class Agent(ContinueBaseModel):
 
     def reverse_to_index(self, index: int):
         while self.history.get_current_index() > index:
-            if type(self.history.get_current().step) == ReversibleStep:
+            if issubclass(self.history.get_current().step.__class__, ReversibleStep):
                 self.history.get_current().step.reverse(self.__get_step_params())
             self.history.timeline.pop()
 
