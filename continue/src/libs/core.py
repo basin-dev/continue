@@ -35,6 +35,13 @@ class History(ContinueBaseModel):
             return None
         return self.timeline[self.current_index]
 
+    def get_current_index(self) -> int:
+        return self.current_index
+    
+    def pop(self):
+        self.timeline.pop()
+        self.current_index -= 1
+
     def last_observation(self) -> Observation | None:
         state = self.get_current()
         if state is None:
@@ -104,6 +111,12 @@ class Agent(ContinueBaseModel):
         return StepParams(agent=self)
 
     _manual_edits_buffer: List[FileEditWithFullContents] = []
+
+    def reverse_to_index(self, index: int):
+        while self.history.get_current_index() > index:
+            if type(self.history.get_current().step) == ReversibleStep:
+                self.history.get_current().step.reverse(self.__get_step_params())
+            self.history.timeline.pop()
 
     def handle_manual_edits(self, edits: List[FileEditWithFullContents]):
         for edit in edits:
