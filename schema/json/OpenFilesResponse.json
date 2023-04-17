@@ -1,13 +1,13 @@
 {
   "title": "OpenFilesResponse",
-  "$ref": "#/definitions/continue__src__libs__ide__OpenFilesResponse",
+  "$ref": "#/definitions/continue__src__server__ide__OpenFilesResponse",
   "definitions": {
-    "continue__src__libs__ide__OpenFilesResponse": {
+    "continue__src__server__ide__OpenFilesResponse": {
       "title": "OpenFilesResponse",
       "type": "object",
       "properties": {
-        "msg_type": {
-          "title": "Msg Type",
+        "messageType": {
+          "title": "Messagetype",
           "default": "openFiles",
           "type": "string"
         },

@@ -5,19 +5,13 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type ShowSuggestionRequest = ShowSuggestionRequest1;
-export type Messagetype = string;
+export type FileEdit = FileEdit1;
 export type Filepath = string;
 export type Line = number;
 export type Character = number;
 export type Replacement = string;
 
-export interface ShowSuggestionRequest1 {
-  messageType?: Messagetype;
-  suggestion: FileEdit;
-  [k: string]: unknown;
-}
-export interface FileEdit {
+export interface FileEdit1 {
   filepath: Filepath;
   range: Range;
   replacement: Replacement;

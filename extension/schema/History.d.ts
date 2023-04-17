@@ -7,6 +7,7 @@
 
 export type History = History1;
 export type Name = string;
+export type Hide = boolean;
 export type Timeline = HistoryNode[];
 export type CurrentIndex = number;
 
@@ -28,6 +29,7 @@ export interface HistoryNode {
 }
 export interface Step {
   name?: Name;
+  hide?: Hide;
   [k: string]: unknown;
 }
 export interface Observation {

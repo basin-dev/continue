@@ -2,7 +2,11 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { postVscMessage } from "../vscode";
 import { useDispatch } from "react-redux";
-import { setApiUrl, setVscMachineId } from "../redux/slices/configSlice";
+import {
+  setApiUrl,
+  setVscMachineId,
+  setSessionId,
+} from "../redux/slices/configSlice";
 import { setHighlightedCode } from "../redux/slices/miscSlice";
 import { updateFileSystem } from "../redux/slices/debugContexSlice";
 import { defaultBorderRadius, vscBackground } from ".";
@@ -53,6 +57,7 @@ function DebugPanel(props: DebugPanelProps) {
         case "onLoad":
           dispatch(setApiUrl(event.data.apiUrl));
           dispatch(setVscMachineId(event.data.vscMachineId));
+          dispatch(setSessionId(event.data.sessionId));
           break;
         case "highlightedCode":
           dispatch(setHighlightedCode(event.data.rangeInFile));

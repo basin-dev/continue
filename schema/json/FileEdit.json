@@ -1,6 +1,6 @@
 {
-  "title": "HighlightedCodeResponse",
-  "$ref": "#/definitions/continue__src__server__ide__HighlightedCodeResponse",
+  "title": "FileEdit",
+  "$ref": "#/definitions/continue__src__models__filesystem_edit__FileEdit",
   "definitions": {
     "Position": {
       "title": "Position",
@@ -37,8 +37,8 @@
         "end"
       ]
     },
-    "RangeInFile": {
-      "title": "RangeInFile",
+    "continue__src__models__filesystem_edit__FileEdit": {
+      "title": "FileEdit",
       "type": "object",
       "properties": {
         "filepath": {
@@ -47,32 +47,16 @@
         },
         "range": {
           "$ref": "#/definitions/Range"
+        },
+        "replacement": {
+          "title": "Replacement",
+          "type": "string"
         }
       },
       "required": [
         "filepath",
-        "range"
-      ]
-    },
-    "continue__src__server__ide__HighlightedCodeResponse": {
-      "title": "HighlightedCodeResponse",
-      "type": "object",
-      "properties": {
-        "messageType": {
-          "title": "Messagetype",
-          "default": "highlightedCode",
-          "type": "string"
-        },
-        "highlightedCode": {
-          "title": "Highlightedcode",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/RangeInFile"
-          }
-        }
-      },
-      "required": [
-        "highlightedCode"
+        "range",
+        "replacement"
       ]
     }
   }

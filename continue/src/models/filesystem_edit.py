@@ -38,6 +38,11 @@ class FileEdit(AtomicFileSystemEdit):
         return FileEdit(filepath, Range(position, position), content)
 
 
+class FileEditWithFullContents(BaseModel):
+    fileEdit: FileEdit
+    fileContents: str
+
+
 class AddFile(AtomicFileSystemEdit):
     filepath: str
     content: str
@@ -121,3 +126,15 @@ class EditDiff(BaseModel):
     """A reversible edit that can be applied to a file."""
     forward: FileSystemEdit
     backward: FileSystemEdit
+
+    @classmethod
+    def from_sequence(cls, diffs: List["EditDiff"]) -> "EditDiff":
+        forwards = []
+        backwards = []
+        for diff in diffs:
+            forwards.append(diff.forward)
+            backwards.insert(0, diff.backward)
+        return cls(
+            forward=SequentialFileSystemEdit(edits=forwards),
+            backward=SequentialFileSystemEdit(edits=backwards)
+        )

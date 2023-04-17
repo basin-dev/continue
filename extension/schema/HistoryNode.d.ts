@@ -7,6 +7,7 @@
 
 export type HistoryNode = HistoryNode1;
 export type Name = string;
+export type Hide = boolean;
 
 /**
  * A point in history, a list of which make up History
@@ -18,6 +19,7 @@ export interface HistoryNode1 {
 }
 export interface Step {
   name?: Name;
+  hide?: Hide;
   [k: string]: unknown;
 }
 export interface Observation {

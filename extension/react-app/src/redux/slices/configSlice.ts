@@ -28,9 +28,16 @@ export const configSlice = createSlice({
       ...state,
       vscMachineId: action.payload,
     }),
+    setSessionId: (
+      state: RootStore["config"],
+      action: { type: string; payload: string }
+    ) => ({
+      ...state,
+      sessionId: action.payload,
+    }),
   },
 });
 
-export const { setVscMachineId, setApiUrl, setWorkspacePath } =
+export const { setVscMachineId, setApiUrl, setWorkspacePath, setSessionId } =
   configSlice.actions;
 export default configSlice.reducer;

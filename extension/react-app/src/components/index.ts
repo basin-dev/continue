@@ -84,9 +84,9 @@ const spin = keyframes`
 `;
 
 export const Loader = styled.div`
-  border: 4px solid ${secondaryDark};
+  border: 4px solid transparent;
   border-radius: 50%;
-  border-top: 4px solid ${buttonColor};
+  border-top: 4px solid white;
   width: 36px;
   height: 36px;
   -webkit-animation: ${spin} 1s ease-in-out infinite;

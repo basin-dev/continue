@@ -1,0 +1,28 @@
+{
+  "title": "EditDiff",
+  "$ref": "#/definitions/continue__src__models__filesystem_edit__EditDiff",
+  "definitions": {
+    "FileSystemEdit": {
+      "title": "FileSystemEdit",
+      "type": "object",
+      "properties": {}
+    },
+    "continue__src__models__filesystem_edit__EditDiff": {
+      "title": "EditDiff",
+      "description": "A reversible edit that can be applied to a file.",
+      "type": "object",
+      "properties": {
+        "forward": {
+          "$ref": "#/definitions/FileSystemEdit"
+        },
+        "backward": {
+          "$ref": "#/definitions/FileSystemEdit"
+        }
+      },
+      "required": [
+        "forward",
+        "backward"
+      ]
+    }
+  }
+}

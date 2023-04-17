@@ -14,12 +14,37 @@ class RangeInFile(BaseModel):
         return hash((self.filepath, self.range))
 
     @staticmethod
-    def from_entire_file(filepath: str, filesystem: "FileSystem") -> "RangeInFile":
-        lines = filesystem.readlines(filepath)
+    def from_entire_file(filepath: str, content: str) -> "RangeInFile":
+        lines = content.splitlines()
         return RangeInFile(
             filepath=filepath,
             range=Range.from_shorthand(
                 0, 0, len(lines) - 1, len(lines[-1]) - 1)
+        )
+
+
+class RangeInFileWithContents(RangeInFile):
+    contents: str
+
+    def __hash__(self):
+        return hash((self.filepath, self.range, self.contents))
+
+    @staticmethod
+    def from_entire_file(filepath: str, content: str) -> "RangeInFileWithContents":
+        lines = content.splitlines()
+        return RangeInFileWithContents(
+            filepath=filepath,
+            range=Range.from_shorthand(
+                0, 0, len(lines) - 1, len(lines[-1]) - 1),
+            contents=content
+        )
+
+    @staticmethod
+    def from_range_in_file(rif: RangeInFile, content: str) -> "RangeInFileWithContents":
+        return RangeInFileWithContents(
+            filepath=rif.filepath,
+            range=rif.range,
+            contents=content
         )
 
 
@@ -77,20 +102,35 @@ class FileSystem(AbstractModel):
     @classmethod
     def read_range_in_str(self, s: str, r: Range) -> str:
         lines = s.splitlines()[r.start.line:r.end.line + 1]
+        if len(lines) == 0:
+            return ""
+
         lines[0] = lines[0][r.start.character:]
         lines[-1] = lines[-1][:r.end.character + 1]
         return "\n".join(lines)
 
     @classmethod
-    def apply_edit_to_str(cls, s: str, edit: FileEdit) -> str:
+    def apply_edit_to_str(cls, s: str, edit: FileEdit) -> Tuple[str, EditDiff]:
         original = cls.read_range_in_str(s, edit.range)
 
+        # Split lines and deal with some edge cases (could obviously be nicer)
         lines = s.splitlines()
+        if s.startswith("\n"):
+            lines.insert(0, "")
+        if s.endswith("\n"):
+            lines.append("")
+
+        end = Position(line=edit.range.end.line,
+                       character=edit.range.end.character)
+        if edit.range.end.line == len(lines) and edit.range.end.character == 0:
+            end = Position(line=edit.range.end.line - 1,
+                           character=len(lines[edit.range.end.line - 1]))
+
         before_lines = lines[:edit.range.start.line]
-        after_lines = lines[edit.range.end.line + 1:]
+        after_lines = lines[end.line + 1:]
         between_str = lines[edit.range.start.line][:edit.range.start.character] + \
             edit.replacement + \
-            lines[edit.range.end.line][edit.range.end.character + 1:]
+            lines[end.line][end.character + 1:]
 
         new_range = Range(
             start=edit.range.start,
@@ -98,7 +138,8 @@ class FileSystem(AbstractModel):
                 line=edit.range.start.line +
                 len(edit.replacement.splitlines()) - 1,
                 character=edit.range.start.character +
-                len(edit.replacement.splitlines()[-1])
+                len(edit.replacement.splitlines()
+                    [-1]) if edit.replacement != "" else 0
             )
         )
 
@@ -181,7 +222,6 @@ class FileSystem(AbstractModel):
         else:
             raise TypeError("Unknown FileSystemEdit type: " + str(type(edit)))
 
-        print("Applied edit: ", backward)
         return EditDiff(
             forward=edit,
             backward=backward
@@ -229,6 +269,24 @@ class RealFileSystem(FileSystem):
         new_content, diff = FileSystem.apply_edit_to_str(old_content, edit)
         self.write(edit.filepath, new_content)
         return diff
+
+
+# class IdeProtocolFileSystem(RealFileSystem):
+#     """A filesystem that works through the IDE Protocol"""
+#     ide: AbstractIdeProtocolServer
+
+#     class Config:
+#         arbitrary_types_allowed = True
+
+#     def read(self, path) -> str:
+#         return await self.ide.readFile(path)
+
+#     def readlines(self, path) -> List[str]:
+#         return self.read(path).splitlines()
+
+#     def write(self, path, content):
+#         with open(path, "w") as f:
+#             f.write(content)
 
 
 class VirtualFileSystem(FileSystem):

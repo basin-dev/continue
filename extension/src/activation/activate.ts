@@ -5,8 +5,11 @@ import { sendTelemetryEvent, TelemetryEvent } from "../telemetry";
 import { getExtensionUri } from "../util/vscode";
 import * as path from "path";
 import { openCapturedTerminal } from "../terminal/terminalEmulator";
+import IdeProtocolClient from "../continueIdeClient";
 
 export let extensionContext: vscode.ExtensionContext | undefined = undefined;
+
+export let ideProtocolClient: IdeProtocolClient | undefined = undefined;
 
 export function activateExtension(
   context: vscode.ExtensionContext,
@@ -16,6 +19,11 @@ export function activateExtension(
 
   registerAllCodeLensProviders(context);
   registerAllCommands(context);
+
+  ideProtocolClient = new IdeProtocolClient(
+    "ws://localhost:8000/ide/ws",
+    context
+  );
 
   if (showTutorial) {
     Promise.all([
@@ -48,18 +56,12 @@ export function activateExtension(
             })
         ),
     ]).then(() => {
-      vscode.commands
-        .executeCommand("continue.openDebugPanel", context)
-        .then(() => {
-          openCapturedTerminal();
-        });
+      ideProtocolClient?.openNotebook();
     });
   } else {
-    vscode.commands
-      .executeCommand("continue.openDebugPanel", context)
-      .then(() => {
-        openCapturedTerminal();
-      });
+    ideProtocolClient?.openNotebook().then(() => {
+      openCapturedTerminal();
+    });
   }
 
   extensionContext = context;

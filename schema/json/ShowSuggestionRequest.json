@@ -1,6 +1,6 @@
 {
   "title": "ShowSuggestionRequest",
-  "$ref": "#/definitions/continue__src__libs__ide__ShowSuggestionRequest",
+  "$ref": "#/definitions/continue__src__server__ide__ShowSuggestionRequest",
   "definitions": {
     "Position": {
       "title": "Position",
@@ -59,12 +59,12 @@
         "replacement"
       ]
     },
-    "continue__src__libs__ide__ShowSuggestionRequest": {
+    "continue__src__server__ide__ShowSuggestionRequest": {
       "title": "ShowSuggestionRequest",
       "type": "object",
       "properties": {
-        "msg_type": {
-          "title": "Msg Type",
+        "messageType": {
+          "title": "Messagetype",
           "default": "showSuggestion",
           "type": "string"
         },
