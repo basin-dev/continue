@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Coroutine
 
 from ...models.main import Range
@@ -11,31 +12,41 @@ import os
 
 
 class WritePytestsStep(Step):
-    for_filepath: str
+    for_filepath: str | None = None
     instructions: str = "Write unit tests for this file."
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+        if self.for_filepath is None:
+            self.for_filepath = (await params.ide.getOpenFiles())[0]
+
         filename = os.path.basename(self.for_filepath)
         dirname = os.path.dirname(self.for_filepath)
 
         path_dir = os.path.join(dirname, "tests")
         if not os.path.exists(path_dir):
-            await params.ide.applyFileSystemEdit(AddDirectory(path_dir))
+            await params.ide.applyFileSystemEdit(AddDirectory(path=path_dir))
 
         path = os.path.join(path_dir, f"test_{filename}")
         if os.path.exists(path):
             return None
 
-        await params.ide.applyFileSystemEdit(AddFile(path, ""))
+        for_file_contents = await params.ide.readFile(self.for_filepath)
 
-        prompt = f"""\
-        # Write unit tests for {self.for_filepath}
-        #
-        # {self.instructions}
-        #
-        # {self.for_filepath}:
-        #
-        # ```python
-        """
-        await params.run_step(EditCodeStep(
-            range_in_files=[RangeInFile(filepath=path, range=Range.from_shorthand(0, 0, 0, 0))], prompt=prompt))
+        prompt = dedent(f"""\
+        This is the file you will write unit tests for:
+
+        ```python
+        {for_file_contents}
+        ```
+
+        Here are additional instructions:
+
+        "{self.instructions}"
+
+        Here are the unit tests:
+
+        """)
+        tests = params.llm.complete(prompt)
+        await params.ide.applyFileSystemEdit(AddFile(filepath=path, content=tests))
+
+        return None

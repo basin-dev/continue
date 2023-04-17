@@ -238,10 +238,10 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             backward = diff.backward
         elif isinstance(edit, AddFile):
             fs.write(edit.filepath, edit.content)
-            backward = DeleteFile(edit.filepath)
+            backward = DeleteFile(filepath=edit.filepath)
         elif isinstance(edit, DeleteFile):
             contents = await self.readFile(edit.filepath)
-            backward = AddFile(edit.filepath, contents)
+            backward = AddFile(filepath=edit.filepath, content=contents)
             fs.delete_file(edit.filepath)
         elif isinstance(edit, RenameFile):
             fs.rename_file(edit.filepath, edit.new_filepath)
@@ -249,21 +249,21 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
                                   new_filepath=edit.filepath)
         elif isinstance(edit, AddDirectory):
             fs.add_directory(edit.path)
-            backward = DeleteDirectory(edit.path)
+            backward = DeleteDirectory(path=edit.path)
         elif isinstance(edit, DeleteDirectory):
             # This isn't atomic!
             backward_edits = []
             for root, dirs, files in os.walk(edit.path, topdown=False):
                 for f in files:
                     path = os.path.join(root, f)
-                    edit_diff = await self.applyFileEdit(DeleteFile(path))
+                    edit_diff = await self.applyFileEdit(DeleteFile(filepath=path))
                     backward_edits.append(edit_diff)
                 for d in dirs:
                     path = os.path.join(root, d)
-                    edit_diff = await self.applyFileEdit(DeleteDirectory(path))
+                    edit_diff = await self.applyFileEdit(DeleteDirectory(path=path))
                     backward_edits.append(edit_diff)
 
-            edit_diff = await self.applyFileEdit(DeleteDirectory(edit.path))
+            edit_diff = await self.applyFileEdit(DeleteDirectory(path=edit.path))
             backward_edits.append(edit_diff)
             backward_edits.reverse()
             backward = SequentialFileSystemEdit(edits=backward_edits)

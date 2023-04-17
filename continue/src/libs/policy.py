@@ -3,6 +3,7 @@ from typing import Generator, List, Tuple, Type
 from .core import Agent, Step, DoneStep, Validator, Policy, History, UserInputStep
 from .observation import Observation, TracebackObservation, UserInputObservation
 from .steps.main import EditCodeStep, EditHighlightedCodeStep, SolveTracebackStep, RunCodeStep
+from .steps.nate import WritePytestsStep
 
 
 class DemoPolicy(Policy):
@@ -17,6 +18,8 @@ class DemoPolicy(Policy):
         observation = history.last_observation()
         if observation is not None and isinstance(observation, UserInputObservation):
             # This could be defined with ObservationTypePolicy. Ergonomics not right though.
+            if "test" in observation.user_input.lower():
+                return WritePytestsStep(instructions=observation.user_input)
             return EditHighlightedCodeStep(user_input=observation.user_input)
 
         state = history.get_current()
