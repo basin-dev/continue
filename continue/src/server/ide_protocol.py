@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, Coroutine, List
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
