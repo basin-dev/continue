@@ -2,7 +2,7 @@ from textwrap import dedent
 import traceback
 import time
 from typing import Callable, Coroutine, Generator, List, Tuple, Union
-from ..models.filesystem_edit import EditDiff, FileEdit, FileEditWithFullContents
+from ..models.filesystem_edit import EditDiff, FileEdit, FileEditWithFullContents, FileSystemEdit
 from ..models.filesystem import FileSystem
 from pydantic import BaseModel, parse_file_as, validator
 from .llm import LLM
@@ -34,6 +34,16 @@ class History(ContinueBaseModel):
         if self.current_index < 0:
             return None
         return self.timeline[self.current_index]
+
+    def get_current_index(self) -> int:
+        return self.current_index
+
+    def step_back(self):
+        self.current_index -= 1
+
+    def pop(self) -> HistoryNode:
+        self.current_index -= 1
+        return self.timeline.pop()
 
     def last_observation(self) -> Observation | None:
         state = self.get_current()
@@ -77,13 +87,16 @@ class StepParams:
     def get_history(self) -> History:
         return self.__agent.history
 
+    async def apply_filesystem_edit(self, edit: FileSystemEdit):
+        await self.run_step(FileSystemEditStep(edit=edit))
+
 
 class Agent(ContinueBaseModel):
     llm: LLM
     policy: Policy
     ide: AbstractIdeProtocolServer
     history: History = History.from_empty()
-    _on_step_callbacks: List[Callable[["Step"], None]] = []
+    _on_update_callbacks: List[Callable[["FullState"], None]] = []
 
     _active: bool = False
     _should_halt: bool = False
@@ -94,8 +107,13 @@ class Agent(ContinueBaseModel):
     def get_full_state(self) -> FullState:
         return FullState(history=self.history, active=self._active)
 
-    def on_step(self, callback: Callable[["Step"], None]):
-        self._on_step_callbacks.append(callback)
+    def on_update(self, callback: Callable[["FullState"], None]):
+        """Subscribe to changes to state"""
+        self._on_update_callbacks.append(callback)
+
+    def update_subscribers(self):
+        for callback in self._on_update_callbacks:
+            callback(self.get_full_state())
 
     def __ask_permission(self, step: "Step") -> bool:
         return input("Run step? (y/n)") == "y"
@@ -104,6 +122,14 @@ class Agent(ContinueBaseModel):
         return StepParams(agent=self)
 
     _manual_edits_buffer: List[FileEditWithFullContents] = []
+
+    async def reverse_to_index(self, index: int):
+        while self.history.get_current_index() > index:
+            current_step = self.history.get_current().step
+            self.history.step_back()
+            if issubclass(current_step.__class__, ReversibleStep):
+                await current_step.reverse(self.__get_step_params())
+            self.history.step_back()
 
     def handle_manual_edits(self, edits: List[FileEditWithFullContents]):
         for edit in edits:
@@ -129,8 +155,7 @@ class Agent(ContinueBaseModel):
         self.history.add_node(HistoryNode(step=step, observation=observation))
 
         # Call all subscribed callbacks
-        for callback in self._on_step_callbacks:
-            callback(step)
+        self.update_subscribers()
 
         return observation
 
@@ -152,7 +177,7 @@ class Agent(ContinueBaseModel):
         self._active = False
 
         # Doing this so active can make it to the frontend after steps are done. But want better state syncing tools
-        for callback in self._on_step_callbacks:
+        for callback in self._on_update_callbacks:
             callback(None)
 
     async def run_from_observation(self, observation: Observation):
@@ -214,6 +239,19 @@ class ReversibleStep(Step):
         raise NotImplementedError
 
 
+class FileSystemEditStep(ReversibleStep):
+    edit: FileSystemEdit
+    _diff: EditDiff | None = None
+
+    async def run(self, params: "StepParams") -> Coroutine[Observation, None, None]:
+        self._diff = await params.ide.applyFileSystemEdit(self.edit)
+        return None
+
+    async def reverse(self, params: "StepParams"):
+        await params.ide.applyFileSystemEdit(self._diff.backward)
+        # Where and when should file saves happen?
+
+
 class ManualEditStep(ReversibleStep):
     edit_diff: EditDiff
 
@@ -260,7 +298,7 @@ class UserInputStep(Step):
         return UserInputObservation(user_input=self.user_input)
 
 
-class DoneStep(ReversibleStep):
+class DoneStep(Step):
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         return None
 
