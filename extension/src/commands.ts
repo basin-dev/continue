@@ -64,6 +64,14 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   "continue.openDebugPanel": () => {
     ideProtocolClient?.openNotebook();
   },
+  "continue.focusContinueInput": async () => {
+    if (!debugPanelWebview) {
+      await ideProtocolClient?.openNotebook();
+    }
+    debugPanelWebview?.postMessage({
+      type: "focusContinueInput",
+    });
+  },
   "continue.openCapturedTerminal": () => {
     // Happens in webview resolution function
     openCapturedTerminal();
