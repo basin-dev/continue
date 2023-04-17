@@ -193,6 +193,15 @@ function Notebook(props: NotebookProps) {
   useEffect(() => {
     if (mainTextInputRef.current) {
       mainTextInputRef.current.focus();
+      let handler = (event: any) => {
+        if (event.data.type === "focusContinueInput") {
+          mainTextInputRef.current?.focus();
+        }
+      };
+      window.addEventListener("message", handler);
+      return () => {
+        window.removeEventListener("message", handler);
+      };
     }
   }, [mainTextInputRef]);
 
