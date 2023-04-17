@@ -1,9 +1,15 @@
-import { FileEditWithFullContents } from "../schema/FileEditWithFullContents";
+// import { ShowSuggestionRequest } from "../schema/ShowSuggestionRequest";
+import { showSuggestion, SuggestionRanges } from "./suggestions";
+import { openEditorAndRevealRange, getRightViewColumn } from "./util/vscode";
 import { FileEdit } from "../schema/FileEdit";
 import { RangeInFile } from "../schema/RangeInFile";
 import * as vscode from "vscode";
-import { setupDebugPanel } from "./debugPanel";
-import { getRightViewColumn, openEditorAndRevealRange } from "./util/vscode";
+import {
+  acceptSuggestionCommand,
+  rejectSuggestionCommand,
+} from "./suggestions";
+import { debugPanelWebview, setupDebugPanel } from "./debugPanel";
+import { FileEditWithFullContents } from "../schema/FileEditWithFullContents";
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 const WebSocket = require("ws");
@@ -11,6 +17,7 @@ import fs = require("fs");
 
 class IdeProtocolClient {
   private _ws: WebSocket | null = null;
+  private _panels: Map<string, vscode.WebviewPanel> = new Map();
   private readonly _serverUrl: string;
   private readonly _context: vscode.ExtensionContext;
 
@@ -155,18 +162,30 @@ class IdeProtocolClient {
   // On message handlers
 
   showSuggestion(edit: FileEdit) {
-    // showSuggestion
+    // showSuggestion already exists
+    showSuggestion(
+      edit.filepath,
+      new vscode.Range(
+        edit.range.start.line,
+        edit.range.start.character,
+        edit.range.end.line,
+        edit.range.end.character
+      ),
+      edit.replacement
+    );
   }
 
   openFile(filepath: string) {
-    // TODO
+    // vscode has a builtin open/get open files
+    openEditorAndRevealRange(filepath, undefined, vscode.ViewColumn.One);
   }
 
   // ------------------------------------ //
   // Initiate Request
 
-  closeNotebook() {
-    // TODO: And close the debug panel webview
+  closeNotebook(sessionId: string) {
+    this._panels.get(sessionId)?.dispose();
+    this._panels.delete(sessionId);
   }
 
   async openNotebook() {
@@ -186,11 +205,16 @@ class IdeProtocolClient {
 
     // And set its HTML content
     panel.webview.html = setupDebugPanel(panel, this._context, sessionId);
+
+    this._panels.set(sessionId, panel);
   }
 
-  acceptRejectSuggestion(accept: boolean) {
-    // TODO
-    // Create a new file
+  acceptRejectSuggestion(accept: boolean, key: SuggestionRanges) {
+    if (accept) {
+      acceptSuggestionCommand(key);
+    } else {
+      rejectSuggestionCommand(key);
+    }
   }
 
   // ------------------------------------ //
