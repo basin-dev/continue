@@ -94,6 +94,11 @@
         "command": "continue.findSuspiciousCode",
         "title": "Find Suspicious Code",
         "category": "Continue"
+      },
+      {
+        "command": "continue.focusContinueInput",
+        "title": "Focus Continue Input",
+        "category": "Continue"
       }
     ],
     "keybindings": [
@@ -126,6 +131,11 @@
         "command": "continue.acceptSuggestion",
         "mac": "shift+ctrl+enter",
         "key": "shift+ctrl+enter"
+      },
+      {
+        "command": "continue.focusContinueInput",
+        "mac": "cmd+k",
+        "key": "ctrl+k"
       }
     ],
     "menus": {
