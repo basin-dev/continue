@@ -3,7 +3,7 @@ import traceback
 import time
 from typing import Callable, Coroutine, Generator, List, Tuple, Union
 from ..models.filesystem_edit import EditDiff, FileEdit, FileEditWithFullContents
-from ..models.filesystem import FileSystem, RangeInFile, RealFileSystem
+from ..models.filesystem import FileSystem
 from pydantic import BaseModel, parse_file_as, validator
 from .llm import LLM
 from .observation import Observation, UserInputObservation
@@ -62,13 +62,11 @@ class Policy(ContinueBaseModel):
 
 class StepParams:
     """The SDK provided as parameters to a step"""
-    filesystem: FileSystem
     llm: LLM
     ide: AbstractIdeProtocolServer
     __agent: "Agent"
 
     def __init__(self, agent: "Agent"):
-        self.filesystem = agent.filesystem
         self.llm = agent.llm
         self.ide = agent.ide
         self.__agent = agent
@@ -84,7 +82,6 @@ class Agent(ContinueBaseModel):
     llm: LLM
     policy: Policy
     ide: AbstractIdeProtocolServer
-    filesystem: FileSystem = RealFileSystem()
     history: History = History.from_empty()
     _on_step_callbacks: List[Callable[["Step"], None]] = []
 
@@ -213,7 +210,7 @@ class Step(ContinueBaseModel):
 
 
 class ReversibleStep(Step):
-    def reverse(self, params: StepParams):
+    async def reverse(self, params: StepParams):
         raise NotImplementedError
 
 
@@ -247,8 +244,8 @@ class ManualEditStep(ReversibleStep):
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         return None
 
-    def reverse(self, params: StepParams):
-        params.filesystem.apply_edit(self.edit_diff.backward)
+    async def reverse(self, params: StepParams):
+        await params.ide.applyFileSystemEdit(self.edit_diff.backward)
 
 
 class UserInputStep(Step):

@@ -1,17 +1,20 @@
-import { ShowSuggestionRequest } from "../schema/ShowSuggestionRequest";
 import { FileEditWithFullContents } from "../schema/FileEditWithFullContents";
-import { FileEdit, RangeInFile } from "./client";
+import { FileEdit } from "../schema/FileEdit";
+import { RangeInFile } from "../schema/RangeInFile";
 import * as vscode from "vscode";
 import { setupDebugPanel } from "./debugPanel";
-import { getRightViewColumn } from "./util/vscode";
+import { getRightViewColumn, openEditorAndRevealRange } from "./util/vscode";
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 const WebSocket = require("ws");
+import fs = require("fs");
 
 class IdeProtocolClient {
   private _ws: WebSocket | null = null;
   private readonly _serverUrl: string;
   private readonly _context: vscode.ExtensionContext;
+
+  private _makingEdit = 0;
 
   constructor(serverUrl: string, context: vscode.ExtensionContext) {
     this._context = context;
@@ -26,28 +29,32 @@ class IdeProtocolClient {
     });
     // Setup listeners for any file changes in open editors
     vscode.workspace.onDidChangeTextDocument((event) => {
-      let fileEdits: FileEditWithFullContents[] = event.contentChanges.map(
-        (change) => {
-          return {
-            fileEdit: {
-              filepath: event.document.uri.fsPath,
-              range: {
-                start: {
-                  line: change.range.start.line,
-                  character: change.range.start.character,
+      if (this._makingEdit === 0) {
+        let fileEdits: FileEditWithFullContents[] = event.contentChanges.map(
+          (change) => {
+            return {
+              fileEdit: {
+                filepath: event.document.uri.fsPath,
+                range: {
+                  start: {
+                    line: change.range.start.line,
+                    character: change.range.start.character,
+                  },
+                  end: {
+                    line: change.range.end.line,
+                    character: change.range.end.character,
+                  },
                 },
-                end: {
-                  line: change.range.end.line,
-                  character: change.range.end.character,
-                },
+                replacement: change.text,
               },
-              replacement: change.text,
-            },
-            fileContents: event.document.getText(),
-          };
-        }
-      );
-      this.send("fileEdits", { fileEdits });
+              fileContents: event.document.getText(),
+            };
+          }
+        );
+        this.send("fileEdits", { fileEdits });
+      } else {
+        this._makingEdit--;
+      }
     });
   }
 
@@ -122,6 +129,20 @@ class IdeProtocolClient {
           openFiles: this.getOpenFiles(),
         });
         break;
+      case "readFile":
+        this.send("readFile", {
+          contents: this.readFile(message.filepath),
+        });
+        break;
+      case "editFile":
+        let fileEdit = await this.editFile(message.edit);
+        this.send("editFile", {
+          fileEdit,
+        });
+        break;
+      case "saveFile":
+        this.saveFile(message.filepath);
+        break;
       case "openNotebook":
       case "connected":
         break;
@@ -169,6 +190,7 @@ class IdeProtocolClient {
 
   acceptRejectSuggestion(accept: boolean) {
     // TODO
+    // Create a new file
   }
 
   // ------------------------------------ //
@@ -177,6 +199,52 @@ class IdeProtocolClient {
   getOpenFiles(): string[] {
     return vscode.window.visibleTextEditors.map((editor) => {
       return editor.document.uri.fsPath;
+    });
+  }
+
+  saveFile(filepath: string) {
+    vscode.window.visibleTextEditors.forEach((editor) => {
+      if (editor.document.uri.fsPath === filepath) {
+        editor.document.save();
+      }
+    });
+  }
+
+  readFile(filepath: string): string {
+    let contents: string | undefined;
+    vscode.window.visibleTextEditors.forEach((editor) => {
+      if (editor.document.uri.fsPath === filepath) {
+        contents = editor.document.getText();
+      }
+    });
+    if (!contents) {
+      contents = fs.readFileSync(filepath, "utf-8");
+    }
+    return contents;
+  }
+
+  editFile(edit: FileEdit): Promise<FileEditWithFullContents> {
+    return new Promise((resolve, reject) => {
+      openEditorAndRevealRange(
+        edit.filepath,
+        undefined,
+        vscode.ViewColumn.One
+      ).then((editor) => {
+        let range = new vscode.Range(
+          edit.range.start.line,
+          edit.range.start.character + 1,
+          edit.range.end.line,
+          edit.range.end.character + 1
+        );
+        editor.edit((editBuilder) => {
+          this._makingEdit += 2; // editBuilder.replace takes 2 edits: delete and insert
+          editBuilder.replace(range, edit.replacement);
+          resolve({
+            fileEdit: edit,
+            fileContents: editor.document.getText(),
+          });
+        });
+      });
     });
   }
 

@@ -1,12 +1,13 @@
 # This is a separate server from server/main.py
 import asyncio
+import os
 from typing import Any, Dict, List, Type, TypeVar, Union
 import uuid
 from fastapi import WebSocket, Body, APIRouter
 from uvicorn.main import Server
-from ..models.filesystem import RangeInFile
+from ..models.filesystem import FileSystem, RangeInFile, EditDiff, RealFileSystem
 from ..models.main import Traceback
-from ..models.filesystem_edit import FileSystemEdit, FileEdit, FileEditWithFullContents
+from ..models.filesystem_edit import AddDirectory, AddFile, DeleteDirectory, DeleteFile, FileSystemEdit, FileEdit, FileEditWithFullContents, RenameDirectory, RenameFile, SequentialFileSystemEdit
 from pydantic import BaseModel
 from .notebook import SessionManager, session_manager
 from .ide_protocol import AbstractIdeProtocolServer
@@ -60,7 +61,18 @@ class ShowSuggestionResponse(BaseModel):
     accepted: bool
 
 
+class ReadFileResponse(BaseModel):
+    messageType: str = "readFile"
+    contents: str
+
+
+class EditFileResponse(BaseModel):
+    messageType: str = "editFile"
+    fileEdit: FileEditWithFullContents
+
+
 class AsyncSubscriptionQueue:
+    # The correct way to do this is probably to keep request IDs
     queues: Dict[str, asyncio.Queue] = {}
 
     def post(self, messageType: str, data: any):
@@ -106,7 +118,7 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             fileEdits = list(
                 map(lambda d: FileEditWithFullContents.parse_obj(d), data["fileEdits"]))
             self.onFileEdits(fileEdits)
-        elif t in ["highlightedCode", "openFiles"]:
+        elif t in ["highlightedCode", "openFiles", "readFile", "editFile"]:
             self.sub_queue.post(t, data)
         else:
             raise ValueError("Unknown message type", t)
@@ -186,6 +198,91 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             "messageType": "highlightedCode"
         }, HighlightedCodeResponse, "highlightedCode")
         return resp.highlightedCode
+
+    async def readFile(self, filepath: str) -> str:
+        """Read a file"""
+        resp = await self._send_and_receive_json({
+            "messageType": "readFile",
+            "filepath": filepath
+        }, ReadFileResponse, "readFile")
+        return resp.contents
+
+    async def saveFile(self, filepath: str):
+        """Save a file"""
+        await self._send_json({
+            "messageType": "saveFile",
+            "filepath": filepath
+        })
+
+    async def readRangeInFile(self, range_in_file: RangeInFile) -> str:
+        """Read a range in a file"""
+        full_contents = await self.readFile(range_in_file.filepath)
+        return FileSystem.read_range_in_str(full_contents, range_in_file.range)
+
+    async def editFile(self, edit: FileEdit) -> FileEditWithFullContents:
+        """Edit a file"""
+        resp = await self._send_and_receive_json({
+            "messageType": "editFile",
+            "edit": edit.dict()
+        }, EditFileResponse, "editFile")
+        return resp.fileEdit
+
+    async def applyFileSystemEdit(self, edit: FileSystemEdit) -> EditDiff:
+        """Apply a file edit"""
+        backward = None
+        fs = RealFileSystem()
+        if isinstance(edit, FileEdit):
+            file_edit = await self.editFile(edit)
+            _, diff = FileSystem.apply_edit_to_str(
+                file_edit.fileContents, file_edit.fileEdit)
+            backward = diff.backward
+        elif isinstance(edit, AddFile):
+            fs.write(edit.filepath, edit.content)
+            backward = DeleteFile(edit.filepath)
+        elif isinstance(edit, DeleteFile):
+            contents = await self.readFile(edit.filepath)
+            backward = AddFile(edit.filepath, contents)
+            fs.delete_file(edit.filepath)
+        elif isinstance(edit, RenameFile):
+            fs.rename_file(edit.filepath, edit.new_filepath)
+            backward = RenameFile(filepath=edit.new_filepath,
+                                  new_filepath=edit.filepath)
+        elif isinstance(edit, AddDirectory):
+            fs.add_directory(edit.path)
+            backward = DeleteDirectory(edit.path)
+        elif isinstance(edit, DeleteDirectory):
+            # This isn't atomic!
+            backward_edits = []
+            for root, dirs, files in os.walk(edit.path, topdown=False):
+                for f in files:
+                    path = os.path.join(root, f)
+                    edit_diff = await self.applyFileEdit(DeleteFile(path))
+                    backward_edits.append(edit_diff)
+                for d in dirs:
+                    path = os.path.join(root, d)
+                    edit_diff = await self.applyFileEdit(DeleteDirectory(path))
+                    backward_edits.append(edit_diff)
+
+            edit_diff = await self.applyFileEdit(DeleteDirectory(edit.path))
+            backward_edits.append(edit_diff)
+            backward_edits.reverse()
+            backward = SequentialFileSystemEdit(edits=backward_edits)
+        elif isinstance(edit, RenameDirectory):
+            fs.rename_directory(edit.path, edit.new_path)
+            backward = RenameDirectory(path=edit.new_path, new_path=edit.path)
+        elif isinstance(edit, FileSystemEdit):
+            diffs = []
+            for edit in edit.next_edit():
+                edit_diff = await self.applyFileEdit(edit)
+                diffs.append(edit_diff)
+            backward = EditDiff.from_sequence(diffs=diffs).backward
+        else:
+            raise TypeError("Unknown FileSystemEdit type: " + str(type(edit)))
+
+        return EditDiff(
+            forward=edit,
+            backward=backward
+        )
 
 
 ideProtocolServer = IdeProtocolServer(session_manager)

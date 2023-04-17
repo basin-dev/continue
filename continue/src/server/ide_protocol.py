@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from pydantic import BaseModel
 
 from ..models.main import Traceback
-from ..models.filesystem_edit import FileEdit, FileSystemEdit
+from ..models.filesystem_edit import FileEdit, FileSystemEdit, EditDiff
 from ..models.filesystem import RangeInFile
 
 
@@ -56,3 +56,23 @@ class AbstractIdeProtocolServer(ABC):
     @abstractmethod
     async def getHighlightedCode(self) -> List[RangeInFile]:
         """Get a list of highlighted code"""
+
+    @abstractmethod
+    async def readFile(self, filepath: str) -> str:
+        """Read a file"""
+
+    @abstractmethod
+    async def readRangeInFile(self, range_in_file: RangeInFile) -> str:
+        """Read a range in a file"""
+
+    @abstractmethod
+    async def editFile(self, edit: FileEdit):
+        """Edit a file"""
+
+    @abstractmethod
+    async def applyFileSystemEdit(self, edit: FileSystemEdit) -> EditDiff:
+        """Apply a file edit"""
+
+    @abstractmethod
+    async def saveFile(self, filepath: str):
+        """Save a file"""

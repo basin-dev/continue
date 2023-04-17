@@ -84,7 +84,7 @@ const spin = keyframes`
 `;
 
 export const Loader = styled.div`
-  border: 4px solid ${secondaryDark};
+  border: 4px solid transparent;
   border-radius: 50%;
   border-top: 4px solid white;
   width: 36px;

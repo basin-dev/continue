@@ -14,12 +14,37 @@ class RangeInFile(BaseModel):
         return hash((self.filepath, self.range))
 
     @staticmethod
-    def from_entire_file(filepath: str, filesystem: "FileSystem") -> "RangeInFile":
-        lines = filesystem.readlines(filepath)
+    def from_entire_file(filepath: str, content: str) -> "RangeInFile":
+        lines = content.splitlines()
         return RangeInFile(
             filepath=filepath,
             range=Range.from_shorthand(
                 0, 0, len(lines) - 1, len(lines[-1]) - 1)
+        )
+
+
+class RangeInFileWithContents(RangeInFile):
+    contents: str
+
+    def __hash__(self):
+        return hash((self.filepath, self.range, self.contents))
+
+    @staticmethod
+    def from_entire_file(filepath: str, content: str) -> "RangeInFileWithContents":
+        lines = content.splitlines()
+        return RangeInFileWithContents(
+            filepath=filepath,
+            range=Range.from_shorthand(
+                0, 0, len(lines) - 1, len(lines[-1]) - 1),
+            contents=content
+        )
+
+    @staticmethod
+    def from_range_in_file(rif: RangeInFile, content: str) -> "RangeInFileWithContents":
+        return RangeInFileWithContents(
+            filepath=rif.filepath,
+            range=rif.range,
+            contents=content
         )
 
 
@@ -232,6 +257,24 @@ class RealFileSystem(FileSystem):
         new_content, diff = FileSystem.apply_edit_to_str(old_content, edit)
         self.write(edit.filepath, new_content)
         return diff
+
+
+# class IdeProtocolFileSystem(RealFileSystem):
+#     """A filesystem that works through the IDE Protocol"""
+#     ide: AbstractIdeProtocolServer
+
+#     class Config:
+#         arbitrary_types_allowed = True
+
+#     def read(self, path) -> str:
+#         return await self.ide.readFile(path)
+
+#     def readlines(self, path) -> List[str]:
+#         return self.read(path).splitlines()
+
+#     def write(self, path, content):
+#         with open(path, "w") as f:
+#             f.write(content)
 
 
 class VirtualFileSystem(FileSystem):

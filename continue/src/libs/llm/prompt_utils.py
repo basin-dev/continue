@@ -1,30 +1,20 @@
-from abc import abstractmethod
 from typing import Dict, List
-
-from pydantic import BaseModel
-from ...models.main import AbstractModel
+from ...models.filesystem import RangeInFileWithContents
 from ...models.filesystem_edit import FileEdit
-from ...models.filesystem import FileSystem, RangeInFile
-
-# TODO: EncoderDecoders should be more general things, like guardrails: https://github.com/ShreyaR/guardrails/blob/main/guardrails/guard.py
-# Can return any type, but is just a subclass of Prompter.
-# Make Prompter generic in its return type, then EncoderDecoders can just specify this type with a pydantic model.
-# That also makes it easier for people to create their own EncoderDecoders.
-
-# Even better, you define an encoder/decoder class so people can play around with different ways of doing this. And it can be stateful.
 
 
-class FileContentsEncoderDecoder(BaseModel):
-    filesystem: FileSystem
-    range_in_files: List[RangeInFile]
+class MarkdownStyleEncoderDecoder:
+    # Filename -> the part of the file you care about
+    range_in_files: List[RangeInFileWithContents]
 
-    @abstractmethod
-    def encode() -> str:
-        raise NotImplementedError()
+    def __init__(self, range_in_files: List[RangeInFileWithContents]):
+        self.range_in_files = range_in_files
 
-    @abstractmethod
-    def decode(completion: str) -> List[FileEdit]:
-        raise NotImplementedError()
+    def encode(self) -> str:
+        return "\n\n".join([
+            f"File ({rif.filepath})\n```\n{rif.contents}\n```"
+            for rif in self.range_in_files
+        ])
 
     def _suggestions_to_file_edits(self, suggestions: Dict[str, str]) -> List[FileEdit]:
         file_edits: List[FileEdit] = []
@@ -40,14 +30,6 @@ class FileContentsEncoderDecoder(BaseModel):
                 ))
 
         return file_edits
-
-
-class MarkdownStyleEncoderDecoder(FileContentsEncoderDecoder):
-    def encode(self) -> str:
-        return "\n\n".join([
-            f"File ({rif.filepath})\n```\n{self.filesystem.read_range_in_file(rif)}\n```"
-            for rif in self.range_in_files
-        ])
 
     def _decode_to_suggestions(self, completion: str) -> Dict[str, str]:
         # Should do a better job of ensuring the ``` format, but for now the issue is mostly just on single file inputs:

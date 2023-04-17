@@ -2,8 +2,8 @@ from typing import Callable, Coroutine, List
 
 from ..llm import LLM
 from ...models.main import Traceback, Range
-from ...models.filesystem_edit import EditDiff, FileSystemEdit, SequentialFileSystemEdit
-from ...models.filesystem import RangeInFile
+from ...models.filesystem_edit import EditDiff
+from ...models.filesystem import RangeInFile, RangeInFileWithContents
 from ..llm.prompt_utils import MarkdownStyleEncoderDecoder
 from textwrap import dedent
 from ..core import Policy, ReversibleStep, Step, StepParams, Observation, DoneStep
@@ -75,8 +75,12 @@ class EditCodeStep(ReversibleStep):
         # This is also nicer because it feels less like you're always taking the last step's observation only.
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
-        enc_dec = MarkdownStyleEncoderDecoder(
-            filesystem=params.filesystem, range_in_files=self.range_in_files)
+        rif_with_contents = []
+        for range_in_file in self.range_in_files:
+            file_contents = await params.ide.readRangeInFile(range_in_file)
+            rif_with_contents.append(
+                RangeInFileWithContents.from_range_in_file(range_in_file, file_contents))
+        enc_dec = MarkdownStyleEncoderDecoder(rif_with_contents)
         code_string = enc_dec.encode()
         prompt = self.prompt.format(code=code_string)
         completion = params.llm.complete(prompt)
@@ -89,13 +93,17 @@ class EditCodeStep(ReversibleStep):
 
         self._edit_diffs = []
         for file_edit in file_edits:
-            self._edit_diffs.append(params.filesystem.apply_edit(file_edit))
+            diff = await params.ide.applyFileSystemEdit(file_edit)
+            self._edit_diffs.append(diff)
+
+        for filepath in set([file_edit.filepath for file_edit in file_edits]):
+            await params.ide.saveFile(filepath)
 
         return None
 
-    def reverse(self, params: StepParams):
+    async def reverse(self, params: StepParams):
         for edit_diff in self._edit_diffs:
-            params.filesystem.apply_edit(edit_diff.backward)
+            await params.ide.applyFileSystemEdit(edit_diff.backward)
 
 
 class EditHighlightedCodeStep(Step):
@@ -118,41 +126,17 @@ This is the code after being changed to perfectly satisfy the user request:
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         range_in_files = await params.ide.getHighlightedCode()
         if len(range_in_files) == 0:
+            # Get the full contents of all open files
             files = await params.ide.getOpenFiles()
+            contents = {}
+            for file in files:
+                contents[file] = await params.ide.readFile()
+
             range_in_files = [RangeInFile.from_entire_file(
-                filepath, params.filesystem) for filepath in files]
+                filepath, content) for filepath, content in contents.items()]
 
         await params.run_step(EditCodeStep(
             range_in_files=range_in_files, prompt=self._prompt.format(code="{code}", user_input=self.user_input)))
-
-
-# class SuggestHighlightedCodeStep(Step):
-#     user_input: str
-#     hide = True
-#     _prompt: str = dedent("""Below is the code before changes:
-
-#                 {code}
-
-#                 This is the user request:
-
-#                 {user_input}
-
-#                 This is the code after being changed to perfectly satisfy the user request:
-#             """)
-
-#     async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
-#         return "Making suggestion to change highlighted code"
-
-#     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
-#         range_in_files = await params.ide.getHighlightedCode()
-#         if len(range_in_files) == 0:
-#             files = await params.ide.getOpenFiles()
-#             range_in_files = [RangeInFile.from_entire_file(
-#                 filepath, params.filesystem) for filepath in files]
-
-#         params.ide.showSuggestion()
-#         await params.run_step(EditCodeStep(
-#             range_in_files=range_in_files, prompt=self._prompt.format(code="{code}", user_input=self.user_input)))
 
 
 class FindCodeStep(Step):
@@ -162,7 +146,7 @@ class FindCodeStep(Step):
         return "Finding code"
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
-        params.filesystem.open_files()
+        return await params.ide.getOpenFiles()
 
 
 class UserInputStep(Step):
@@ -171,6 +155,9 @@ class UserInputStep(Step):
 
 class SolveTracebackStep(Step):
     traceback: Traceback
+
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
+        return f"```\n{self.traceback.full_traceback}\n```"
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         prompt = dedent("""I ran into this problem with my Python code:
@@ -186,8 +173,9 @@ class SolveTracebackStep(Step):
 
         range_in_files = []
         for frame in self.traceback.frames:
-            range_in_files.append(RangeInFile.from_entire_file(
-                frame.filepath, params.filesystem))
+            content = await params.ide.readFile(frame.filepath)
+            range_in_files.append(
+                RangeInFile.from_entire_file(frame.filepath, content))
 
         await params.run_step(EditCodeStep(
             range_in_files=range_in_files, prompt=prompt))
