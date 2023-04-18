@@ -33,6 +33,7 @@ const MainDiv = styled.div<{ stepDepth: number; inFuture: boolean }>`
   opacity: ${(props) => (props.inFuture ? 0.3 : 1)};
   animation: ${appear} 0.3s ease-in-out;
   padding-left: ${(props) => props.stepDepth * 20}px;
+  overflow: hidden;
 `;
 
 const StepContainerDiv = styled.div<{ open: boolean }>`
@@ -124,7 +125,7 @@ function StepContainer(props: StepContainerProps) {
             </HeaderButton>
           </HeaderDiv>
 
-          <ReactMarkdown key={1}>
+          <ReactMarkdown key={1} className="overflow-scroll">
             {props.historyNode.step.description as any}
           </ReactMarkdown>
 

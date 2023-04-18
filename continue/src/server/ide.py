@@ -256,14 +256,14 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             for root, dirs, files in os.walk(edit.path, topdown=False):
                 for f in files:
                     path = os.path.join(root, f)
-                    edit_diff = await self.applyFileEdit(DeleteFile(filepath=path))
+                    edit_diff = await self.applyFileSystemEdit(DeleteFile(filepath=path))
                     backward_edits.append(edit_diff)
                 for d in dirs:
                     path = os.path.join(root, d)
-                    edit_diff = await self.applyFileEdit(DeleteDirectory(path=path))
+                    edit_diff = await self.applyFileSystemEdit(DeleteDirectory(path=path))
                     backward_edits.append(edit_diff)
 
-            edit_diff = await self.applyFileEdit(DeleteDirectory(path=edit.path))
+            edit_diff = await self.applyFileSystemEdit(DeleteDirectory(path=edit.path))
             backward_edits.append(edit_diff)
             backward_edits.reverse()
             backward = SequentialFileSystemEdit(edits=backward_edits)
@@ -273,7 +273,7 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
         elif isinstance(edit, FileSystemEdit):
             diffs = []
             for edit in edit.next_edit():
-                edit_diff = await self.applyFileEdit(edit)
+                edit_diff = await self.applyFileSystemEdit(edit)
                 diffs.append(edit_diff)
             backward = EditDiff.from_sequence(diffs=diffs).backward
         else:

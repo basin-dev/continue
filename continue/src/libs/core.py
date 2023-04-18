@@ -139,13 +139,16 @@ class Agent(ContinueBaseModel):
     _manual_edits_buffer: List[FileEditWithFullContents] = []
 
     async def reverse_to_index(self, index: int):
-        while self.history.get_current_index() > index:
-            current_step = self.history.get_current().step
-            self.history.step_back()
-            if issubclass(current_step.__class__, ReversibleStep):
-                await current_step.reverse(self.__get_step_params())
+        try:
+            while self.history.get_current_index() > index:
+                current_step = self.history.get_current().step
+                self.history.step_back()
+                if issubclass(current_step.__class__, ReversibleStep):
+                    await current_step.reverse(self.__get_step_params())
 
-            self.update_subscribers()
+                self.update_subscribers()
+        except Exception as e:
+            print(e)
 
     def handle_manual_edits(self, edits: List[FileEditWithFullContents]):
         for edit in edits:
@@ -290,7 +293,7 @@ class FileSystemEditStep(ReversibleStep):
     edit: FileSystemEdit
     _diff: EditDiff | None = None
 
-    hide: True
+    hide: bool = True
 
     async def run(self, params: "StepParams") -> Coroutine[Observation, None, None]:
         self._diff = await params.ide.applyFileSystemEdit(self.edit)
