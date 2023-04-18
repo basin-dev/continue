@@ -1,5 +1,7 @@
 # Steps
 
+Every step could have a modify() function, so that if you are give NLI, here is how you pass them and utilize them, but might be against the spirit of full openendness
+
 A `Step` is the unit of action. They can be composed by calling any other existing step.
 
 Steps are often reversible. If you inherit from `ReversibleStep` and implement the `reverse` method (also likely keeping track of some state as you make the forward run), then your step is guaranteed to be reversible. Even if you don't implement this though, if you only call sub-steps that are themselves reversible, then Continue will automatically pick up on them and construct a reversal function.
