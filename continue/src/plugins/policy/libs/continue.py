@@ -2,32 +2,37 @@ from plugins import policy
 from ....libs.observation import Observation
 from ....libs.steps import Step
 from ....libs.core import History
+from ....libs.steps import AddPolicyStep, AddStepStep, EditStepStep, EditPolicyStep, NaturalLanguageUserInputStep, DoneStep
 
 
-class ContinuePolicy:
+class ContinuePolicy(Policy):
     """A policy that helps you write Continue plugins."""
 
     def __init__(self):
-        self.selection = "user selection"
+        self.selection = None
         self.initialize = True
 
     @policy.hookimpl
     def next(self, history: History) -> Step:
+        
         if self.initialize:
-            # TODO: add step
-            # TODO: add policy
+            AddPolicyStep()
+            AddStepStep()
             self.initialize = False
-        if self.selection == "add_step":
-            # TODO: add step
             self.selection = "edit_step"
-        elif self.selection == "edit_step":
-            # rename if step has a generic name
-            # replace if still boilerplate code
-            # edit if not boilerplate code
+
+        if self.selection == "add_step":
+            AddStepStep()
+            EditStepStep()
             self.selection = None
-        elif self.selection == "edit_policy"
-            # rename if policy has a generic name
-            # replace if still boilerplate code
-            # edit if not boilerplate code
+        elif self.selection == "edit_step":
+            EditStepStep()
+            self.selection = None
+        elif self.selection == "edit_policy":
+            EditPolicyStep()
+            self.selection = None
+        elif self.selection == "done":
+            DoneStep()
         else:
-            # TODO: do something
+            NaturalLanguageUserInputStep("Do you want to add_step, edit_step, or edit_policy? If not, type done.")
+        
