@@ -10,6 +10,17 @@ When we reverse a sequence of steps to go back in history, we have to know which
 
 But what's the best way to determine whether other Steps are reversible? Maybe all Steps should be considered reversible by default, and the default implementation of `reverse` is to `pass` and assume that all substeps are reversible. But even in this case, we should check at runtime whether any non-reversible steps were taken. S ultimately need to have a "reversible" function or property. Should a parent step be reversible even if its child steps are not? No...definitely not. But you should be able to reverse some of the substeps, right???? Or does this require another button click? For now, let's not worry about it, that will be a part of composability.
 
+how do we build interfaces within steps?
+how to let user decide from a set of finite options? buttons? if so, how?
+do we have some basic things?
+already have the user input step
+might have a multi select or radio button step
+some way of converting history into chatML or other context
+conversion functions are fairly fundamental but could be overwrriten by the user
+how do we let it know what it is in the codebase though?
+
+allows you to add an optional system message to every step
+
 ## Notes
 
 Watch the filesystem so as to insert "ManualUserStep"
