@@ -6,7 +6,7 @@ from ...models.filesystem_edit import EditDiff
 from ...models.filesystem import RangeInFile, RangeInFileWithContents
 from ..llm.prompt_utils import MarkdownStyleEncoderDecoder
 from textwrap import dedent
-from ..core import Policy, ReversibleStep, Step, StepParams, Observation, DoneStep
+from ..core import Policy, Step, StepParams, Observation
 import subprocess
 from ..util.traceback_parsers import parse_python_traceback
 from ..observation import TracebackObservation
@@ -17,7 +17,7 @@ class RunPolicyUntilDoneStep(Step):
 
     async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
         next_step = self.policy.next(params.get_history())
-        while next_step is not None and not isinstance(next_step, DoneStep):
+        while next_step is not None:
             observation = await params.run_step(next_step)
             next_step = self.policy.next(params.get_history())
         return observation

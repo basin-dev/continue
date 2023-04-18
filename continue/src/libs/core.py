@@ -19,6 +19,7 @@ class HistoryNode(ContinueBaseModel):
     """A point in history, a list of which make up History"""
     step: "Step"
     observation: Observation | None
+    depth: int
 
 
 class History(ContinueBaseModel):
@@ -27,7 +28,7 @@ class History(ContinueBaseModel):
     current_index: int
 
     def add_node(self, node: HistoryNode):
-        self.timeline.append(node)
+        self.timeline.insert(self.current_index + 1, node)
         self.current_index += 1
 
     def get_current(self) -> HistoryNode | None:
@@ -35,15 +36,28 @@ class History(ContinueBaseModel):
             return None
         return self.timeline[self.current_index]
 
+    def remove_current_and_substeps(self):
+        self.timeline.pop(self.current_index)
+        while self.get_current() is not None and self.get_current().depth > 0:
+            self.timeline.pop(self.current_index)
+
+    def take_next_step(self) -> Union["Step", None]:
+        if self.has_future():
+            self.current_index += 1
+            current_state = self.get_current()
+            if current_state is None:
+                return None
+            return current_state.step
+        return None
+
     def get_current_index(self) -> int:
         return self.current_index
 
+    def has_future(self) -> bool:
+        return self.current_index < len(self.timeline) - 1
+
     def step_back(self):
         self.current_index -= 1
-
-    def pop(self) -> HistoryNode:
-        self.current_index -= 1
-        return self.timeline.pop()
 
     def last_observation(self) -> Observation | None:
         state = self.get_current()
@@ -112,8 +126,9 @@ class Agent(ContinueBaseModel):
         self._on_update_callbacks.append(callback)
 
     def update_subscribers(self):
+        full_state = self.get_full_state()
         for callback in self._on_update_callbacks:
-            callback(self.get_full_state())
+            callback(full_state)
 
     def __ask_permission(self, step: "Step") -> bool:
         return input("Run step? (y/n)") == "y"
@@ -129,7 +144,8 @@ class Agent(ContinueBaseModel):
             self.history.step_back()
             if issubclass(current_step.__class__, ReversibleStep):
                 await current_step.reverse(self.__get_step_params())
-            self.history.step_back()
+
+            self.update_subscribers()
 
     def handle_manual_edits(self, edits: List[FileEditWithFullContents]):
         for edit in edits:
@@ -137,22 +153,31 @@ class Agent(ContinueBaseModel):
             # Note that you're storing a lot of unecessary data here. Can compress into EditDiffs on the spot, and merge.
             # self._manual_edits_buffer = merge_file_edit(self._manual_edits_buffer, edit)
 
-    async def _run_singular_step(self, step: "Step") -> Coroutine[Observation, None, None]:
-        # Check manual edits buffer, clear out if needed by creating a ManualEditStep
-        if len(self._manual_edits_buffer) > 0:
-            manualEditsStep = ManualEditStep.from_sequence(
-                self._manual_edits_buffer)
-            self._manual_edits_buffer = []
-            await self._run_singular_step(manualEditsStep)
+    _step_depth: int = 0
+
+    async def _run_singular_step(self, step: "Step", is_future_step: bool = False) -> Coroutine[Observation, None, None]:
+        if not is_future_step:
+            # Check manual edits buffer, clear out if needed by creating a ManualEditStep
+            if len(self._manual_edits_buffer) > 0:
+                manualEditsStep = ManualEditStep.from_sequence(
+                    self._manual_edits_buffer)
+                self._manual_edits_buffer = []
+                await self._run_singular_step(manualEditsStep)
+
+        # Update history - do this first so we get top-first tree ordering
+        self.history.add_node(HistoryNode(
+            step=step, observation=None, depth=self._step_depth))
 
         # Run step
+        self._step_depth += 1
         observation = await step(self.__get_step_params())
+        self._step_depth -= 1
+
+        # Add observation to history
+        self.history.get_current().observation = observation
 
         # Update its description
         step._set_description(await step.describe(self.llm))
-
-        # Update history
-        self.history.add_node(HistoryNode(step=step, observation=observation))
 
         # Call all subscribed callbacks
         self.update_subscribers()
@@ -165,10 +190,21 @@ class Agent(ContinueBaseModel):
         self._active = True
 
         next_step = step
-        while not (next_step is None or isinstance(next_step, DoneStep) or self._should_halt):
+        is_future_step = False
+        while not (next_step is None or self._should_halt):
             try:
-                observation = await self._run_singular_step(next_step)
-                next_step = self.policy.next(self.history)
+                if is_future_step:
+                    # If future step, then we are replaying and need to delete the step from history so it can be replaced
+                    self.history.remove_current_and_substeps()
+
+                observation = await self._run_singular_step(next_step, is_future_step)
+                if next_step := self.policy.next(self.history):
+                    is_future_step = False
+                elif next_step := self.history.take_next_step():
+                    is_future_step = True
+                else:
+                    next_step = None
+
             except Exception as e:
                 print(
                     f"Error while running step: \n{''.join(traceback.format_tb(e.__traceback__))}\n{e}")
@@ -188,15 +224,23 @@ class Agent(ContinueBaseModel):
         first_step = self.policy.next(self.history)
         await self.run_from_step(first_step)
 
-    async def accept_user_input(self, user_input: str):
+    async def _request_halt(self):
         if self._active:
             self._should_halt = True
             while self._active:
                 time.sleep(0.1)
         self._should_halt = False
+        return None
 
+    async def accept_user_input(self, user_input: str):
+        await self._request_halt()
         # Just run the step that takes user input, and
         # then up to the policy to decide how to deal with it.
+        await self.run_from_step(UserInputStep(user_input=user_input))
+
+    async def accept_refinement_input(self, user_input: str, index: int):
+        await self._request_halt()
+        await self.reverse_to_index(index)
         await self.run_from_step(UserInputStep(user_input=user_input))
 
 
@@ -204,6 +248,9 @@ class Step(ContinueBaseModel):
     name: str = None
     hide: bool = False
     _description: str | None = None
+
+    class Config:
+        copy_on_model_validation = False
 
     async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         if self._description is not None:
@@ -242,6 +289,8 @@ class ReversibleStep(Step):
 class FileSystemEditStep(ReversibleStep):
     edit: FileSystemEdit
     _diff: EditDiff | None = None
+
+    hide: True
 
     async def run(self, params: "StepParams") -> Coroutine[Observation, None, None]:
         self._diff = await params.ide.applyFileSystemEdit(self.edit)
@@ -296,11 +345,6 @@ class UserInputStep(Step):
 
     async def run(self, params: StepParams) -> Coroutine[UserInputObservation, None, None]:
         return UserInputObservation(user_input=self.user_input)
-
-
-class DoneStep(Step):
-    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
-        return None
 
 
 class ValidatorObservation(Observation):

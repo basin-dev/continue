@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styled, { keyframes } from "styled-components";
 import {
   appear,
@@ -26,11 +26,13 @@ interface StepContainerProps {
   historyNode: HistoryNode;
   onReverse: () => void;
   inFuture: boolean;
+  onRefinement: (input: string) => void;
 }
 
-const MainDiv = styled.div`
-  opacity: ${(props: { inFuture: boolean }) => (props.inFuture ? 0.3 : 1)};
+const MainDiv = styled.div<{ stepDepth: number; inFuture: boolean }>`
+  opacity: ${(props) => (props.inFuture ? 0.3 : 1)};
   animation: ${appear} 0.3s ease-in-out;
+  padding-left: ${(props) => props.stepDepth * 20}px;
 `;
 
 const StepContainerDiv = styled.div<{ open: boolean }>`
@@ -80,8 +82,16 @@ function StepContainer(props: StepContainerProps) {
     }
   }, [isHovered]);
 
+  const onTextInput = useCallback(() => {
+    if (naturalLanguageInputRef.current) {
+      props.onRefinement(naturalLanguageInputRef.current.value);
+      naturalLanguageInputRef.current.value = "";
+    }
+  }, [naturalLanguageInputRef]);
+
   return (
     <MainDiv
+      stepDepth={(props.historyNode.depth as any) || 0}
       inFuture={props.inFuture}
       onMouseEnter={() => {
         setIsHovered(true);
@@ -140,9 +150,14 @@ function StepContainer(props: StepContainerProps) {
 
       <OnHoverDiv hidden={!open}>
         <NaturalLanguageInput
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onTextInput();
+            }
+          }}
           ref={naturalLanguageInputRef}
         ></NaturalLanguageInput>
-        <ContinueButton></ContinueButton>
+        <ContinueButton onClick={onTextInput}></ContinueButton>
       </OnHoverDiv>
     </MainDiv>
   );

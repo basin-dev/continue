@@ -226,6 +226,15 @@ function Notebook(props: NotebookProps) {
           <StepContainer
             inFuture={index > history?.current_index}
             historyNode={node}
+            onRefinement={(input: string) => {
+              websocket?.send(
+                JSON.stringify({
+                  messageType: "refinement_input",
+                  value: input,
+                  index,
+                })
+              );
+            }}
             onReverse={() => {
               websocket?.send(
                 JSON.stringify({

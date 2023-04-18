@@ -1,6 +1,6 @@
 from typing import Generator, List, Tuple, Type
 
-from .core import Agent, Step, DoneStep, Validator, Policy, History, UserInputStep
+from .core import Agent, Step, Validator, Policy, History, UserInputStep
 from .observation import Observation, TracebackObservation, UserInputObservation
 from .steps.main import EditCodeStep, EditHighlightedCodeStep, SolveTracebackStep, RunCodeStep
 from .steps.nate import WritePytestsStep
@@ -31,7 +31,7 @@ class DemoPolicy(Policy):
             self.ran_code_last = False
             return SolveTracebackStep(traceback=observation.traceback)
         else:
-            return DoneStep()
+            return None
         # if self.ran_code_last:
         #     # A nicer way to define this with the Continue SDK: continue_sdk.on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
         #     # This is a way to iteratively define policies.
@@ -46,7 +46,7 @@ class DemoPolicy(Policy):
         #         self.ran_code_last = False
         #         return SolveTracebackStep(traceback=observation.traceback)
         #     else:
-        #         return DoneStep()
+        #         return None
         # else:
         #     self.ran_code_last = True
         #     return RunCodeStep(cmd=self.cmd)

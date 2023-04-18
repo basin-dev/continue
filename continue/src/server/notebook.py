@@ -94,12 +94,10 @@ class SessionManager:
 
         # Run coroutine in background
         if self._event_loop is None or self._event_loop.is_closed():
-            print("Creating event loop")
             self._event_loop = asyncio.new_event_loop()
             self._event_loop.run_until_complete(a())
             self._event_loop.close()
         else:
-            print("Using existing event loop")
             self._event_loop.run_until_complete(a())
             self._event_loop.close()
 
@@ -141,12 +139,22 @@ async def websocket_endpoint(websocket: WebSocket, session: Session = Depends(we
         if "messageType" not in data:
             continue
         messageType = data["messageType"]
-        if messageType == "main_input":
-            # Do something with user input
-            asyncio.create_task(session.agent.accept_user_input(data["value"]))
-        elif messageType == "reverse":
-            # Reverse the history to the given index
-            asyncio.create_task(session.agent.reverse_to_index(data["index"]))
+
+        try:
+            if messageType == "main_input":
+                # Do something with user input
+                asyncio.create_task(
+                    session.agent.accept_user_input(data["value"]))
+            elif messageType == "refinement_input":
+                asyncio.create_task(
+                    session.agent.accept_refinement_input(data["value"], data["index"]))
+            elif messageType == "reverse":
+                # Reverse the history to the given index
+                asyncio.create_task(
+                    session.agent.reverse_to_index(data["index"]))
+        except Exception as e:
+            print(e)
+
     print("Closing websocket")
     await websocket.close()
 
