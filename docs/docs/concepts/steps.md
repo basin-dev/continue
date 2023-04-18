@@ -1,5 +1,7 @@
 # Steps
 
+Every step could have a modify() function, so that if you are give NLI, here is how you pass them and utilize them, but might be against the spirit of full openendness
+
 A `Step` is the unit of action. They can be composed by calling any other existing step.
 
 Steps are often reversible. If you inherit from `ReversibleStep` and implement the `reverse` method (also likely keeping track of some state as you make the forward run), then your step is guaranteed to be reversible. Even if you don't implement this though, if you only call sub-steps that are themselves reversible, then Continue will automatically pick up on them and construct a reversal function.
@@ -7,6 +9,17 @@ Steps are often reversible. If you inherit from `ReversibleStep` and implement t
 When we reverse a sequence of steps to go back in history, we have to know which ones are reversible. If a non-reversible Step is encountered, Continue will not revert any further. A `ReversibleStep` is always assumed to be reversible because there is ultimately no way of enforcing that the developer doesn't add any side-effects to their `run` function.
 
 But what's the best way to determine whether other Steps are reversible? Maybe all Steps should be considered reversible by default, and the default implementation of `reverse` is to `pass` and assume that all substeps are reversible. But even in this case, we should check at runtime whether any non-reversible steps were taken. S ultimately need to have a "reversible" function or property. Should a parent step be reversible even if its child steps are not? No...definitely not. But you should be able to reverse some of the substeps, right???? Or does this require another button click? For now, let's not worry about it, that will be a part of composability.
+
+how do we build interfaces within steps?
+how to let user decide from a set of finite options? buttons? if so, how?
+do we have some basic things?
+already have the user input step
+might have a multi select or radio button step
+some way of converting history into chatML or other context
+conversion functions are fairly fundamental but could be overwrriten by the user
+how do we let it know what it is in the codebase though?
+
+allows you to add an optional system message to every step
 
 ## Notes
 
@@ -30,5 +43,3 @@ returns observation
 ideal way would be just to have people outline steps
 Step could be run policy until x
 SequentialStep([
-
-DoneStep

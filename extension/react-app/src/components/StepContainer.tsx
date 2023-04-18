@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styled, { keyframes } from "styled-components";
 import {
   appear,
@@ -25,10 +25,15 @@ import ContinueButton from "./ContinueButton";
 interface StepContainerProps {
   historyNode: HistoryNode;
   onReverse: () => void;
+  inFuture: boolean;
+  onRefinement: (input: string) => void;
 }
 
-const MainDiv = styled.div`
+const MainDiv = styled.div<{ stepDepth: number; inFuture: boolean }>`
+  opacity: ${(props) => (props.inFuture ? 0.3 : 1)};
   animation: ${appear} 0.3s ease-in-out;
+  padding-left: ${(props) => props.stepDepth * 20}px;
+  overflow: hidden;
 `;
 
 const StepContainerDiv = styled.div<{ open: boolean }>`
@@ -78,8 +83,17 @@ function StepContainer(props: StepContainerProps) {
     }
   }, [isHovered]);
 
+  const onTextInput = useCallback(() => {
+    if (naturalLanguageInputRef.current) {
+      props.onRefinement(naturalLanguageInputRef.current.value);
+      naturalLanguageInputRef.current.value = "";
+    }
+  }, [naturalLanguageInputRef]);
+
   return (
     <MainDiv
+      stepDepth={(props.historyNode.depth as any) || 0}
+      inFuture={props.inFuture}
       onMouseEnter={() => {
         setIsHovered(true);
       }}
@@ -102,12 +116,16 @@ function StepContainer(props: StepContainerProps) {
               )}
               {props.historyNode.step.name as any}:
             </h4>
-            <HeaderButton>
+            <HeaderButton
+              onClick={() => {
+                props.onReverse();
+              }}
+            >
               <Backward size="1.6em" onClick={props.onReverse}></Backward>
             </HeaderButton>
           </HeaderDiv>
 
-          <ReactMarkdown key={1}>
+          <ReactMarkdown key={1} className="overflow-scroll">
             {props.historyNode.step.description as any}
           </ReactMarkdown>
 
@@ -133,9 +151,14 @@ function StepContainer(props: StepContainerProps) {
 
       <OnHoverDiv hidden={!open}>
         <NaturalLanguageInput
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onTextInput();
+            }
+          }}
           ref={naturalLanguageInputRef}
         ></NaturalLanguageInput>
-        <ContinueButton></ContinueButton>
+        <ContinueButton onClick={onTextInput}></ContinueButton>
       </OnHoverDiv>
     </MainDiv>
   );

@@ -1,5 +1,11 @@
 # Building a plugin
 
+How to build plugin possibilities...
+
+1. Watch / recoding as I write code
+2. Maybe you write bullet points on what you do
+3. Provide a list of either text description or step object or both elements
+
 What are the simple building blocks that developers can use to define their own workflow automation?
 
 - Simplest: hook and a prompt, that’s all

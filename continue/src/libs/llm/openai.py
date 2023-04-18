@@ -13,6 +13,7 @@ import numpy as np
 from ..llm import LLM
 from pydantic import BaseModel, validator
 
+
 class OpenAI(LLM):
     api_key: str
     completion_count: int = 0
@@ -23,16 +24,20 @@ class OpenAI(LLM):
         openai.api_key = v
         return v
 
+    def with_system_message(self, system_message: str | None):
+        return OpenAI(api_key=self.api_key, system_message=system_message)
+
     def stream_chat(self, messages, **kwargs) -> Generator[Any | list | dict, None, None] | Any | list | dict:
         self.completion_count += 1
-        args = { "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 } | kwargs
+        args = {"max_tokens": 512, "temperature": 0.5, "top_p": 1,
+                "frequency_penalty": 0, "presence_penalty": 0} | kwargs
         args["stream"] = True
         args["model"] = "gpt-3.5-turbo"
 
         for chunk in openai.ChatCompletion.create(
             messages=messages,
             **args,
-        ):  
+        ):
             if "content" in chunk.choices[0].delta:
                 yield chunk.choices[0].delta.content
             else:
@@ -40,7 +45,8 @@ class OpenAI(LLM):
 
     def stream_complete(self, prompt: str, **kwargs) -> Generator[Any | list | dict, None, None] | Any | list | dict:
         self.completion_count += 1
-        args = { "model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None } | kwargs
+        args = {"model": self.default_model, "max_tokens": 512, "temperature": 0.5,
+                "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None} | kwargs
         args["stream"] = True
 
         if args["model"] == "gpt-3.5-turbo":
@@ -63,15 +69,22 @@ class OpenAI(LLM):
 
     def complete(self, prompt: str, **kwargs) -> str:
         self.completion_count += 1
-        args = { "model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None, "stream": False } | kwargs
-        
+        args = {"model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1,
+                "frequency_penalty": 0, "presence_penalty": 0, "suffix": None, "stream": False} | kwargs
+
         if args["model"] == "gpt-3.5-turbo":
+            messages = [{
+                "role": "user",
+                "content": prompt
+            }]
+            if self.system_message:
+                messages.insert(0, {
+                    "role": "system",
+                    "content": self.system_message
+                })
             return openai.ChatCompletion.create(
                 model=args["model"],
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }],
+                messages=messages,
                 **args,
             ).choices[0].message.content
         else:
@@ -103,8 +116,9 @@ class OpenAI(LLM):
             raise e
 
     def parallel_edit(self, inputs: list[str], instructions: list[str] | str, **kwargs) -> list[str]:
-        args = { "temperature": 0.5, "top_p": 1 } | kwargs
+        args = {"temperature": 0.5, "top_p": 1} | kwargs
         args['model'] = 'text-davinci-edit-001'
+
         async def fn():
             async with aiohttp.ClientSession() as session:
                 tasks = []
@@ -121,15 +135,18 @@ class OpenAI(LLM):
                         return json["choices"][0]["text"]
 
                 for i in range(len(inputs)):
-                    tasks.append(get(inputs[i], instructions[i] if isinstance(instructions, list) else instructions))
-                
+                    tasks.append(get(inputs[i], instructions[i] if isinstance(
+                        instructions, list) else instructions))
+
                 return await asyncio.gather(*tasks)
 
         return asyncio.run(fn())
 
-    def parallel_complete(self, prompts: list[str], suffixes: list[str]| None=None, **kwargs) -> list[str]:
+    def parallel_complete(self, prompts: list[str], suffixes: list[str] | None = None, **kwargs) -> list[str]:
         self.completion_count += len(prompts)
-        args = { "model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 } | kwargs
+        args = {"model": self.default_model, "max_tokens": 512, "temperature": 0.5,
+                "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0} | kwargs
+
         async def fn():
             async with aiohttp.ClientSession() as session:
                 tasks = []
@@ -144,10 +161,11 @@ class OpenAI(LLM):
                             print("ERROR IN GPT-3 RESPONSE: ", json)
                             return None
                         return json["choices"][0]["text"]
-                
+
                 for i in range(len(prompts)):
-                    tasks.append(asyncio.ensure_future(get(prompts[i], suffixes[i] if suffixes else None)))
-                
+                    tasks.append(asyncio.ensure_future(
+                        get(prompts[i], suffixes[i] if suffixes else None)))
+
                 return await asyncio.gather(*tasks)
-        
+
         return asyncio.run(fn())

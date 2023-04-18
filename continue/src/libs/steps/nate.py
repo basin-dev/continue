@@ -24,7 +24,7 @@ class WritePytestsStep(Step):
 
         path_dir = os.path.join(dirname, "tests")
         if not os.path.exists(path_dir):
-            await params.ide.applyFileSystemEdit(AddDirectory(path=path_dir))
+            await params.apply_filesystem_edit(AddDirectory(path=path_dir))
 
         path = os.path.join(path_dir, f"test_{filename}")
         if os.path.exists(path):
@@ -47,6 +47,6 @@ class WritePytestsStep(Step):
 
         """)
         tests = params.llm.complete(prompt)
-        await params.ide.applyFileSystemEdit(AddFile(filepath=path, content=tests))
+        await params.apply_filesystem_edit(AddFile(filepath=path, content=tests))
 
         return None
