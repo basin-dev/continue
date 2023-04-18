@@ -90,8 +90,11 @@ class StepParams:
     ide: AbstractIdeProtocolServer
     __agent: "Agent"
 
-    def __init__(self, agent: "Agent"):
-        self.llm = agent.llm
+    def __init__(self, agent: "Agent", llm: LLM | None = None):
+        if llm is None:
+            self.llm = agent.llm
+        else:
+            self.llm = llm
         self.ide = agent.ide
         self.__agent = agent
 
@@ -133,8 +136,8 @@ class Agent(ContinueBaseModel):
     def __ask_permission(self, step: "Step") -> bool:
         return input("Run step? (y/n)") == "y"
 
-    def __get_step_params(self):
-        return StepParams(agent=self)
+    def __get_step_params(self, step: "Step"):
+        return StepParams(agent=self, llm=self.llm.with_system_message(step.system_message))
 
     _manual_edits_buffer: List[FileEditWithFullContents] = []
 
@@ -144,7 +147,7 @@ class Agent(ContinueBaseModel):
                 current_step = self.history.get_current().step
                 self.history.step_back()
                 if issubclass(current_step.__class__, ReversibleStep):
-                    await current_step.reverse(self.__get_step_params())
+                    await current_step.reverse(self.__get_step_params(current_step))
 
                 self.update_subscribers()
         except Exception as e:
@@ -173,7 +176,7 @@ class Agent(ContinueBaseModel):
 
         # Run step
         self._step_depth += 1
-        observation = await step(self.__get_step_params())
+        observation = await step(self.__get_step_params(step))
         self._step_depth -= 1
 
         # Add observation to history
@@ -251,6 +254,8 @@ class Step(ContinueBaseModel):
     name: str = None
     hide: bool = False
     _description: str | None = None
+
+    system_message: str | None = None
 
     class Config:
         copy_on_model_validation = False
