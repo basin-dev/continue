@@ -2,7 +2,8 @@
 
 Demo
 
-1. Showing first the https://dlthub.com/docs/walkthroughs/create-a-pipeline docs page and then switching to the `create dlt pipeline` plugin code, Nate mentions something like "Ty and many other developers create a lot of dlt pipelines, so he created a Continue plug-in that accelerates the process of creating a dlt pipeline and plans to share it with the dlt community. Let's use it to build a new dlt pipeline that loads data from an API to DuckDB"
+0. Nate narrates a video of me creating a dlt pipeline using chatgpt (e.g. "he has done this dozens of times, he knows every step he will need to do, he uses chatgpt to speed himself up, but he still can't type fast enough") and then switches to code for the Continue plugin for creating a dlt pipeline at the end
+1. Nate says "Instead of using ChatGPT to create new dlt pipeline, Ty now uses a Continue plug-in he wrote to accelerate the process of creating a dlt pipeline that he plans to share it with the dlt community. Let's see it in action."
 2. Nate then switches to Continue and shows how "We can kickoff the plug-in with the `/dlt` command"
 3. This causes Continue to ask: "What API do you want to load data from using a dlt pipeline?" It then waits for input from the user.
 4. Nate types in something like "I want to load data from a free weather API"
