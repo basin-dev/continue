@@ -1,5 +1,15 @@
 # Steps
 
+## Params
+
+The params object can be seen in core.py. It provides you with an LLM, so you can do params.llm.complete(prompt). (In my recent commit, this LLM will automatically have the system message loaded as specified in the Step). It also provides the ide object, but this mostly shouldn't be used. Use params.applyFileSystemEdit(...) to make any changes to files, params.run_step to run a sub-step (for example EditCodeStep, which will itself call applyFileSystemEdit , and use params.get_history() to do just that.
+
+## EditCodeStep
+
+Assuming you mean EditCodeStep , you pass it the range_in_files argument. Can see this if you go to the class. The way pydantic works is that all attributes that don't begin with an underscore are arguments in the initialization method. If they have defaults (like name here), then you don't have to specify them, but can
+
+EditCodeStep takes a list of RangeInFile objects. One way to get these is by taking the user's highlighted code (what EditHighlightedCodeStep does). If you want the whole file, you can use RangeInFile.from_entire_file. If you are just writing to a blank file, you probably just want to use params.apply_filesystem_edit(...)
+
 Every step could have a modify() function, so that if you are give NLI, here is how you pass them and utilize them, but might be against the spirit of full openendness
 
 A `Step` is the unit of action. They can be composed by calling any other existing step.
