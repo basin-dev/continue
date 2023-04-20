@@ -1,5 +1,27 @@
 # `dlt` Plugin
 
+Demo
+
+1. Showing first the https://dlthub.com/docs/walkthroughs/create-a-pipeline docs page and then switching to the `create dlt pipeline` plugin code, Nate mentions something like "Ty and many other developers create a lot of dlt pipelines, so he created a Continue plug-in that accelerates the process of creating a dlt pipeline and plans to share it with the dlt community. Let's use it to build a new dlt pipeline that loads data from an API to DuckDB"
+2. Nate then switches to Continue and shows how "We can kickoff the plug-in with the `/dlt` command"
+3. This causes Continue to ask: "What API do you want to load data from using a dlt pipeline?" It then waits for input from the user.
+4. Nate types in something like "I want to load data from a free weather API"
+5. The plug-in runs `dlt init weather duckdb`, creating a `weather.py` file
+7. It then asks GPT-3.5-turbo to select a weather API, write out a plan for implementing a dlt pipeline, and then it implements the resource function to call the WeatherAPI.com API and get the latest weather for London
+8. It follows this by pausing and prompting Nate to add his API key to `.dlt/secrets.toml`
+9. Nate manually edits `weather.py`, replacing London with SF, showing this is possible during a plug-in
+10. Continue then resumes the plug-in and prompts Nate to add his API key to `.dlt/secrets.toml`
+11. Nate then grabs his key from weatherapi.com and pastes it into `.dlt/secrets.toml`, pressing continue to move forward
+12. It then runs ``weather.py`, which tries to call the API, and it sees that it returns a 200 response and valid json is printed out (ideally an error occurs in the code it wrote, which is automatically fixed before it works)
+13. It then makes an edit to remove the `exit()` from the main file
+14. It then runs `weather.py`, which this time loads the data into the `weather.duckdb` DuckDB instance
+15. It then writes a utility function to SQL query `weather.duckdb` for the tables and schemas
+16. It then runs this and prints out the schema
+17. It then adds a second utility function to SQL query `weather.duckdb` for some of the data in one of the table using the schema
+18. It pauses. Nate realizes that he does not want to load all of the data. Just a subset of it. So he goes to #13 and asks for it to add transform function that leaves out the temp in celsius. Steps 14-17 replay
+19. Nate then asks for it to add unit tests for the transform function and the DuckDB utility function. It runs them
+
+
 ```python
 
 from plugins import step
@@ -113,7 +135,7 @@ Steps
 - then "API success? if so: remove exit()" action
 - then "success to DuckDB" action
 
-1. User enters: `dlt init weather duckdb` into the notebook-like GUI
+1. User enters: `` into the notebook-like GUI
 
 2. `dlt` autopilot triggers `createPipelinePolicy` to assist the user in building their `dlt` pipeline
 
