@@ -131,7 +131,7 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
 
     async def setFileOpen(self, filepath: str, open: bool):
         # Agent needs access to this.
-        await self.websocket._send_json({
+        await self.websocket.send_json({
             "messageType": "setFileOpen",
             "filePath": filepath,
             "open": open
