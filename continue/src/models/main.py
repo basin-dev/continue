@@ -3,6 +3,7 @@ from typing import List
 from pydantic import BaseModel, root_validator
 from functools import total_ordering
 
+
 @total_ordering
 class Position(BaseModel):
     line: int
@@ -33,6 +34,7 @@ class Position(BaseModel):
 
         return Position(line, character)
 
+
 class Range(BaseModel):
     """A range in a file. 0-indexed."""
     start: Position
@@ -47,16 +49,19 @@ class Range(BaseModel):
             end=max(self.end, other.end),
         )
 
+    def is_empty(self) -> bool:
+        return self.start == self.end
+
     def overlaps_with(self, other: "Range") -> bool:
         return not (self.end < other.start or self.start > other.end)
-    
+
     @staticmethod
     def from_indices(string: str, start_index: int, end_index: int) -> "Range":
         return Range(
             start=Position.from_index(string, start_index),
             end=Position.from_index(string, end_index)
         )
-    
+
     @staticmethod
     def from_shorthand(start_line: int, start_char: int, end_line: int, end_char: int) -> "Range":
         return Range(
@@ -70,11 +75,14 @@ class Range(BaseModel):
             )
         )
 
+
 class AbstractModel(ABC, BaseModel):
     @root_validator(pre=True)
     def check_is_subclass(cls, values):
         if not issubclass(cls, AbstractModel):
-            raise TypeError("AbstractModel subclasses must be subclasses of AbstractModel")
+            raise TypeError(
+                "AbstractModel subclasses must be subclasses of AbstractModel")
+
 
 class TracebackFrame(BaseModel):
     filepath: str
@@ -84,6 +92,7 @@ class TracebackFrame(BaseModel):
 
     def __eq__(self, other):
         return self.filepath == other.filepath and self.lineno == other.lineno and self.function == other.function
+
 
 class Traceback(BaseModel):
     frames: List[TracebackFrame]

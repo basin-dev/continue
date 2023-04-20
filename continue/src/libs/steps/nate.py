@@ -32,21 +32,21 @@ class WritePytestsStep(Step):
 
         for_file_contents = await params.ide.readFile(self.for_filepath)
 
-        prompt = dedent(f"""\
-        This is the file you will write unit tests for:
+        prompt = dedent(f"""This is the file you will write unit tests for:
 
-        ```python
-        {for_file_contents}
-        ```
+```python
+{for_file_contents}
+```
 
-        Here are additional instructions:
+Here are additional instructions:
 
-        "{self.instructions}"
+"{self.instructions}"
 
-        Here are the unit tests:
+Here are the unit tests:
 
-        """)
+""")
         tests = params.llm.complete(prompt)
         await params.apply_filesystem_edit(AddFile(filepath=path, content=tests))
+        await params.ide.setFileOpen(path, True)
 
         return None

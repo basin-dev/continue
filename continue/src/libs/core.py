@@ -74,6 +74,7 @@ class FullState(ContinueBaseModel):
     """A full state of the program, including the history"""
     history: History
     active: bool
+    user_input_queue: List[str]
 
 
 class Policy(ContinueBaseModel):
@@ -117,12 +118,13 @@ class Agent(ContinueBaseModel):
 
     _active: bool = False
     _should_halt: bool = False
+    _main_user_input_queue: List[str] = []
 
     class Config:
         arbitrary_types_allowed = True
 
     def get_full_state(self) -> FullState:
-        return FullState(history=self.history, active=self._active)
+        return FullState(history=self.history, active=self._active, user_input_queue=self._main_user_input_queue)
 
     def on_update(self, callback: Callable[["FullState"], None]):
         """Subscribe to changes to state"""
@@ -239,10 +241,24 @@ class Agent(ContinueBaseModel):
         return None
 
     async def accept_user_input(self, user_input: str):
+        self._main_user_input_queue.append(user_input)
+        self.update_subscribers()
+
+        if len(self._main_user_input_queue) > 1:
+            return
+
         await self._request_halt()
         # Just run the step that takes user input, and
         # then up to the policy to decide how to deal with it.
         await self.run_from_step(UserInputStep(user_input=user_input))
+
+        self._main_user_input_queue.pop(0)
+
+        self.update_subscribers()
+
+        while len(self._main_user_input_queue) > 0:
+            await self.run_from_step(UserInputStep(
+                user_input=self._main_user_input_queue.pop(0)))
 
     async def accept_refinement_input(self, user_input: str, index: int):
         await self._request_halt()
@@ -311,6 +327,7 @@ class FileSystemEditStep(ReversibleStep):
 
 class ManualEditStep(ReversibleStep):
     edit_diff: EditDiff
+    hide: bool = True
 
     async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         return "Manual edit step"

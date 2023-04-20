@@ -102,13 +102,13 @@ function StepContainer(props: StepContainerProps) {
       }}
       hidden={props.historyNode.step.hide as any}
     >
-      <GradientBorder className="m-2 overflow-hidden">
+      <GradientBorder
+        className="m-2 overflow-hidden cursor-pointer"
+        onClick={() => setOpen((prev) => !prev)}
+      >
         <StepContainerDiv open={open}>
           <HeaderDiv>
-            <h4
-              className="m-2 cursor-pointer"
-              onClick={() => setOpen((prev) => !prev)}
-            >
+            <h4 className="m-2 cursor-pointer">
               {open ? (
                 <ChevronDown size="1.4em" />
               ) : (
@@ -117,7 +117,8 @@ function StepContainer(props: StepContainerProps) {
               {props.historyNode.step.name as any}:
             </h4>
             <HeaderButton
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 props.onReverse();
               }}
             >

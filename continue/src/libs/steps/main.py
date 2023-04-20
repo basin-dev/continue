@@ -131,8 +131,16 @@ This is the code after being changed to perfectly satisfy the user request:
             range_in_files = [RangeInFile.from_entire_file(
                 filepath, content) for filepath, content in contents.items()]
 
+        prompt = self._prompt.format(code="{code}", user_input=self.user_input)
+        if len(range_in_files) == 1 and range_in_files[0].range.is_empty():
+            prompt = f"""{self.user_input}:
+File ({range_in_files[0].filepath})
+```
+
+"""
+
         await params.run_step(EditCodeStep(
-            range_in_files=range_in_files, prompt=self._prompt.format(code="{code}", user_input=self.user_input)))
+            range_in_files=range_in_files, prompt=prompt))
 
 
 class FindCodeStep(Step):

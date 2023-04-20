@@ -16,6 +16,11 @@ class RangeInFile(BaseModel):
     @staticmethod
     def from_entire_file(filepath: str, content: str) -> "RangeInFile":
         lines = content.splitlines()
+        if len(lines) == 0:
+            return RangeInFile(
+                filepath=filepath,
+                range=Range.from_shorthand(0, 0, 0, 0)
+            )
         return RangeInFile(
             filepath=filepath,
             range=Range.from_shorthand(
@@ -120,6 +125,9 @@ class FileSystem(AbstractModel):
         if s.endswith("\n"):
             lines.append("")
 
+        if len(lines) == 0:
+            lines.append("")
+
         end = Position(line=edit.range.end.line,
                        character=edit.range.end.character)
         if edit.range.end.line == len(lines) and edit.range.end.character == 0:
@@ -128,9 +136,9 @@ class FileSystem(AbstractModel):
 
         before_lines = lines[:edit.range.start.line]
         after_lines = lines[end.line + 1:]
-        between_str = lines[edit.range.start.line][:edit.range.start.character] + \
+        between_str = lines[min(edit.range.start.line, len(lines) - 1)][:edit.range.start.character] + \
             edit.replacement + \
-            lines[end.line][end.character + 1:]
+            lines[min(end.line, len(lines) - 1)][end.character + 1:]
 
         new_range = Range(
             start=edit.range.start,
