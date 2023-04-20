@@ -184,6 +184,7 @@
     "@electron/rebuild": "^3.2.10",
     "@reduxjs/toolkit": "^1.9.3",
     "@segment/analytics-node": "^0.0.1-beta.16",
+    "@styled-icons/heroicons-outline": "^10.47.0",
     "axios": "^1.2.5",
     "highlight.js": "^11.7.0",
     "node-pty": "^0.10.1",

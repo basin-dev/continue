@@ -5,6 +5,7 @@
 TO RUN SERVER:
 `cd continue`
 `poetry shell`
+`poetry install`
 `cd ..`
 `python -m continue.src.continue`
 
