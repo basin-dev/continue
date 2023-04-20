@@ -1,5 +1,15 @@
 # Steps
 
+## Params
+
+The params object can be seen in core.py. It provides you with an LLM, so you can do params.llm.complete(prompt). (In my recent commit, this LLM will automatically have the system message loaded as specified in the Step). It also provides the ide object, but this mostly shouldn't be used. Use params.applyFileSystemEdit(...) to make any changes to files, params.run_step to run a sub-step (for example EditCodeStep, which will itself call applyFileSystemEdit , and use params.get_history() to do just that.
+
+## EditCodeStep
+
+Assuming you mean EditCodeStep , you pass it the range_in_files argument. Can see this if you go to the class. The way pydantic works is that all attributes that don't begin with an underscore are arguments in the initialization method. If they have defaults (like name here), then you don't have to specify them, but can
+
+EditCodeStep takes a list of RangeInFile objects. One way to get these is by taking the user's highlighted code (what EditHighlightedCodeStep does). If you want the whole file, you can use RangeInFile.from_entire_file. If you are just writing to a blank file, you probably just want to use params.apply_filesystem_edit(...)
+
 Every step could have a modify() function, so that if you are give NLI, here is how you pass them and utilize them, but might be against the spirit of full openendness
 
 A `Step` is the unit of action. They can be composed by calling any other existing step.
@@ -9,6 +19,17 @@ Steps are often reversible. If you inherit from `ReversibleStep` and implement t
 When we reverse a sequence of steps to go back in history, we have to know which ones are reversible. If a non-reversible Step is encountered, Continue will not revert any further. A `ReversibleStep` is always assumed to be reversible because there is ultimately no way of enforcing that the developer doesn't add any side-effects to their `run` function.
 
 But what's the best way to determine whether other Steps are reversible? Maybe all Steps should be considered reversible by default, and the default implementation of `reverse` is to `pass` and assume that all substeps are reversible. But even in this case, we should check at runtime whether any non-reversible steps were taken. S ultimately need to have a "reversible" function or property. Should a parent step be reversible even if its child steps are not? No...definitely not. But you should be able to reverse some of the substeps, right???? Or does this require another button click? For now, let's not worry about it, that will be a part of composability.
+
+how do we build interfaces within steps?
+how to let user decide from a set of finite options? buttons? if so, how?
+do we have some basic things?
+already have the user input step
+might have a multi select or radio button step
+some way of converting history into chatML or other context
+conversion functions are fairly fundamental but could be overwrriten by the user
+how do we let it know what it is in the codebase though?
+
+allows you to add an optional system message to every step
 
 ## Notes
 
