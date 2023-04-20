@@ -1,4 +1,4 @@
-# `dlt` Plugin
+# create a `dlt` pipeline plugin
 
 ## Using Continue to create a dlt pipeline (without plugin)
 
@@ -25,7 +25,31 @@
 2. Send Continue "load data from the WeatherAPI.com API"
 3. 1-7 directly above occur, and it prompts you to add your API key to `.dlt/secrets.toml` (Review steps)
 4. Copy and paste your API key into `.dlt/secrets.toml` and press Continue button
-5. 9-16 above occur and then look if the output is as expected (Review steps)
+5. 9-16 directly above occur (Review steps)
+
+## Designing the `create dlt pipeline` plugin
+
+You have a `CreatePipelinePolicy()` that is triggered by `/dlt` command
+
+You have the following steps / validators:
+- `NaturalLanguageInputStep`: asks user "what API do you want to load data from?"
+- `SetupVenvStep`: this runs `python3 -m venv env` and `source env/bin/activate`
+- `PipInstallStep`: you pass this step `dlt` as the library to pip install and it does
+- You determine {source_name} by passing the answer above to the model and ask it to come with lowercase, no spaces name
+- `RunCmdStep`: you pass `dlt init {source_name} duckdb` to run and it does
+- `EditResourceStep`: you pass the answer above and `{source_name}.py` file, which is opened and then has its `@resource` edited
+- `ActionRequestedStep`: requests user to copy and paste your API key into `.dlt/secrets.toml` and press Continue button
+- `RunCmdStep`: you pass `python3 {source_name}.py` which runs the file
+- `CheckStdOut`: a validator runs to check if the response was 200 successful
+- `EditFileStep`: passed description to remove the exit() from main
+- `RunCmdStep`: you pass `python3 {source_name}.py` which runs the file
+- `CheckStdOut`: a validator runs to check if `dlt` outputted that it ran successfully
+- `CreateFileStep`: creates a `query.py` file with code to query the {source_name}.duckdb DuckDB instance for its tables
+- `RunCmdStep`: you pass `python3 query.py` which runs the file
+- `CheckStdOut`: a validator runs to grab {table_name} from outputted schema information
+- `EditFileStep`: edits `query.py` file with code to query run a select query on the {table_name} table
+- `RunCmdStep`: you pass `python3 query.py` which runs the file
+- `CheckStdOut`: a validator runs to make sure that it outputted table info
 
 ## Demo Outline
 
