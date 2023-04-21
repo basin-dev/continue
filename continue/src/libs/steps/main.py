@@ -4,6 +4,7 @@ from ..llm import LLM
 from ...models.main import Traceback, Range
 from ...models.filesystem_edit import EditDiff
 from ...models.filesystem import RangeInFile, RangeInFileWithContents
+from ..observation import Observation, TextObservation
 from ..llm.prompt_utils import MarkdownStyleEncoderDecoder
 from textwrap import dedent
 from ..core import Policy, Step, StepParams, Observation
@@ -21,6 +22,48 @@ class RunPolicyUntilDoneStep(Step):
             observation = await params.run_step(next_step)
             next_step = self.policy.next(params.get_history())
         return observation
+
+
+class RunCommandStep(Step):
+    cmd: str
+    name: str = "Run command"
+
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
+        return f"Ran `{self.cmd}`"
+
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+        result = subprocess.run(
+            self.cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout = result.stdout.decode("utf-8")
+        stderr = result.stderr.decode("utf-8")
+        print(stdout, stderr)
+
+        # If it fails, return the error
+        if result.returncode != 0:
+            return TextObservation(text=stdout)
+
+
+class WaitForUserInputStep(Step):
+    prompt: str
+    name: str = "Wait for user input"
+
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
+        return self.prompt
+
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+        return await params.get_user_input()
+    
+
+class WaitForUserConfirmationStep(Step):
+    prompt: str
+    name: str = "Wait for user confirmation"
+
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
+        return self.prompt
+
+    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+        return await params.get_user_confirmation()
+
 
 
 class RunCodeStep(Step):
