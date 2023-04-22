@@ -27,12 +27,13 @@ interface StepContainerProps {
   onReverse: () => void;
   inFuture: boolean;
   onRefinement: (input: string) => void;
+  onUserInput: (input: string) => void;
 }
 
 const MainDiv = styled.div<{ stepDepth: number; inFuture: boolean }>`
   opacity: ${(props) => (props.inFuture ? 0.3 : 1)};
   animation: ${appear} 0.3s ease-in-out;
-  padding-left: ${(props) => props.stepDepth * 20}px;
+  /* padding-left: ${(props) => props.stepDepth * 20}px; */
   overflow: hidden;
 `;
 
@@ -128,6 +129,23 @@ function StepContainer(props: StepContainerProps) {
           <ReactMarkdown key={1} className="overflow-scroll">
             {props.historyNode.step.description as any}
           </ReactMarkdown>
+
+          {(props.historyNode.step.name === "Waiting for user input" ||
+            props.historyNode.step.name ===
+              "Waiting for user confirmation") && (
+            <input
+              className="m-auto p-2 rounded-md border-1 border-solid text-white w-3/4 border-gray-200 bg-vsc-background"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  props.onUserInput(e.currentTarget.value);
+                }
+              }}
+              type="text"
+              onSubmit={(ev) => {
+                props.onUserInput(ev.currentTarget.value);
+              }}
+            />
+          )}
 
           {open && (
             <>

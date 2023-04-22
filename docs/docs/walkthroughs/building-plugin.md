@@ -26,14 +26,14 @@ First, import the plugin registration manager and necessary types:
 
 ```python
 from plugins import step
-from ....libs.steps import StepParams
+from ....libs.steps import ContinueSDK
 ```
 
 The `step` file you've imported contains the `hookimpl` object that will let you specify where you are defining your implementation. Let's do this, and write an action that says "Hello World!":
 
 ```python
 @step.hookimpl
-def run(params: StepParams):
+def run(sdk: ContinueSDK):
     print("Hello World!")
 ```
 
@@ -47,15 +47,15 @@ We can use the built-in `AddFile` and `FileEdit` Steps as follows:
 
 ```python
 from plugins import step
-from ....libs.steps import StepParams
+from ....libs.steps import ContinueSDK
 from ??? import AddFile, FileEdit
 
 @step.hookimpl
-def run(params: StepParams) -> Observation:
+def run(sdk: ContinueSDK) -> Observation:
     for i in range(5):
         filename = "file_" + str(i) + ".py"
-        params.run_step(AddFile(filename))
-        params.run_step(FileEdit(Range.from_shorthand(0, 0, 0, 0), filename, str(i)))
+        sdk.run_step(AddFile(filename))
+        sdk.run_step(FileEdit(Range.from_shorthand(0, 0, 0, 0), filename, str(i)))
 ```
 
 The benefit of calling sub-Steps with the `Runner` is that we automatically keep track of changes for you so that the UI can display them and so that your Step automatically becomes reversible.

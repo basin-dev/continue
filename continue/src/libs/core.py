@@ -1,13 +1,15 @@
+import asyncio
 from textwrap import dedent
 import traceback
 import time
-from typing import Callable, Coroutine, Generator, List, Tuple, Union
+from typing import Callable, Coroutine, Dict, Generator, List, Tuple, Union
 from ..models.filesystem_edit import EditDiff, FileEdit, FileEditWithFullContents, FileSystemEdit
 from ..models.filesystem import FileSystem
 from pydantic import BaseModel, parse_file_as, validator
 from .llm import LLM
 from .observation import Observation, UserInputObservation
 from ..server.ide_protocol import AbstractIdeProtocolServer
+from .util.queue import AsyncSubscriptionQueue
 
 
 class ContinueBaseModel(BaseModel):
@@ -84,7 +86,7 @@ class Policy(ContinueBaseModel):
         raise NotImplementedError
 
 
-class StepParams:
+class ContinueSDK:
     """The SDK provided as parameters to a step"""
     llm: LLM
     ide: AbstractIdeProtocolServer
@@ -98,14 +100,18 @@ class StepParams:
         self.ide = agent.ide
         self.__agent = agent
 
+    @property
+    def history(self) -> History:
+        return self.__agent.history
+
     async def run_step(self, step: "Step") -> Coroutine[Observation, None, None]:
         return await self.__agent._run_singular_step(step)
 
-    def get_history(self) -> History:
-        return self.__agent.history
-
     async def apply_filesystem_edit(self, edit: FileSystemEdit):
         await self.run_step(FileSystemEditStep(edit=edit))
+
+    async def wait_for_user_input(self) -> str:
+        return await self.__agent.wait_for_user_input()
 
 
 class Agent(ContinueBaseModel):
@@ -117,6 +123,8 @@ class Agent(ContinueBaseModel):
 
     _active: bool = False
     _should_halt: bool = False
+
+    _user_input_queue = AsyncSubscriptionQueue()
 
     class Config:
         arbitrary_types_allowed = True
@@ -133,11 +141,15 @@ class Agent(ContinueBaseModel):
         for callback in self._on_update_callbacks:
             callback(full_state)
 
-    def __ask_permission(self, step: "Step") -> bool:
-        return input("Run step? (y/n)") == "y"
-
     def __get_step_params(self, step: "Step"):
-        return StepParams(agent=self, llm=self.llm.with_system_message(step.system_message))
+        return ContinueSDK(agent=self, llm=self.llm.with_system_message(step.system_message))
+
+    def give_user_input(self, input: str, index: int):
+        self._user_input_queue.post(index, input)
+
+    async def wait_for_user_input(self) -> str:
+        self.update_subscribers()
+        return await self._user_input_queue.get(self.history.current_index)
 
     _manual_edits_buffer: List[FileEditWithFullContents] = []
 
@@ -282,15 +294,37 @@ class Step(ContinueBaseModel):
             return cls.__name__
         return name
 
-    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
         raise NotImplementedError
 
-    async def __call__(self, params: StepParams) -> Coroutine[Observation, None, None]:
-        return await self.run(params)
+    async def __call__(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
+        return await self.run(sdk)
+
+    def __rshift__(self, other: "Step"):
+        steps = []
+        if isinstance(self, SequentialStep):
+            steps = self.steps
+        else:
+            steps.append(self)
+        if isinstance(other, SequentialStep):
+            steps += other.steps
+        else:
+            steps.append(other)
+        return SequentialStep(steps=steps)
+
+
+class SequentialStep(Step):
+    steps: list[Step]
+    hide: bool = True
+
+    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
+        for step in self.steps:
+            observation = await sdk.run_step(step)
+        return observation
 
 
 class ReversibleStep(Step):
-    async def reverse(self, params: StepParams):
+    async def reverse(self, sdk: ContinueSDK):
         raise NotImplementedError
 
 
@@ -300,17 +334,19 @@ class FileSystemEditStep(ReversibleStep):
 
     hide: bool = True
 
-    async def run(self, params: "StepParams") -> Coroutine[Observation, None, None]:
-        self._diff = await params.ide.applyFileSystemEdit(self.edit)
+    async def run(self, sdk: "ContinueSDK") -> Coroutine[Observation, None, None]:
+        self._diff = await sdk.ide.applyFileSystemEdit(self.edit)
         return None
 
-    async def reverse(self, params: "StepParams"):
-        await params.ide.applyFileSystemEdit(self._diff.backward)
+    async def reverse(self, sdk: "ContinueSDK"):
+        await sdk.ide.applyFileSystemEdit(self._diff.backward)
         # Where and when should file saves happen?
 
 
 class ManualEditStep(ReversibleStep):
     edit_diff: EditDiff
+
+    hide: bool = True
 
     async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         return "Manual edit step"
@@ -336,11 +372,11 @@ class ManualEditStep(ReversibleStep):
             diffs.append(diff)
         return cls(edit_diff=EditDiff.from_sequence(diffs))
 
-    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
         return None
 
-    async def reverse(self, params: StepParams):
-        await params.ide.applyFileSystemEdit(self.edit_diff.backward)
+    async def reverse(self, sdk: ContinueSDK):
+        await sdk.ide.applyFileSystemEdit(self.edit_diff.backward)
 
 
 class UserInputStep(Step):
@@ -351,7 +387,7 @@ class UserInputStep(Step):
     async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         return self.user_input
 
-    async def run(self, params: StepParams) -> Coroutine[UserInputObservation, None, None]:
+    async def run(self, sdk: ContinueSDK) -> Coroutine[UserInputObservation, None, None]:
         return UserInputObservation(user_input=self.user_input)
 
 
@@ -361,7 +397,7 @@ class ValidatorObservation(Observation):
 
 
 class Validator(Step):
-    def run(self, params: StepParams) -> ValidatorObservation:
+    def run(self, sdk: ContinueSDK) -> ValidatorObservation:
         raise NotImplementedError
 
 

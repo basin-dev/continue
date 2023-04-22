@@ -1,5 +1,5 @@
 from plugins import step
-from ....libs.steps import StepParams
+from ....libs.steps import ContinueSDK
 # Already here, you're seeing how bad it is that you're going to write
 # matching Actions and Steps.
 # In this case, you could solve it by having the FileSystem passed to
@@ -29,5 +29,5 @@ whether the step was reversible or not.
 class ThoughtStep:
     """A Step that thinks."""
     @step.hookimpl
-    def run(params: StepParams):
+    def run(sdk: ContinueSDK):
         print("Thinking...")

@@ -15,11 +15,10 @@ class RangeInFile(BaseModel):
 
     @staticmethod
     def from_entire_file(filepath: str, content: str) -> "RangeInFile":
-        lines = content.splitlines()
+        range = Range.from_entire_file(content)
         return RangeInFile(
             filepath=filepath,
-            range=Range.from_shorthand(
-                0, 0, len(lines) - 1, len(lines[-1]) - 1)
+            range=range
         )
 
 

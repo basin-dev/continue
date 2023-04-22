@@ -131,6 +131,10 @@ class IdeProtocolClient {
           highlightedCode: this.getHighlightedCode(),
         });
         break;
+      case "workspaceDirectory":
+        this.send("workspaceDirectory", {
+          workspaceDirectory: this.getWorkspaceDirectory(),
+        });
       case "openFiles":
         this.send("openFiles", {
           openFiles: this.getOpenFiles(),
@@ -150,12 +154,19 @@ class IdeProtocolClient {
       case "saveFile":
         this.saveFile(message.filepath);
         break;
+      case "setFileOpen":
+        this.openFile(message.filepath);
+        // TODO: Close file
+        break;
       case "openNotebook":
       case "connected":
         break;
       default:
         throw Error("Unknown message type:" + message.messageType);
     }
+  }
+  getWorkspaceDirectory() {
+    return vscode.workspace.workspaceFolders![0].uri.fsPath;
   }
 
   // ------------------------------------ //
@@ -295,6 +306,11 @@ class IdeProtocolClient {
       });
     });
     return rangeInFiles;
+  }
+
+  runCommand(command: string) {
+    vscode.window.terminals[0].sendText(command, true);
+    // But need to know when it's done executing...
   }
 }
 

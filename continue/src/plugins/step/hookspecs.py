@@ -1,6 +1,6 @@
 from typing import Coroutine
 import pluggy
-from ...libs.core import StepParams, Step, Observation
+from ...libs.core import ContinueSDK, Step, Observation
 
 hookspec = pluggy.HookspecMarker("continue.step")
 
@@ -9,7 +9,7 @@ hookspec = pluggy.HookspecMarker("continue.step")
 
 class StepPlugin(Step):
     @hookspec
-    async def run(self, params: StepParams) -> Coroutine[Observation, None, None]:
+    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
         """Run"""
 
 # 1. Decide the action to take, which returns an Action *type*

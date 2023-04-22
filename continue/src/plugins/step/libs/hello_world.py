@@ -1,8 +1,9 @@
 from ....plugins import step
-from ....libs.steps import StepParams
+from ....libs.steps import ContinueSDK
+
 
 class HelloWorldStep:
     """A Step that prints "Hello World!"."""
     @step.hookimpl
-    def run(params: StepParams):
+    def run(sdk: ContinueSDK):
         print("Hello World!")

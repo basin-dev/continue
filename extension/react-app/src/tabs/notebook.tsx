@@ -183,6 +183,7 @@ function Notebook(props: NotebookProps) {
         if (data.messageType === "state") {
           setWaitingForSteps(data.state.active);
           setHistory(data.state.history);
+          console.log("Got state", data.state);
         }
       };
     }
@@ -218,12 +219,32 @@ function Notebook(props: NotebookProps) {
     }
   }, [websocket]);
 
+  const onStepUserInput = useCallback(
+    (input: string, index: number) => {
+      console.log("Sending step user input", input, index);
+      if (websocket) {
+        websocket.send(
+          JSON.stringify({
+            messageType: "step_user_input",
+            value: input,
+            index,
+          })
+        );
+      }
+    },
+    [websocket]
+  );
+
   // const iterations = useSelector(selectIterations);
   return (
     <TopNotebookDiv>
       {history?.timeline.map((node: HistoryNode, index: number) => {
         return (
           <StepContainer
+            key={index}
+            onUserInput={(input: string) => {
+              onStepUserInput(input, index);
+            }}
             inFuture={index > history?.current_index}
             historyNode={node}
             onRefinement={(input: string) => {

@@ -19,3 +19,14 @@ class ValidatorObservation(Observation):
 
 class UserInputObservation(Observation):
     user_input: str
+
+
+class DictObservation(Observation):
+    values: dict
+
+    def __getitem__(self, key):
+        return self.values[key]
+
+
+class TextObservation(Observation):
+    text: str

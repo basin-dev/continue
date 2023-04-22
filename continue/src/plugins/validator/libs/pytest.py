@@ -4,9 +4,11 @@ from plugins import validator
 from ..hookspecs import ValidatorParams, ValidatorReturn
 import subprocess
 
+
 @validator.hookimpl
 def run(params: ValidatorParams) -> ValidatorReturn:
-    result = subprocess.run(["pytest", "--tb=native"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=params.root_dir)
+    result = subprocess.run(["pytest", "--tb=native"],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=sdk.root_dir)
     stdout = result.stdout.decode("utf-8")
     stderr = result.stderr.decode("utf-8")
 

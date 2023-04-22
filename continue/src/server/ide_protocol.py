@@ -18,7 +18,11 @@ class AbstractIdeProtocolServer(ABC):
         """Show a suggestion to the user"""
 
     @abstractmethod
-    async def setFileOpen(self, filepath: str, open: bool):
+    async def getWorkspaceDirectory(self):
+        """Get the workspace directory"""
+
+    @abstractmethod
+    async def setFileOpen(self, filepath: str, open: bool = True):
         """Set whether a file is open"""
 
     @abstractmethod

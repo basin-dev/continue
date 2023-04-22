@@ -145,6 +145,9 @@ async def websocket_endpoint(websocket: WebSocket, session: Session = Depends(we
                 # Do something with user input
                 asyncio.create_task(
                     session.agent.accept_user_input(data["value"]))
+            elif messageType == "step_user_input":
+                asyncio.create_task(
+                    session.agent.give_user_input(data["value"], data["index"]))
             elif messageType == "refinement_input":
                 asyncio.create_task(
                     session.agent.accept_refinement_input(data["value"], data["index"]))

@@ -1,5 +1,6 @@
 from typing import Generator, List, Tuple, Type
 
+from .steps.ty import CreatePipelineStep
 from .core import Agent, Step, Validator, Policy, History, UserInputStep
 from .observation import Observation, TracebackObservation, UserInputObservation
 from .steps.main import EditCodeStep, EditHighlightedCodeStep, SolveTracebackStep, RunCodeStep
@@ -20,6 +21,8 @@ class DemoPolicy(Policy):
             # This could be defined with ObservationTypePolicy. Ergonomics not right though.
             if "test" in observation.user_input.lower():
                 return WritePytestsStep(instructions=observation.user_input)
+            elif "dlt" in observation.user_input.lower():
+                return CreatePipelineStep()
             return EditHighlightedCodeStep(user_input=observation.user_input)
 
         state = history.get_current()

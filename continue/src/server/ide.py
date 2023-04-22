@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Type, TypeVar, Union
 import uuid
 from fastapi import WebSocket, Body, APIRouter
 from uvicorn.main import Server
+
+from ..libs.util.queue import AsyncSubscriptionQueue
 from ..models.filesystem import FileSystem, RangeInFile, EditDiff, RealFileSystem
 from ..models.main import Traceback
 from ..models.filesystem_edit import AddDirectory, AddFile, DeleteDirectory, DeleteFile, FileSystemEdit, FileEdit, FileEditWithFullContents, RenameDirectory, RenameFile, SequentialFileSystemEdit
@@ -71,19 +73,9 @@ class EditFileResponse(BaseModel):
     fileEdit: FileEditWithFullContents
 
 
-class AsyncSubscriptionQueue:
-    # The correct way to do this is probably to keep request IDs
-    queues: Dict[str, asyncio.Queue] = {}
-
-    def post(self, messageType: str, data: any):
-        if messageType not in self.queues:
-            self.queues.update({messageType: asyncio.Queue()})
-        self.queues[messageType].put_nowait(data)
-
-    async def get(self, message_type: str) -> any:
-        if message_type not in self.queues:
-            self.queues.update({message_type: asyncio.Queue()})
-        return await self.queues[message_type].get()
+class WorkspaceDirectoryResponse(BaseModel):
+    messageType: str = "workspaceDirectory"
+    workspaceDirectory: str
 
 
 T = TypeVar("T", bound=BaseModel)
@@ -129,11 +121,11 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
     def showSuggestion():
         pass
 
-    async def setFileOpen(self, filepath: str, open: bool):
+    async def setFileOpen(self, filepath: str, open: bool = True):
         # Agent needs access to this.
-        await self.websocket._send_json({
+        await self.websocket.send_json({
             "messageType": "setFileOpen",
-            "filePath": filepath,
+            "filepath": filepath,
             "open": open
         })
 
@@ -192,6 +184,12 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             "messageType": "openFiles"
         }, OpenFilesResponse, "openFiles")
         return resp.openFiles
+
+    async def getWorkspaceDirectory(self) -> str:
+        resp = await self._send_and_receive_json({
+            "messageType": "workspaceDirectory"
+        }, WorkspaceDirectoryResponse, "workspaceDirectory")
+        return resp.workspaceDirectory
 
     async def getHighlightedCode(self) -> List[RangeInFile]:
         resp = await self._send_and_receive_json({
