@@ -6,7 +6,7 @@ from ...models.filesystem import RangeInFile
 from ...models.filesystem_edit import AddDirectory, AddFile, FileEdit
 from ..observation import DictObservation
 from ..core import History, Step, ContinueSDK, Policy
-from .main import EditCodeStep, RunCommandStep, WaitForUserInputStep, WaitForUserConfirmationStep
+from .main import EditCodeStep, RunCommandStep, WaitForUserInputStep, WaitForUserConfirmationStep, ShellCommandsStep
 from ..llm import LLM
 import os
 
@@ -18,16 +18,17 @@ class SetupPipelineStep(Step):
     async def run(self, sdk: ContinueSDK):
         source_name = sdk.llm.complete(
             f"Write a snake_case name for the data source described by {self.api_description}: ").strip()
-        filename = f'/Users/natesesti/Desktop/continue/extension/examples/python/{source_name}.py'
+        filename = f'{source_name}.py'
 
         # running commands to get started when creating a new dlt pipeline
-        await sdk.run_step(
-            RunCommandStep(cmd=f'python3 -m venv env') >>
-            RunCommandStep(cmd=f'source env/bin/activate') >>
-            RunCommandStep(cmd=f'pip install dlt') >>
-            RunCommandStep(cmd=f'dlt init {source_name} duckdb') >>
-            RunCommandStep(cmd=f'pip install -r requirements')
-        )
+        await sdk.run_step(ShellCommandsStep(cmds=[
+            'python3 -m venv env',
+            'source env/bin/activate',
+            'pip install dlt',
+            'dlt init {source_name} duckdb',
+            'Y',
+            'pip install -r requirements.txt'
+        ]))
 
         # editing the resource function to call the requested API
         await sdk.run_step(EditCodeStep(

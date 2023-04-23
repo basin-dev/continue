@@ -171,6 +171,9 @@ class Agent(ContinueBaseModel):
             # Note that you're storing a lot of unecessary data here. Can compress into EditDiffs on the spot, and merge.
             # self._manual_edits_buffer = merge_file_edit(self._manual_edits_buffer, edit)
 
+    def handle_traceback(self, traceback: str):
+        raise NotImplementedError
+
     _step_depth: int = 0
 
     async def _run_singular_step(self, step: "Step", is_future_step: bool = False) -> Coroutine[Observation, None, None]:

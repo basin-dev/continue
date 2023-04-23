@@ -159,7 +159,9 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
         pass
 
     def onTraceback(self, traceback: Traceback):
-        pass
+        # Same as below, maybe not every agent?
+        for _, session in self.session_manager.sessions.items():
+            session.agent.handle_traceback(traceback)
 
     def onFileSystemUpdate(self, update: FileSystemEdit):
         # Access to Agent (so SessionManager)

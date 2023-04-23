@@ -33,8 +33,9 @@ class RunCommandStep(Step):
         return self.cmd
 
     async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
+        cwd = await sdk.ide.getWorkspaceDirectory()
         result = subprocess.run(
-            self.cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd="/Users/natesesti/Desktop/continue/extension/examples/python")
+            self.cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
         stdout = result.stdout.decode("utf-8")
         stderr = result.stderr.decode("utf-8")
         print(stdout, stderr)
@@ -42,6 +43,29 @@ class RunCommandStep(Step):
         # If it fails, return the error
         if result.returncode != 0:
             return TextObservation(text=stdout)
+
+
+def ShellCommandsStep(Step):
+    cmds: List[str]
+    name: str = "Run Shell Commands"
+
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
+        return "\n".join(self.cmds)
+
+    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
+        cwd = await sdk.ide.getWorkspaceDirectory()
+
+        process = subprocess.Popen(
+            '/bin/bash', stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd)
+
+        stdin_input = "\n".join(self.cmds)
+        out, err = process.communicate(stdin_input.encode())
+
+        # If it fails, return the error
+        if err is not None and err != "":
+            return TextObservation(text=err)
+
+        return None
 
 
 class WaitForUserInputStep(Step):
@@ -132,64 +156,7 @@ class EditCodeStep(Step):
         enc_dec = MarkdownStyleEncoderDecoder(rif_with_contents)
         code_string = enc_dec.encode()
         prompt = self.prompt.format(code=code_string)
-
-        if "@dlt.resource" in prompt:
-            time.sleep(3.5)
-            completion = '''
-```
-import dlt
-from dlt.sources.helpers import requests
-
-
-@dlt.source
-def weather_api_source(api_secret_key=dlt.secrets.value):
-    return weather_api_resource(api_secret_key)
-
-
-def _create_auth_headers(api_secret_key):
-    """Constructs Bearer type authorization header which is the most common authorization method"""
-    headers = {
-        "Authorization": f"Bearer {api_secret_key}"
-    }
-    return headers
-
-
-@dlt.resource(write_disposition="append")
-def weather_api_resource(api_secret_key=dlt.secrets.value):
-    headers = _create_auth_headers(api_secret_key)
-
-    # check if authentication headers look fine
-
-    # make an api call here
-    url = 'https://api.weatherapi.com/v1/forecast.json'
-    params = {'q': 'London', 'days': '7', 'key': api_secret_key}
-    print(headers)
-    response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
-    yield response.json()
-
-
-if __name__ == '__main__':
-    # configure the pipeline with your destination details
-    pipeline = dlt.pipeline(pipeline_name='weather',
-                            destination='duckdb', dataset_name='weather_api')
-
-    # print credentials by running the resource
-    data = list(weather_api_resource())
-
-    # print the data yielded from resource
-    print(data)
-    exit()
-
-    # run the pipeline with your parameters
-    load_info = pipeline.run(weather_api_source())
-
-    # pretty print the information on data that was loaded
-    print(load_info)
-```
-            '''
-        else:
-            completion = sdk.llm.complete(prompt)
+        completion = sdk.llm.complete(prompt)
 
         # Temporarily doing this to generate description.
         self._prompt = prompt
@@ -204,6 +171,7 @@ if __name__ == '__main__':
 
         for filepath in set([file_edit.filepath for file_edit in file_edits]):
             await sdk.ide.saveFile(filepath)
+            await sdk.ide.setFileOpen(filepath)
 
         return None
 

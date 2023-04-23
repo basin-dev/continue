@@ -50,3 +50,20 @@ class WritePytestsStep(Step):
         await sdk.apply_filesystem_edit(AddFile(filepath=path, content=tests))
 
         return None
+
+
+class CreatePyplot(Step):
+    # Wish there was a way to add import, specify dependency
+    name: str = "Create a pyplot"
+
+    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
+        code = dedent("""import matplotlib.pyplot as plt
+import numpy as np
+
+{instructions}
+
+plt.xlabel("{x_label}")
+plt.ylabel("{y_label}")
+plt.title("{title}")
+plt.show()
+        """)
