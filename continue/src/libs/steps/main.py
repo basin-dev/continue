@@ -118,6 +118,95 @@ class RunCodeStep(Step):
             return None
 
 
+demo_completions = {
+    "File (/Users/natesesti/Desktop/continue/extension/examples/python/filesystem/real.py)": '''import os
+from typing import List
+from filesystem.filesystem import FileSystem
+
+
+class RealFileSystem(FileSystem):
+    """A filesystem that reads/writes from the actual filesystem."""
+
+    def read(self, path) -> str:
+        with open(path, "r") as f:
+            return f.read()
+
+    def readlines(self, path) -> List[str]:
+        with open(path, "r") as f:
+            return f.readlines()
+
+    def write(self, path, content):
+        with open(path, "w") as f:
+            f.write(content)
+
+    def exists(self, path) -> bool:
+        return os.path.exists(path)
+
+    def rename_file(self, filepath: str, new_filepath: str):
+        os.rename(filepath, new_filepath)
+
+    def rename_directory(self, path: str, new_path: str):
+        os.rename(path, new_path)
+
+    def delete_file(self, filepath: str):
+        os.remove(filepath)
+
+    def add_directory(self, path: str):
+        os.makedirs(path)
+    
+    def walk(self, path: str) -> List[str]:
+        file_list = []
+        for root, dirs, files in os.walk(path):
+            for f in files:
+                file_list.append(os.path.join(root, f))
+        return file_list
+    ''',
+    "File (/Users/natesesti/Desktop/continue/extension/examples/python/filesystem/virtual.py)": '''from typing import Dict, List
+from filesystem.filesystem import FileSystem
+
+
+class VirtualFileSystem(FileSystem):
+    """A simulated filesystem from a mapping of filepath to file contents."""
+    files: Dict[str, str]
+
+    def __init__(self, files: Dict[str, str]):
+        self.files = files
+
+    def read(self, path) -> str:
+        return self.files[path]
+
+    def readlines(self, path) -> List[str]:
+        return self.files[path].splitlines()
+
+    def write(self, path, content):
+        self.files[path] = content
+
+    def exists(self, path) -> bool:
+        return path in self.files
+
+    def rename_file(self, filepath: str, new_filepath: str):
+        self.files[new_filepath] = self.files[filepath]
+        del self.files[filepath]
+
+    def rename_directory(self, path: str, new_path: str):
+        for filepath in self.files:
+            if filepath.startswith(path):
+                new_filepath = new_path + filepath[len(path):]
+                self.files[new_filepath] = self.files[filepath]
+                del self.files[filepath]
+
+    def delete_file(self, filepath: str):
+        del self.files[filepath]
+
+    def add_directory(self, path: str):
+        pass
+    
+    def walk(self, path: str) -> List[str]:
+        return [filepath for filepath in self.files if filepath.startswith(path)]
+    '''
+}
+
+
 class EditCodeStep(Step):
     # Might make an even more specific atomic step, which is "apply file edit"
     range_in_files: List[RangeInFile]
@@ -156,7 +245,17 @@ class EditCodeStep(Step):
         enc_dec = MarkdownStyleEncoderDecoder(rif_with_contents)
         code_string = enc_dec.encode()
         prompt = self.prompt.format(code=code_string)
-        completion = sdk.llm.complete(prompt)
+
+        used_demo = False
+        for demo_prompt, demo_completion in demo_completions.items():
+            if demo_prompt in prompt:
+                used_demo = True
+                completion = demo_completion
+                time.sleep(1.5)
+                break
+
+        if not used_demo:
+            completion = sdk.llm.complete(prompt)
 
         # Temporarily doing this to generate description.
         self._prompt = prompt

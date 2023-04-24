@@ -5,9 +5,12 @@ from typing import Any, Dict, List
 from uuid import uuid4
 from pydantic import BaseModel
 from uvicorn.main import Server
+
+from ..models.filesystem_edit import FileEditWithFullContents
 from ..libs.policy import DemoPolicy
 from ..libs.steps.main import RunCodeStep, RunPolicyUntilDoneStep, UserInputStep
 from ..libs.core import Agent, FullState, History, Step
+from ..libs.steps.nate import ImplementAbstractMethodStep
 from ..libs.observation import Observation
 from dotenv import load_dotenv
 from ..libs.llm.openai import OpenAI
@@ -50,6 +53,23 @@ class Session:
         self.ws = None
 
 
+class DemoAgent(Agent):
+    first_seen: bool = False
+
+    def handle_manual_edits(self, edits: List[FileEditWithFullContents]):
+        for edit in edits:
+            self._manual_edits_buffer.append(edit)
+            # Note that you're storing a lot of unecessary data here. Can compress into EditDiffs on the spot, and merge.
+            # self._manual_edits_buffer = merge_file_edit(self._manual_edits_buffer, edit)
+            # FOR DEMO PURPOSES
+            if edit.fileEdit.replacement == ":":
+                if self.first_seen:
+                    asyncio.create_task(self.run_from_step(
+                        ImplementAbstractMethodStep()))
+                else:
+                    self.first_seen = True
+
+
 class SessionManager:
     sessions: Dict[str, Session] = {}
     _event_loop: asyncio.BaseEventLoop | None = None
@@ -61,8 +81,8 @@ class SessionManager:
 
     def new_session(self, ide: AbstractIdeProtocolServer) -> str:
         cmd = "python3 /Users/natesesti/Desktop/continue/extension/examples/python/main.py"
-        agent = Agent(llm=OpenAI(api_key=openai_api_key),
-                      policy=DemoPolicy(cmd=cmd), ide=ide)
+        agent = DemoAgent(llm=OpenAI(api_key=openai_api_key),
+                          policy=DemoPolicy(cmd=cmd), ide=ide)
         session_id = str(uuid4())
         session = Session(session_id=session_id, agent=agent)
         self.sessions[session_id] = session

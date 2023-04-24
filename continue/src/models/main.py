@@ -75,6 +75,8 @@ class Range(BaseModel):
     @staticmethod
     def from_entire_file(content: str) -> "Range":
         lines = content.splitlines()
+        if len(lines) == 0:
+            return Range.from_shorthand(0, 0, 0, 0)
         return Range.from_shorthand(0, 0, len(lines) - 1, len(lines[-1]) - 1)
 
 

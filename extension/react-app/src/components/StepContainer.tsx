@@ -130,9 +130,7 @@ function StepContainer(props: StepContainerProps) {
             {props.historyNode.step.description as any}
           </ReactMarkdown>
 
-          {(props.historyNode.step.name === "Waiting for user input" ||
-            props.historyNode.step.name ===
-              "Waiting for user confirmation") && (
+          {props.historyNode.step.name === "Waiting for user input" && (
             <input
               className="m-auto p-2 rounded-md border-1 border-solid text-white w-3/4 border-gray-200 bg-vsc-background"
               onKeyDown={(e) => {
@@ -145,6 +143,23 @@ function StepContainer(props: StepContainerProps) {
                 props.onUserInput(ev.currentTarget.value);
               }}
             />
+          )}
+          {props.historyNode.step.name === "Waiting for user confirmation" && (
+            <>
+              <input
+                type="button"
+                value="Cancel"
+                className="m-4 p-2 rounded-md border border-solid text-white border-gray-200 bg-vsc-background cursor-pointer hover:bg-white hover:text-black"
+              ></input>
+              <input
+                className="m-4 p-2 rounded-md border border-solid text-white border-gray-200 bg-vsc-background cursor-pointer hover:bg-white hover:text-black"
+                onClick={(e) => {
+                  props.onUserInput("ok");
+                }}
+                type="button"
+                value="Confirm"
+              />
+            </>
           )}
 
           {open && (

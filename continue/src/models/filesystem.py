@@ -119,11 +119,14 @@ class FileSystem(AbstractModel):
         if s.endswith("\n"):
             lines.append("")
 
+        if len(lines) == 0:
+            lines = [""]
+
         end = Position(line=edit.range.end.line,
                        character=edit.range.end.character)
         if edit.range.end.line == len(lines) and edit.range.end.character == 0:
             end = Position(line=edit.range.end.line - 1,
-                           character=len(lines[edit.range.end.line - 1]))
+                           character=len(lines[min(len(lines) - 1, edit.range.end.line - 1)]))
 
         before_lines = lines[:edit.range.start.line]
         after_lines = lines[end.line + 1:]
