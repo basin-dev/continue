@@ -130,9 +130,9 @@ class FileSystem(AbstractModel):
 
         before_lines = lines[:edit.range.start.line]
         after_lines = lines[end.line + 1:]
-        between_str = lines[edit.range.start.line][:edit.range.start.character] + \
+        between_str = lines[max(len(lines) - 1, edit.range.start.line)][:edit.range.start.character] + \
             edit.replacement + \
-            lines[end.line][end.character + 1:]
+            lines[min(len(lines) - 1, end.line)][end.character + 1:]
 
         new_range = Range(
             start=edit.range.start,

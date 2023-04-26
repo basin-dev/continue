@@ -28,8 +28,11 @@ class RunPolicyUntilDoneStep(Step):
 class RunCommandStep(Step):
     cmd: str
     name: str = "Run command"
+    _description: str = None
 
     async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
+        if self._description is not None:
+            return self._description
         return self.cmd
 
     async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
@@ -42,6 +45,8 @@ class RunCommandStep(Step):
 
         # If it fails, return the error
         if result.returncode != 0:
+            return TextObservation(text=stderr)
+        else:
             return TextObservation(text=stdout)
 
 
@@ -273,6 +278,23 @@ class EditCodeStep(Step):
             await sdk.ide.setFileOpen(filepath)
 
         return None
+
+
+class EditFileStep(Step):
+    filepath: str
+    prompt: str
+    hide: bool = True
+
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
+        return "Editing file: " + self.filepath
+
+    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
+        file_contents = await sdk.ide.readFile(self.filepath)
+        await sdk.run_step(EditCodeStep(
+            range_in_files=[RangeInFile.from_entire_file(
+                self.filepath, file_contents)],
+            prompt=self.prompt
+        ))
 
 
 class EditHighlightedCodeStep(Step):

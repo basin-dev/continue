@@ -155,6 +155,7 @@ async def websocket_endpoint(websocket: WebSocket, session: Session = Depends(we
     print("Session started", data)
     while AppStatus.should_exit is False:
         data = await websocket.receive_json()
+        print("Received data", data)
 
         if "messageType" not in data:
             continue

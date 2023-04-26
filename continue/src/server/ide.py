@@ -110,7 +110,7 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             fileEdits = list(
                 map(lambda d: FileEditWithFullContents.parse_obj(d), data["fileEdits"]))
             self.onFileEdits(fileEdits)
-        elif t in ["highlightedCode", "openFiles", "readFile", "editFile"]:
+        elif t in ["highlightedCode", "openFiles", "readFile", "editFile", "workspaceDirectory"]:
             self.sub_queue.post(t, data)
         else:
             raise ValueError("Unknown message type", t)

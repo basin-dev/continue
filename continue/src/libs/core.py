@@ -206,8 +206,8 @@ class Agent(ContinueBaseModel):
         return observation
 
     async def run_from_step(self, step: "Step"):
-        if self._active:
-            raise RuntimeError("Agent is already running")
+        # if self._active:
+        #     raise RuntimeError("Agent is already running")
         self._active = True
 
         next_step = step
@@ -254,7 +254,7 @@ class Agent(ContinueBaseModel):
         return None
 
     async def accept_user_input(self, user_input: str):
-        await self._request_halt()
+        # await self._request_halt()
         # Just run the step that takes user input, and
         # then up to the policy to decide how to deal with it.
         await self.run_from_step(UserInputStep(user_input=user_input))

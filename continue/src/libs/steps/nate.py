@@ -5,9 +5,9 @@ from typing import Coroutine
 from ...models.main import Range
 from ...models.filesystem import RangeInFile
 from ...models.filesystem_edit import AddDirectory, AddFile
-from ..observation import Observation
+from ..observation import Observation, TextObservation
 from ..core import Step, ContinueSDK
-from .main import EditCodeStep, WaitForUserConfirmationStep
+from .main import EditCodeStep, EditFileStep, RunCommandStep, ShellCommandsStep, WaitForUserConfirmationStep
 import os
 
 
@@ -87,3 +87,55 @@ class ImplementAbstractMethodStep(Step):
                 range_in_files=[implementation],
                 prompt=f"{{code}}\nRewrite the class, implementing the method `{self.method_name}`.\n",
             ))
+
+
+class CreateTableStep(Step):
+    sql_str: str
+    name: str = "Create a table"
+
+    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
+        # Write the TypeORM entity
+        entity_name = "Order"
+        orm_entity = sdk.llm.complete(
+            f"{self.sql_str}\n\nWrite a TypeORM entity called {entity_name} for this table, importing as necessary:")
+        # sdk.llm.complete("What is the name of the entity?")
+        await sdk.apply_filesystem_edit(AddFile(filepath=f"/Users/natesesti/Desktop/continue/extension/examples/python/MyProject/src/entity/{entity_name}.ts", content=orm_entity))
+        await sdk.ide.setFileOpen(f"/Users/natesesti/Desktop/continue/extension/examples/python/MyProject/src/entity/{entity_name}.ts", True)
+
+        # Add entity to data-source.ts
+        await sdk.run_step(EditFileStep(
+            filepath=f"/Users/natesesti/Desktop/continue/extension/examples/python/MyProject/src/data-source.ts",
+            prompt=f"{{code}}\nAdd the {entity_name} entity:\n",
+        ))
+
+        # Generate blank migration for the entity
+        obs: TextObservation = await sdk.run_step(RunCommandStep(
+            cmd=f"npx typeorm migration:create ./src/migration/Create{entity_name}Table"
+        ))
+        migration_filepath = obs.text.split(" ")[1]
+
+        # Wait for user input
+        await sdk.run_step(WaitForUserConfirmationStep(prompt="Fill in the migration?"))
+
+        # Fill in the migration
+        await sdk.run_step(EditFileStep(
+            filepath=migration_filepath,
+            prompt=f"{{code}}\nThis is the table that was created:\n{self.sql_str}\n\nFill in the migration for the table:\n",
+        ))
+
+        # Run the migration
+        command_step = RunCommandStep(
+            cmd=f"""sqlite3 database.sqlite 'CREATE TABLE orders (
+  order_id SERIAL PRIMARY KEY,
+  customer_id INTEGER,
+  order_date DATE,
+  order_total NUMERIC,
+  shipping_address TEXT,
+  billing_address TEXT,
+  payment_method TEXT,
+  order_status TEXT,
+  tracking_number TEXT
+);'"""
+        )
+        command_step._description = "npx typeorm-ts-node-commonjs migration:run -d ./src/data-source.ts"
+        await sdk.run_step(command_step)
