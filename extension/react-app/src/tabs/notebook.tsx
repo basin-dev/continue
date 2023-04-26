@@ -189,7 +189,7 @@ function Notebook(props: NotebookProps) {
     }
   }, [sessionId]);
 
-  const mainTextInputRef = useRef<HTMLInputElement>(null);
+  const mainTextInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (mainTextInputRef.current) {
@@ -216,6 +216,7 @@ function Notebook(props: NotebookProps) {
         })
       );
       mainTextInputRef.current.value = "";
+      mainTextInputRef.current.style.height = "";
     }
   }, [websocket]);
 
@@ -273,7 +274,16 @@ function Notebook(props: NotebookProps) {
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             onMainTextInput();
+            e.stopPropagation();
+            e.preventDefault();
           }
+        }}
+        rows={1}
+        onChange={() => {
+          let textarea = mainTextInputRef.current!;
+          textarea.style.height = ""; /* Reset the height*/
+          textarea.style.height =
+            Math.min(textarea.scrollHeight - 15, 500) + "px";
         }}
       ></MainTextInput>
       <ContinueButton onClick={onMainTextInput}></ContinueButton>

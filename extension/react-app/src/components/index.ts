@@ -106,7 +106,7 @@ export const GradientBorder = styled.div<{ borderWidth?: string }>`
   );
 `;
 
-export const MainTextInput = styled.input`
+export const MainTextInput = styled.textarea`
   padding: 8px;
   font-size: 16px;
   border-radius: ${defaultBorderRadius};
@@ -114,6 +114,8 @@ export const MainTextInput = styled.input`
   margin: 8px 8px;
   background-color: ${vscBackground};
   color: white;
+  outline: 1px solid orange;
+  resize: none;
 `;
 
 export const appear = keyframes`

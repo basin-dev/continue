@@ -76,7 +76,7 @@ const NaturalLanguageInput = styled(MainTextInput)`
 function StepContainer(props: StepContainerProps) {
   const [open, setOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const naturalLanguageInputRef = useRef<HTMLInputElement>(null);
+  const naturalLanguageInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isHovered) {
