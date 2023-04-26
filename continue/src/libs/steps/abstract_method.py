@@ -1,4 +1,3 @@
-from .main import EditCodeStep
 from ..core import ContinueSDK, Step
 
 
@@ -13,7 +12,7 @@ class ImplementAbstractMethodStep(Step):
 
         for implementation in implementations:
 
-            await sdk.run_step(EditCodeStep(
+            await sdk.edit_file(
                 range_in_files=[implementation.range_in_file],
                 prompt=f"Implement method `{self.method_name}` for this subclass of `{self.class_name}`",
-            ))
+            )

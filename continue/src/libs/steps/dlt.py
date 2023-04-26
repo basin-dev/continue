@@ -1,14 +1,7 @@
-import subprocess
 from textwrap import dedent
-from typing import Coroutine
-from ...models.main import Position, Range
-from ...models.filesystem import RangeInFile
-from ...models.filesystem_edit import AddDirectory, AddFile, FileEdit
-from ..observation import DictObservation
-from ..core import History, Step, ContinueSDK, Policy
-from .main import EditCodeStep, RunCommandStep, WaitForUserInputStep, WaitForUserConfirmationStep, ShellCommandsStep
-from ..llm import LLM
-import os
+from ...models.filesystem_edit import AddFile
+from ..core import Step, ContinueSDK
+from .main import WaitForUserInputStep
 
 
 class SetupPipelineStep(Step):
@@ -21,25 +14,25 @@ class SetupPipelineStep(Step):
         filename = f'{source_name}.py'
 
         # running commands to get started when creating a new dlt pipeline
-        await sdk.run_step(ShellCommandsStep(cmds=[
+        await sdk.run([
             'python3 -m venv env',
             'source env/bin/activate',
             'pip install dlt',
             'dlt init {source_name} duckdb',
             'Y',
             'pip install -r requirements.txt'
-        ]))
+        ])
 
         # editing the resource function to call the requested API
-        await sdk.run_step(EditCodeStep(
+        await sdk.edit_file(
             filename=filename,
             prompt=f'Edit the resource function to call the API described by this: {self.api_description}'
-        ))
+        )
 
         # wait for user to put API key in secrets.toml
         await sdk.ide.setFileOpen(".dlt/secrets.toml")
-        await sdk.run_step(WaitForUserConfirmationStep(prompt=f"Please add the API key to the `secrets.toml` file and then press `Continue`"))
-        return DictObservation(values={"source_name": source_name})
+        await sdk.wait_for_user_confirmation("Please add the API key to the `secrets.toml` file and then press `Continue`")
+        return {"source_name": source_name}
 
 
 class ValidatePipelineStep(Step):
@@ -49,19 +42,19 @@ class ValidatePipelineStep(Step):
         filename = f'{source_name}.py'
 
         # test that the API call works
-        await sdk.run_step(RunCommandStep(cmd=f'python3 {filename}'))
+        await sdk.run(f'python3 {filename}')
 
         # remove exit() from the main main function
-        await sdk.run_step(EditCodeStep(
+        await sdk.edit_file(
             filename=filename,
             prompt='Remove exit() from the main function'
-        ))
+        )
 
         # load the data into the DuckDB instance
-        await sdk.run_step(RunCommandStep(cmd=f'python3 {filename}'))
+        await sdk.run(f'python3 {filename}')
 
         table_name = f"{source_name}.{source_name}_resource"
-        tables_query_code = dedent(f'''
+        tables_query_code = dedent(f'''\
             import duckdb
 
             # connect to DuckDB instance
@@ -75,7 +68,7 @@ class ValidatePipelineStep(Step):
                 print(row)
         ''')
         await sdk.apply_filesystem_edit(AddFile(filepath='query.py', content=tables_query_code))
-        await sdk.run_step(RunCommandStep(cmd=f'env/bin/python3 query.py'))
+        await sdk.run('env/bin/python3 query.py')
 
 
 class CreatePipelineStep(Step):
