@@ -1,5 +1,9 @@
 # Policies
 
+## Slash commands
+
+If the plugin is kicked off with a slash command, maybe they'll give some general instructions there. Otherwise, see the Agent.accept_refinement_input() for what happens when the user enters instructions into a non-main text input box. This is where you might make a RequestUserInput step that displays a text entry box or something. Possibly...
+
 - You can go pretty far, pretty fast just using NLI + Python Traceback Snooper
 - But you can go further, faster if the policy can cause the autocompletition of many steps
 - Today, that means creating a plugin that suggests steps and their ordering for a specific workflow

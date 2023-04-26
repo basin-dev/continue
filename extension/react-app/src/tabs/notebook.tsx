@@ -19,6 +19,14 @@ let TopNotebookDiv = styled.div`
   grid-template-columns: 1fr;
 `;
 
+let UserInputQueueItem = styled.div`
+  border-radius: ${defaultBorderRadius};
+  color: gray;
+  padding: 8px;
+  margin: 8px;
+  text-align: center;
+`;
+
 interface NotebookProps {
   apiBaseUrl: string;
   firstObservation?: any;
@@ -27,8 +35,9 @@ interface NotebookProps {
 function Notebook(props: NotebookProps) {
   const sessionId = useSelector((state: RootStore) => state.config.sessionId);
   const [waitingForSteps, setWaitingForSteps] = useState(false);
+  const [userInputQueue, setUserInputQueue] = useState<string[]>([]);
   const [history, setHistory] = useState<History | undefined>();
-  // {
+  //   {
   //   timeline: [
   //     {
   //       step: {
@@ -145,6 +154,7 @@ function Notebook(props: NotebookProps) {
   //   ],
   //   current_index: 0,
   // } as any
+  // );
   const [websocket, setWebsocket] = useState<WebSocket | undefined>(undefined);
 
   useEffect(() => {
@@ -183,7 +193,7 @@ function Notebook(props: NotebookProps) {
         if (data.messageType === "state") {
           setWaitingForSteps(data.state.active);
           setHistory(data.state.history);
-          console.log("Got state", data.state);
+          setUserInputQueue(data.state.user_input_queue);
         }
       };
     }
@@ -208,13 +218,17 @@ function Notebook(props: NotebookProps) {
 
   const onMainTextInput = useCallback(() => {
     if (websocket && mainTextInputRef.current) {
+      let value = mainTextInputRef.current.value;
       setWaitingForSteps(true);
       websocket.send(
         JSON.stringify({
           messageType: "main_input",
-          value: mainTextInputRef.current.value,
+          value: value,
         })
       );
+      setUserInputQueue((queue) => {
+        return [...queue, value];
+      });
       mainTextInputRef.current.value = "";
       mainTextInputRef.current.style.height = "";
     }
@@ -269,6 +283,13 @@ function Notebook(props: NotebookProps) {
         );
       })}
       {waitingForSteps && <Loader></Loader>}
+
+      <div>
+        {userInputQueue.map((input) => {
+          return <UserInputQueueItem>{input}</UserInputQueueItem>;
+        })}
+      </div>
+
       <MainTextInput
         ref={mainTextInputRef}
         onKeyDown={(e) => {

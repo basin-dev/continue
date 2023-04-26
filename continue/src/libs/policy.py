@@ -19,7 +19,7 @@ class DemoPolicy(Policy):
         observation = history.last_observation()
         if observation is not None and isinstance(observation, UserInputObservation):
             # This could be defined with ObservationTypePolicy. Ergonomics not right though.
-            if "test" in observation.user_input.lower():
+            if " test" in observation.user_input.lower():
                 return WritePytestsStep(instructions=observation.user_input)
             elif "dlt" in observation.user_input.lower():
                 return CreatePipelineStep()

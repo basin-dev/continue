@@ -49,6 +49,9 @@ class Range(BaseModel):
             end=max(self.end, other.end),
         )
 
+    def is_empty(self) -> bool:
+        return self.start == self.end
+
     def overlaps_with(self, other: "Range") -> bool:
         return not (self.end < other.start or self.start > other.end)
 

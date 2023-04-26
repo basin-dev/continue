@@ -1,5 +1,11 @@
 # Plugins
 
+## How to run
+
+Haven't determined how we want to run plugins, but I've done something Ad Hoc in the DemoPolicy where you just search for exact strings. You could instead search for the string with a slash before if you want it to be like a slash command (see below in policy.py)
+
+Example plugins in libs/steps/main.py,nate.py
+
 follows an interface, so that Continue knows how to find it and interact with it
 
 Policy Plugins

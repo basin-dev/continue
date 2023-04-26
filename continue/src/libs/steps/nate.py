@@ -32,18 +32,17 @@ class WritePytestsStep(Step):
 
         for_file_contents = await sdk.ide.readFile(self.for_filepath)
 
-        prompt = dedent(f"""\
-        This is the file you will write unit tests for:
+        prompt = dedent(f"""This is the file you will write unit tests for:
 
-        ```python
-        {for_file_contents}
-        ```
+```python
+{for_file_contents}
+```
 
-        Here are additional instructions:
+Here are additional instructions:
 
-        "{self.instructions}"
+"{self.instructions}"
 
-        Here are the unit tests:
+Here are the unit tests:
 
         """)
         tests = sdk.llm.complete(prompt)
