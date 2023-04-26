@@ -5,27 +5,27 @@ export class Order {
   @PrimaryGeneratedColumn()
   order_id: number;
 
-  @Column({ nullable: true })
+  @Column()
   customer_id: number;
 
-  @Column({ nullable: true })
+  @Column()
   order_date: Date;
 
-  @Column({ nullable: true })
+  @Column()
   order_total: number;
 
-  @Column({ nullable: true })
+  @Column()
   shipping_address: string;
 
-  @Column({ nullable: true })
+  @Column()
   billing_address: string;
 
-  @Column({ nullable: true })
+  @Column()
   payment_method: string;
 
-  @Column({ nullable: true })
+  @Column()
   order_status: string;
 
-  @Column({ nullable: true })
+  @Column()
   tracking_number: string;
 }

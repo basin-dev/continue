@@ -156,6 +156,8 @@ function StepContainer(props: StepContainerProps) {
                 className="m-4 p-2 rounded-md border border-solid text-white border-gray-200 bg-vsc-background cursor-pointer hover:bg-white hover:text-black"
                 onClick={(e) => {
                   props.onUserInput("ok");
+                  e.preventDefault();
+                  e.stopPropagation();
                 }}
                 type="button"
                 value="Confirm"

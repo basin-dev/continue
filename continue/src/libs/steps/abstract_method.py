@@ -8,12 +8,12 @@ class ImplementAbstractMethodStep(Step):
     class_name: str
 
     async def run(self, sdk: ContinueSDK):
+
         implementations = await sdk.lsp.go_to_implementations(self.class_name)
+
         for implementation in implementations:
+
             await sdk.run_step(EditCodeStep(
                 range_in_files=[implementation.range_in_file],
-                prompt=f"{{code}}Implement method `{self.method_name}` for this subclass of `{self.class_name}`",
+                prompt=f"Implement method `{self.method_name}` for this subclass of `{self.class_name}`",
             ))
-
-    # What if there was a sidebar where in bullet points you could write out any micro-actions you want it to take, and then click to see the code (Continue plugin)
-    # that it generated, and will run every time

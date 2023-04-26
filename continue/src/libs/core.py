@@ -265,11 +265,9 @@ class Agent(ContinueBaseModel):
         # await self._request_halt()
         # Just run the step that takes user input, and
         # then up to the policy to decide how to deal with it.
-        await self.run_from_step(UserInputStep(user_input=user_input))
-
         self._main_user_input_queue.pop(0)
-
         self.update_subscribers()
+        await self.run_from_step(UserInputStep(user_input=user_input))
 
         while len(self._main_user_input_queue) > 0:
             await self.run_from_step(UserInputStep(

@@ -42,7 +42,7 @@ Here are additional instructions:
 
 "{self.instructions}"
 
-Here are the unit tests:
+Here is a complete set of pytest unit tests:
 
         """)
         tests = sdk.llm.complete(prompt)
