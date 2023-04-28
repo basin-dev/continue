@@ -1,9 +1,5 @@
 from textwrap import dedent
-from typing import Coroutine
-from ...models.filesystem_edit import AddDirectory, AddFile
-from ..observation import Observation, TextObservation
 from ..core import Step, ContinueSDK
-from .main import EditCodeStep, EditFileStep, RunCommandStep, ShellCommandsStep, WaitForUserConfirmationStep
 
 
 class CreateTableStep(Step):

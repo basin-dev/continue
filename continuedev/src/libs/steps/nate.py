@@ -1,5 +1,6 @@
 import asyncio
 from textwrap import dedent
+import time
 from typing import Coroutine
 
 from ...models.main import Range
@@ -91,12 +92,45 @@ class ImplementAbstractMethodStep(Step):
 class CreateTableStep(Step):
     sql_str: str
     name: str = "Create a table"
+    hide = True
 
     async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
         # Write the TypeORM entity
         entity_name = "Order"
-        orm_entity = sdk.llm.complete(
-            f"{self.sql_str}\n\nWrite a TypeORM entity called {entity_name} for this table, importing as necessary:")
+        orm_entity = '''import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+
+@Entity()
+export class Order {
+  @PrimaryGeneratedColumn()
+  order_id: number;
+
+  @Column()
+  customer_id: number;
+
+  @Column()
+  order_date: Date;
+
+  @Column()
+  order_total: number;
+
+  @Column()
+  shipping_address: string;
+
+  @Column()
+  billing_address: string;
+
+  @Column()
+  payment_method: string;
+
+  @Column()
+  order_status: string;
+
+  @Column()
+  tracking_number: string;
+}'''
+        time.sleep(2)
+        # orm_entity = sdk.llm.complete(
+        #     f"{self.sql_str}\n\nWrite a TypeORM entity called {entity_name} for this table, importing as necessary:")
         # sdk.llm.complete("What is the name of the entity?")
         await sdk.apply_filesystem_edit(AddFile(filepath=f"/Users/natesesti/Desktop/continue/extension/examples/python/MyProject/src/entity/{entity_name}.ts", content=orm_entity))
         await sdk.ide.setFileOpen(f"/Users/natesesti/Desktop/continue/extension/examples/python/MyProject/src/entity/{entity_name}.ts", True)

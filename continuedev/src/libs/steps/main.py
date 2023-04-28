@@ -257,7 +257,77 @@ def test_div(calculator):
 def test_exp(calculator):
     assert calculator.exp(2, 4) == 16
     assert calculator.exp(float('inf'), 0) == 1
-    assert calculator.exp(float('-inf'), 0) == 1'''
+    assert calculator.exp(float('-inf'), 0) == 1''',
+    "Fill in the migration": '''import { MigrationInterface, QueryRunner } from "typeorm";
+
+export class CreateOrderTable1682519299910 implements MigrationInterface {
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `CREATE TABLE orders (
+            order_id SERIAL PRIMARY KEY,
+            customer_id INTEGER,
+            order_date DATE,
+            order_total NUMERIC,
+            shipping_address TEXT,
+            billing_address TEXT,
+            payment_method TEXT,
+            order_status TEXT,
+            tracking_number TEXT
+        )`
+    );
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP TABLE orders`);
+  }
+}
+''',
+    "Add the ": '''import "reflect-metadata";
+import { DataSource } from "typeorm";
+import { User } from "./entity/User";
+import { Order } from "./entity/Order";
+
+export const AppDataSource = new DataSource({
+  type: "sqlite",
+  database: "database.sqlite",
+  synchronize: true,
+  logging: false,
+  entities: [User, Order],
+  migrations: [],
+  subscribers: [],
+});
+''',
+    "nullable": '''import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+
+@Entity()
+export class Order {
+  @PrimaryGeneratedColumn()
+  order_id: number;
+
+  @Column({ nullable: true })
+  customer_id: number;
+
+  @Column({ nullable: true })
+  order_date: Date;
+
+  @Column({ nullable: true })
+  order_total: number;
+
+  @Column({ nullable: true })
+  shipping_address: string;
+
+  @Column({ nullable: true })
+  billing_address: string;
+
+  @Column({ nullable: true })
+  payment_method: string;
+
+  @Column({ nullable: true })
+  order_status: string;
+
+  @Column({ nullable: true })
+  tracking_number: string;
+}'''
 }
 
 

@@ -1,26 +1,21 @@
 [tool.poetry]
-name = "continue"
+name = "continuedev"
 version = "0.1.0"
 description = ""
 authors = ["Nate Sesti <sestinj@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
 typer = "^0.7.0"
 pydantic = "^1.10.7"
 pathspec = "^0.11.1"
 python-dotenv = "^1.0.0"
-numpy = "^1.24.2"
-ruff = "^0.0.260"
 fastapi = "^0.95.0"
-watchdog = "^3.0.0"
 pluggy = "^1.0.0"
 boltons = "^23.0.0"
 openai = "^0.27.4"
 uvicorn = "^0.21.1"
 websockets = "^11.0.1"
-nest-asyncio = "^1.5.6"
 
 
 [build-system]

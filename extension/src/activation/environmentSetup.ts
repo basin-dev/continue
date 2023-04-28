@@ -19,6 +19,21 @@ async function setupPythonEnv() {
     "Successfully set up python env at ",
     getExtensionUri().fsPath + "/scripts/env"
   );
+
+  await startContinuePythonServer();
+}
+
+export async function startContinuePythonServer() {
+  console.log("Starting Continue python server...");
+  let command = `cd ${path.join(
+    getExtensionUri().fsPath,
+    "scripts"
+  )} && source env/bin/activate && python3 -m run_continue_server`;
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+  console.log("Successfully started Continue python server");
 }
 
 async function installNodeModules() {

@@ -9,7 +9,6 @@ import asyncio
 from typing import Any, Generator, List
 import openai
 import aiohttp
-import numpy as np
 from ..llm import LLM
 from pydantic import BaseModel, validator
 
@@ -92,12 +91,12 @@ class OpenAI(LLM):
                 **args,
             ).choices[0].text
 
-    def embed(self, input: List[str] | str) -> List[np.ndarray]:
-        resps = openai.Embedding.create(
-            model="text-embedding-ada-002",
-            input=input,
-        )["data"]
-        return [np.array(resp["embedding"]) for resp in resps]
+    # def embed(self, input: List[str] | str) -> List[np.ndarray]:
+    #     resps = openai.Embedding.create(
+    #         model="text-embedding-ada-002",
+    #         input=input,
+    #     )["data"]
+    #     return [np.array(resp["embedding"]) for resp in resps]
 
     def single_embed(self, input: str) -> np.ndarray:
         return self.embed([input])[0]
