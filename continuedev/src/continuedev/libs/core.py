@@ -20,7 +20,7 @@ class ContinueBaseModel(BaseModel):
 class HistoryNode(ContinueBaseModel):
     """A point in history, a list of which make up History"""
     step: "Step"
-    observation: Observation | None
+    observation: Union[Observation, None]
     depth: int
 
 
@@ -33,7 +33,7 @@ class History(ContinueBaseModel):
         self.timeline.insert(self.current_index + 1, node)
         self.current_index += 1
 
-    def get_current(self) -> HistoryNode | None:
+    def get_current(self) -> Union[HistoryNode, None]:
         if self.current_index < 0:
             return None
         return self.timeline[self.current_index]
@@ -61,7 +61,7 @@ class History(ContinueBaseModel):
     def step_back(self):
         self.current_index -= 1
 
-    def last_observation(self) -> Observation | None:
+    def last_observation(self) -> Union[Observation, None]:
         state = self.get_current()
         if state is None:
             return None
@@ -93,7 +93,7 @@ class ContinueSDK:
     ide: AbstractIdeProtocolServer
     __agent: "Agent"
 
-    def __init__(self, agent: "Agent", llm: LLM | None = None):
+    def __init__(self, agent: "Agent", llm: Union[LLM, None] = None):
         if llm is None:
             self.llm = agent.llm
         else:
@@ -285,9 +285,9 @@ class Agent(ContinueBaseModel):
 class Step(ContinueBaseModel):
     name: str = None
     hide: bool = False
-    _description: str | None = None
+    _description: Union[str, None] = None
 
-    system_message: str | None = None
+    system_message: Union[str, None] = None
 
     class Config:
         copy_on_model_validation = False
@@ -350,7 +350,7 @@ class ReversibleStep(Step):
 
 class FileSystemEditStep(ReversibleStep):
     edit: FileSystemEdit
-    _diff: EditDiff | None = None
+    _diff: Union[EditDiff, None] = None
 
     hide: bool = True
 

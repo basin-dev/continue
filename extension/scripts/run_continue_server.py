@@ -1,4 +1,4 @@
-from continuedev import cli_app
+from continuedev.server.main import run_server
 
 if __name__ == "__main__":
-    cli_app()
+    run_server()

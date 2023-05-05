@@ -1,7 +1,7 @@
 import time
 from fastapi import FastAPI, Depends, Header, WebSocket, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from uuid import uuid4
 from pydantic import BaseModel
 from uvicorn.main import Server
@@ -45,7 +45,7 @@ Server.handle_exit = AppStatus.handle_exit
 class Session:
     session_id: str
     agent: Agent
-    ws: WebSocket | None
+    ws: Union[WebSocket, None]
 
     def __init__(self, session_id: str, agent: Agent):
         self.session_id = session_id
@@ -72,7 +72,7 @@ class DemoAgent(Agent):
 
 class SessionManager:
     sessions: Dict[str, Session] = {}
-    _event_loop: asyncio.BaseEventLoop | None = None
+    _event_loop: Union[asyncio.BaseEventLoop, None] = None
 
     def get_session(self, session_id: str) -> Session:
         if session_id not in self.sessions:
@@ -134,7 +134,7 @@ def websocket_session(session_id: str) -> Session:
 
 
 class StartSessionBody(BaseModel):
-    config_file_path: str | None
+    config_file_path: Union[str, None]
 
 
 class StartSessionResp(BaseModel):

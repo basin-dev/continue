@@ -5,13 +5,9 @@ import os
 
 
 class WritePytestsStep(Step):
-    for_filepath: str | None = None
+    for_filepath: str
 
     async def run(self, sdk: ContinueSDK):
-        # Get filenames, create directories
-        if self.for_filepath is None:
-            self.for_filepath = (await sdk.ide.getOpenFiles())[0]
-
         filename, dirname = os.path.split(self.for_filepath)
 
         path_dir = os.path.join(dirname, "tests")
@@ -20,7 +16,7 @@ class WritePytestsStep(Step):
 
         path = os.path.join(path_dir, f"test_{filename}")
         if os.path.exists(path):
-            return None
+            return
 
         for_file_contents = await sdk.ide.readFile(self.for_filepath)
 

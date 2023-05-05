@@ -13,7 +13,7 @@ import {
 } from "./suggestions";
 import * as bridge from "./bridge";
 import { debugPanelWebview, setupDebugPanel } from "./debugPanel";
-import { openCapturedTerminal } from "./terminal/terminalEmulator";
+// import { openCapturedTerminal } from "./terminal/terminalEmulator";
 import { getRightViewColumn } from "./util/vscode";
 import {
   findSuspiciousCode,
@@ -74,7 +74,7 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   },
   "continue.openCapturedTerminal": () => {
     // Happens in webview resolution function
-    openCapturedTerminal();
+    // openCapturedTerminal();
   },
   "continue.findSuspiciousCode": async (
     debugContext: SerializedDebugContext

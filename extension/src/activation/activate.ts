@@ -4,7 +4,7 @@ import { registerAllCodeLensProviders } from "../lang-server/codeLens";
 import { sendTelemetryEvent, TelemetryEvent } from "../telemetry";
 import { getExtensionUri } from "../util/vscode";
 import * as path from "path";
-import { openCapturedTerminal } from "../terminal/terminalEmulator";
+// import { openCapturedTerminal } from "../terminal/terminalEmulator";
 import IdeProtocolClient from "../continueIdeClient";
 
 export let extensionContext: vscode.ExtensionContext | undefined = undefined;
@@ -60,7 +60,7 @@ export function activateExtension(
     });
   } else {
     ideProtocolClient?.openNotebook().then(() => {
-      openCapturedTerminal();
+      // openCapturedTerminal();
     });
   }
 

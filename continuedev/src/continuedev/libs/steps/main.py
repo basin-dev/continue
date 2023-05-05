@@ -1,5 +1,5 @@
 import time
-from typing import Callable, Coroutine, List
+from typing import Callable, Coroutine, List, Union
 
 from ..llm import LLM
 from ...models.main import Traceback, Range
@@ -77,7 +77,7 @@ class WaitForUserInputStep(Step):
     prompt: str
     name: str = "Waiting for user input"
 
-    _description: str | None = None
+    _description: Union[str, None] = None
 
     async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         return self.prompt
@@ -327,7 +327,47 @@ export class Order {
 
   @Column({ nullable: true })
   tracking_number: string;
-}'''
+}''',
+    "complete set of pytest": '''
+import pytest
+
+from ..calculator import Calculator
+
+
+@pytest.fixture
+def calculator():
+    return Calculator()
+
+
+def test_add(calculator):
+    assert calculator.add(2, 3) == 5
+    assert calculator.add(10, -2) == 8
+    assert calculator.add(0, 0) == 0
+
+
+def test_sub(calculator):
+    assert calculator.sub(2, 3) == -1
+    assert calculator.sub(10, -2) == 12
+    assert calculator.sub(0, 0) == 0
+
+
+def test_mul(calculator):
+    assert calculator.mul(2, 3) == 6
+    assert calculator.mul(10, -2) == -20
+    assert calculator.mul(0, 0) == 0
+
+
+def test_div(calculator):
+    assert calculator.div(2, 3) == 0.6666666666666666
+    assert calculator.div(10, -2) == -5
+    assert calculator.div(0, 1) == 0
+
+
+def test_exp(calculator):
+    assert calculator.exp(2, 3) == 8
+    assert calculator.exp(10, -2) == 0.01
+    assert calculator.exp(0, 0) == 1
+'''
 }
 
 
@@ -337,9 +377,9 @@ class EditCodeStep(Step):
     prompt: str  # String with {code} somewhere
     name: str = "Edit code"
 
-    _edit_diffs: List[EditDiff] | None = None
-    _prompt: str | None = None
-    _completion: str | None = None
+    _edit_diffs: Union[List[EditDiff], None] = None
+    _prompt: Union[str, None] = None
+    _completion: Union[str, None] = None
 
     async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
         if self._edit_diffs is None:
@@ -375,7 +415,7 @@ class EditCodeStep(Step):
             if demo_prompt in prompt:
                 used_demo = True
                 completion = demo_completion
-                time.sleep(1.5)
+                time.sleep(3)
                 break
 
         if not used_demo:

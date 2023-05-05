@@ -1,31 +1,32 @@
-
-import pytest
-from calculator import Calculator
-
-
-def test_add():
-    calc = Calculator()
-    assert calc.add(2, 3) == 5
+@pytest.fixture
+def calculator():
+    return Calculator()
 
 
-def test_sub():
-    calc = Calculator()
-    assert calc.sub(10, 5) == 5
+def test_add(calculator):
+    assert calculator.add(2, 3) == 5
+    assert calculator.add(2, 0) == 2
+    assert calculator.add(-2, -3) == -5
+    assert calculator.add(0, 0) == 0
+    assert calculator.add(100, 200) == 300
+    assert calculator.add(float('inf'), float('inf')) == float('inf')
+    assert calculator.add(float('-inf'), float('inf')) == float('-inf')
 
 
-def test_mul():
-    calc = Calculator()
-    assert calc.mul(4, 5) == 20
+def test_sub(calculator):
+    assert calculator.sub(4, 2) == 2
+    assert calculator.sub(float('inf'), float('inf')) == 0
+    assert calculator.sub(float('-inf'), float('inf')) == float('-inf')
 
 
-def test_div():
-    calc = Calculator()
-    assert calc.div(20, 4) == 5
+def test_mul(calculator):
+    assert calculator.mul(3, 4) == 12
+    assert calculator.mul(float('inf'), 0) == 0
+    assert calculator.mul(float('-inf'), 0) == 0
 
 
-def test_exp():
-    calc = Calculator()
-    assert calc.exp(2, 3) == 8
+def test_div(calculator):
+    assert calculator.div(6, 3) == 2
     assert calculator.div(float('inf'), float('inf')) == 1
     assert calculator.div(float('-inf'), float('inf')) == -1
 

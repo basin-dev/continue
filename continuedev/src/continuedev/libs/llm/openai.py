@@ -6,7 +6,7 @@
 
 # OR are actions run within a context manager? But don't think this works through functions
 import asyncio
-from typing import Any, Generator, List
+from typing import Any, Dict, Generator, List, Union
 import openai
 import aiohttp
 from ..llm import LLM
@@ -23,10 +23,10 @@ class OpenAI(LLM):
         openai.api_key = v
         return v
 
-    def with_system_message(self, system_message: str | None):
+    def with_system_message(self, system_message: Union[str, None]):
         return OpenAI(api_key=self.api_key, system_message=system_message)
 
-    def stream_chat(self, messages, **kwargs) -> Generator[Any | list | dict, None, None] | Any | list | dict:
+    def stream_chat(self, messages, **kwargs) -> Generator[Union[Any, List, Dict], None, None]:
         self.completion_count += 1
         args = {"max_tokens": 512, "temperature": 0.5, "top_p": 1,
                 "frequency_penalty": 0, "presence_penalty": 0} | kwargs
@@ -42,7 +42,7 @@ class OpenAI(LLM):
             else:
                 continue
 
-    def stream_complete(self, prompt: str, **kwargs) -> Generator[Any | list | dict, None, None] | Any | list | dict:
+    def stream_complete(self, prompt: str, **kwargs) -> Generator[Union[Any, List, Dict], None, None]:
         self.completion_count += 1
         args = {"model": self.default_model, "max_tokens": 512, "temperature": 0.5,
                 "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0, "suffix": None} | kwargs
@@ -98,8 +98,8 @@ class OpenAI(LLM):
     #     )["data"]
     #     return [np.array(resp["embedding"]) for resp in resps]
 
-    def single_embed(self, input: str) -> np.ndarray:
-        return self.embed([input])[0]
+    # def single_embed(self, input: str) -> np.ndarray:
+    #     return self.embed([input])[0]
 
     def edit(self, inp: str, instruction: str) -> str:
         try:
@@ -113,7 +113,7 @@ class OpenAI(LLM):
             print("OpenAI error:", e)
             raise e
 
-    def parallel_edit(self, inputs: list[str], instructions: list[str] | str, **kwargs) -> list[str]:
+    def parallel_edit(self, inputs: list[str], instructions: Union[List[str], str], **kwargs) -> list[str]:
         args = {"temperature": 0.5, "top_p": 1} | kwargs
         args['model'] = 'text-davinci-edit-001'
 
@@ -140,7 +140,7 @@ class OpenAI(LLM):
 
         return asyncio.run(fn())
 
-    def parallel_complete(self, prompts: list[str], suffixes: list[str] | None = None, **kwargs) -> list[str]:
+    def parallel_complete(self, prompts: list[str], suffixes: Union[list[str], None] = None, **kwargs) -> list[str]:
         self.completion_count += len(prompts)
         args = {"model": self.default_model, "max_tokens": 512, "temperature": 0.5,
                 "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0} | kwargs

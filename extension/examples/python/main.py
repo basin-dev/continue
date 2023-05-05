@@ -1,7 +1,21 @@
+class Calculator:
+    def __init__(self):
+        pass
 
-from sum import sum
+    def add(self, num1, num2):
+        return num1 + num2
 
-first = 1
-second = 2
+    def sub(self, num1, num2):
+        return num1 - num2
 
-print(sum(first, second))
+    def mul(self, num1, num2):
+        return num1 * num2
+
+    def div(self, num1, num2):
+        return num1 / num2
+
+    def exp(self, num1, num2):
+        return num1 ** num2
+
+    def mod(self, num1, num2):
+        return num1 % num2

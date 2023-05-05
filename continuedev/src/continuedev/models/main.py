@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List
+from typing import List, Union
 from pydantic import BaseModel, root_validator
 from functools import total_ordering
 
@@ -95,7 +95,7 @@ class TracebackFrame(BaseModel):
     filepath: str
     lineno: int
     function: str
-    code: str | None
+    code: Union[str, None]
 
     def __eq__(self, other):
         return self.filepath == other.filepath and self.lineno == other.lineno and self.function == other.function
@@ -105,7 +105,7 @@ class Traceback(BaseModel):
     frames: List[TracebackFrame]
     message: str
     error_type: str
-    full_traceback: str | None
+    full_traceback: Union[str, None]
 
     @classmethod
     def from_tbutil_parsed_exc(cls, tbutil_parsed_exc):

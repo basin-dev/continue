@@ -101,17 +101,21 @@ class IdeProtocolClient {
 
   async send(messageType: string, data: object) {
     await this.isConnected();
-    this._ws!.send(JSON.stringify({ messageType, ...data }));
+    let msg = JSON.stringify({ messageType, ...data });
+    this._ws!.send(msg);
+    console.log("Sent message", msg);
   }
 
   async receiveMessage(messageType: string): Promise<any> {
     await this.isConnected();
+    console.log("Connected to websocket");
     return await new Promise((resolve, reject) => {
       if (!this._ws) {
         reject("Not connected to websocket");
       }
       this._ws!.onmessage = (event: any) => {
         let message = JSON.parse(event.data);
+        console.log("RECEIVED MESSAGE", message);
         if (message.messageType === messageType) {
           resolve(message);
         }
@@ -120,8 +124,14 @@ class IdeProtocolClient {
   }
 
   async sendAndReceive(message: any, messageType: string): Promise<any> {
-    let resp = await this.send(messageType, message);
-    return await this.receiveMessage(messageType);
+    try {
+      await this.send(messageType, message);
+      let msg = await this.receiveMessage(messageType);
+      console.log("Received message", msg);
+      return msg;
+    } catch (e) {
+      console.log("Error sending message", e);
+    }
   }
 
   async handleMessage(message: any) {
@@ -200,8 +210,10 @@ class IdeProtocolClient {
   }
 
   async openNotebook() {
+    console.log("OPENING NOTEBOOK");
     let resp = await this.sendAndReceive({}, "openNotebook");
     let sessionId = resp.sessionId;
+    console.log("SESSION ID", sessionId);
 
     let column = getRightViewColumn();
     const panel = vscode.window.createWebviewPanel(

@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 from ...models.filesystem import RangeInFileWithContents
 from ...models.filesystem_edit import FileEdit
 
@@ -44,7 +44,7 @@ class MarkdownStyleEncoderDecoder:
 
         suggestions: Dict[str, str] = {}
         current_file_lines: List[str] = []
-        current_filepath: str | None = None
+        current_filepath: Union[str, None] = None
         last_was_file = False
         inside_file = False
         for line in completion.splitlines():
