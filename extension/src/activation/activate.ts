@@ -25,7 +25,7 @@ export function activateExtension(
     context
   );
 
-  if (showTutorial) {
+  if (showTutorial && false) {
     Promise.all([
       vscode.workspace
         .openTextDocument(

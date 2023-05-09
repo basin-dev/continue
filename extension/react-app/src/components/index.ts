@@ -106,6 +106,12 @@ export const GradientBorder = styled.div<{ borderWidth?: string }>`
   );
 `;
 
+export const MainContainerWithBorder = styled.div<{ borderWidth?: string }>`
+  border-radius: ${defaultBorderRadius};
+  padding: ${(props) => props.borderWidth || "1px"};
+  background-color: white;
+`;
+
 export const MainTextInput = styled.textarea`
   padding: 8px;
   font-size: 16px;

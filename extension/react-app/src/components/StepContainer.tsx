@@ -4,7 +4,7 @@ import {
   appear,
   buttonColor,
   defaultBorderRadius,
-  GradientBorder,
+  MainContainerWithBorder,
   MainTextInput,
   secondaryDark,
   vscBackground,
@@ -103,7 +103,7 @@ function StepContainer(props: StepContainerProps) {
       }}
       hidden={props.historyNode.step.hide as any}
     >
-      <GradientBorder
+      <MainContainerWithBorder
         className="m-2 overflow-hidden cursor-pointer"
         onClick={() => setOpen((prev) => !prev)}
       >
@@ -183,7 +183,7 @@ function StepContainer(props: StepContainerProps) {
             </>
           )}
         </StepContainerDiv>
-      </GradientBorder>
+      </MainContainerWithBorder>
 
       <OnHoverDiv hidden={!open}>
         <NaturalLanguageInput

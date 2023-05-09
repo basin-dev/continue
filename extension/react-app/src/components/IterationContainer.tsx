@@ -2,7 +2,7 @@ import { useState } from "react";
 import styled from "styled-components";
 import {
   defaultBorderRadius,
-  GradientBorder,
+  MainContainerWithBorder,
   secondaryDark,
   vscBackground,
 } from ".";
@@ -36,7 +36,7 @@ function IterationContainer(props: IterationContainerProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <GradientBorder className="m-2 overflow-hidden">
+    <MainContainerWithBorder className="m-2 overflow-hidden">
       <IterationContainerDiv open={open}>
         <p
           className="m-2 cursor-pointer"
@@ -70,7 +70,7 @@ function IterationContainer(props: IterationContainerProps) {
           </>
         )}
       </IterationContainerDiv>
-    </GradientBorder>
+    </MainContainerWithBorder>
   );
 }
 
