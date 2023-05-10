@@ -1,5 +1,11 @@
 import * as vscode from "vscode";
-import { debugApi, get_api_url, runPythonScript, unittestApi } from "./bridge";
+import {
+  debugApi,
+  getContinueServerUrl,
+  get_api_url,
+  runPythonScript,
+  unittestApi,
+} from "./bridge";
 import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
@@ -148,7 +154,7 @@ export function setupDebugPanel(
         panel.webview.postMessage({
           type: "onLoad",
           vscMachineId: vscode.env.machineId,
-          apiUrl: get_api_url(),
+          apiUrl: getContinueServerUrl(),
           sessionId,
         });
         break;

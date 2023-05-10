@@ -10,11 +10,10 @@ function App() {
   return (
     <>
       <Provider store={store}>
-        {/* <Notebook apiBaseUrl="http://localhost:8000" /> */}
         <DebugPanel
           tabs={[
             {
-              element: <Notebook apiBaseUrl="http://localhost:8000" />,
+              element: <Notebook />,
               title: "Notebook",
             },
             // { element: <MainTab />, title: "Debug Panel" },

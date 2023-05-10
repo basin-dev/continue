@@ -51,6 +51,13 @@ export function get_api_url() {
 }
 const API_URL = get_api_url();
 
+export function getContinueServerUrl() {
+  return (
+    vscode.workspace.getConfiguration("continue").get<string>("serverUrl") ||
+    "http://localhost:8000"
+  );
+}
+
 function build_python_command(cmd: string): string {
   return `cd ${get_python_path()} && source env/bin/activate && ${cmd}`;
 }

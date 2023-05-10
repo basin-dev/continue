@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .ide import router as ide_router
 from .notebook import router as notebook_router
 import uvicorn
+import argparse
 
 app = FastAPI()
 
@@ -18,9 +19,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# add cli arg for server port
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--port", help="server port", type=int, default=8000)
+args = parser.parse_args()
+
 
 def run_server():
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=args.port)
 
 
 if __name__ == "__main__":

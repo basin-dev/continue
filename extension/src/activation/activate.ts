@@ -6,6 +6,7 @@ import { getExtensionUri } from "../util/vscode";
 import * as path from "path";
 // import { openCapturedTerminal } from "../terminal/terminalEmulator";
 import IdeProtocolClient from "../continueIdeClient";
+import { getContinueServerUrl } from "../bridge";
 
 export let extensionContext: vscode.ExtensionContext | undefined = undefined;
 
@@ -20,8 +21,10 @@ export function activateExtension(
   registerAllCodeLensProviders(context);
   registerAllCommands(context);
 
+  let serverUrl = getContinueServerUrl();
+
   ideProtocolClient = new IdeProtocolClient(
-    "ws://localhost:8000/ide/ws",
+    serverUrl.replace("http", "ws") + "/ide/ws",
     context
   );
 

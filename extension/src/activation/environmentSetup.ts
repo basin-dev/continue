@@ -6,6 +6,7 @@ import * as path from "path";
 import * as fs from "fs";
 import rebuild from "@electron/rebuild";
 import * as vscode from "vscode";
+import { getContinueServerUrl } from "../bridge";
 
 async function setupPythonEnv() {
   console.log("Setting up python env for Continue extension...");
@@ -59,6 +60,12 @@ function writeEnvFile(path: string, key: string, value: string) {
 }
 
 export async function startContinuePythonServer() {
+  // Check vscode settings
+  let serverUrl = getContinueServerUrl();
+  if (serverUrl !== "http://localhost:8000") {
+    return;
+  }
+
   let envFile = path.join(getExtensionUri().fsPath, "scripts", ".env");
   let openai_api_key: string | undefined =
     readEnvFile(envFile)["OPENAI_API_KEY"];

@@ -28,12 +28,17 @@ let UserInputQueueItem = styled.div`
 `;
 
 interface NotebookProps {
-  apiBaseUrl: string;
   firstObservation?: any;
 }
 
 function Notebook(props: NotebookProps) {
   const sessionId = useSelector((state: RootStore) => state.config.sessionId);
+  const serverUrl = useSelector((state: RootStore) => state.config.apiUrl);
+
+  const sessionStarted = useSelector(
+    (state: RootStore) => state.config.sessionStarted
+  );
+
   const [waitingForSteps, setWaitingForSteps] = useState(false);
   const [userInputQueue, setUserInputQueue] = useState<string[]>([]);
   const [history, setHistory] = useState<History | undefined>();
@@ -160,7 +165,7 @@ function Notebook(props: NotebookProps) {
   useEffect(() => {
     (async () => {
       if (sessionId && props.firstObservation) {
-        let resp = await fetch(props.apiBaseUrl + "/observation", {
+        let resp = await fetch(serverUrl + "/observation", {
           method: "POST",
           headers: new Headers({
             "x-continue-session-id": sessionId,
@@ -178,7 +183,7 @@ function Notebook(props: NotebookProps) {
     if (sessionId) {
       console.log("Creating websocket", sessionId);
       let wsUrl =
-        props.apiBaseUrl.replace("http", "ws") +
+        serverUrl.replace("http", "ws") +
         "/notebook/ws?session_id=" +
         encodeURIComponent(sessionId);
       let ws = new WebSocket(wsUrl);
