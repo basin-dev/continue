@@ -8,15 +8,34 @@ import rebuild from "@electron/rebuild";
 import * as vscode from "vscode";
 import { getContinueServerUrl } from "../bridge";
 
+async function runCommand(cmd: string): Promise<[string, string | undefined]> {
+  var stdout: any = "";
+  var stderr: any = "";
+  try {
+    var { stdout, stderr } = await exec(cmd);
+  } catch (e: any) {
+    stderr = e.stderr;
+    stdout = e.stdout;
+  }
+  if (stderr === "") {
+    stderr = undefined;
+  }
+  if (typeof stdout === "undefined") {
+    stdout = "";
+  }
+
+  return [stdout, stderr];
+}
+
 async function setupPythonEnv() {
   console.log("Setting up python env for Continue extension...");
   // First check that python3 is installed
 
-  var { stdout: string, stderr } = await exec("python3 --version");
+  var [stdout, stderr] = await runCommand("python3 --version");
   let pythonCmd = "python3";
   if (stderr) {
     // If not, first see if python3 is aliased to python
-    var { stdout: string, stderr } = await exec("python --version");
+    var [stdout, stderr] = await runCommand("python --version");
     if (
       (typeof stderr === "undefined" || stderr === "") &&
       stdout.split(" ")[1][0] === "3"
@@ -35,7 +54,7 @@ async function setupPythonEnv() {
     getExtensionUri().fsPath,
     "scripts"
   )} && ${pythonCmd} -m venv env && source env/bin/activate && ${pipCmd} install --upgrade pip && ${pipCmd} install -r requirements.txt`;
-  var { stdout, stderr } = await exec(command);
+  var [stdout, stderr] = await runCommand(command);
   if (stderr) {
     throw new Error(stderr);
   }
@@ -171,7 +190,7 @@ export async function downloadPython3() {
     pythonCmd = "python";
   }
 
-  const { stdout, stderr } = await exec(command);
+  var [stdout, stderr] = await runCommand(command);
   if (stderr) {
     throw new Error(stderr);
   }
