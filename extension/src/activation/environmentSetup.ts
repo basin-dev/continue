@@ -10,11 +10,19 @@ import { getContinueServerUrl } from "../bridge";
 
 async function setupPythonEnv() {
   console.log("Setting up python env for Continue extension...");
+  // First check that python3 is installed
+
+  var { stdout, stderr } = await exec("python3 --version");
+  if (stderr) {
+    console.log("Python3 not found, downloading...");
+    await downloadPython3();
+  }
+
   let command = `cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
   )} && python3 -m venv env && source env/bin/activate && pip3 install --upgrade pip && pip3 install -r requirements.txt`;
-  const { stdout, stderr } = await exec(command);
+  var { stdout, stderr } = await exec(command);
   if (stderr) {
     throw new Error(stderr);
   }
@@ -132,4 +140,23 @@ export function isPythonEnvSetup(): boolean {
 export async function setupExtensionEnvironment() {
   console.log("Setting up environment for Continue extension...");
   await Promise.all([setupPythonEnv(), installNodeModules()]);
+}
+
+export async function downloadPython3() {
+  let os = process.platform;
+  let command: string = "";
+  if (os === "darwin") {
+    throw new Error("python3 not found");
+  } else if (os === "linux") {
+    command =
+      "sudo apt update && upgrade && sudo apt install python3 python3-pip";
+  } else if (os === "win32") {
+    throw new Error("python3 not found");
+  }
+
+  const { stdout, stderr } = await exec(command);
+  if (stderr) {
+    throw new Error(stderr);
+  }
+  console.log("Successfully downloaded python3");
 }
