@@ -12,16 +12,29 @@ async function setupPythonEnv() {
   console.log("Setting up python env for Continue extension...");
   // First check that python3 is installed
 
-  var { stdout, stderr } = await exec("python3 --version");
+  var { stdout: string, stderr } = await exec("python3 --version");
+  let pythonCmd = "python3";
   if (stderr) {
-    console.log("Python3 not found, downloading...");
-    await downloadPython3();
+    // If not, first see if python3 is aliased to python
+    var { stdout: string, stderr } = await exec("python --version");
+    if (
+      (typeof stderr === "undefined" || stderr === "") &&
+      stdout.split(" ")[1][0] === "3"
+    ) {
+      // Python3 is aliased to python
+      pythonCmd = "python";
+    } else {
+      // Python doesn't exist at all
+      console.log("Python3 not found, downloading...");
+      await downloadPython3();
+    }
   }
+  let pipCmd = pythonCmd.endsWith("3") ? "pip3" : "pip";
 
   let command = `cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
-  )} && python3 -m venv env && source env/bin/activate && pip3 install --upgrade pip && pip3 install -r requirements.txt`;
+  )} && ${pythonCmd} -m venv env && source env/bin/activate && ${pipCmd} install --upgrade pip && ${pipCmd} install -r requirements.txt`;
   var { stdout, stderr } = await exec(command);
   if (stderr) {
     throw new Error(stderr);
@@ -143,15 +156,19 @@ export async function setupExtensionEnvironment() {
 }
 
 export async function downloadPython3() {
+  // Download python3 and return the command to run it (python or python3)
   let os = process.platform;
   let command: string = "";
+  let pythonCmd = "python3";
   if (os === "darwin") {
     throw new Error("python3 not found");
   } else if (os === "linux") {
     command =
       "sudo apt update && upgrade && sudo apt install python3 python3-pip";
   } else if (os === "win32") {
-    throw new Error("python3 not found");
+    command =
+      "wget -O python_installer.exe https://www.python.org/ftp/python/3.11.3/python-3.11.3-amd64.exe && python_installer.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0";
+    pythonCmd = "python";
   }
 
   const { stdout, stderr } = await exec(command);
@@ -159,4 +176,6 @@ export async function downloadPython3() {
     throw new Error(stderr);
   }
   console.log("Successfully downloaded python3");
+
+  return pythonCmd;
 }
