@@ -164,6 +164,7 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "package": "cp ./config/prod_config.json ./config/config.json && npm run compile && mkdir -p ./build && vsce package --out ./build && chmod 777 ./build/continue-0.0.1.vsix && cp ./config/dev_config.json ./config/config.json",
+    "full-package": "npm run typegen && npm run clientgen && cd react-app && npm run build && cd .. && npm run package",
     "install-extension": "code --install-extension ./build/continue-0.0.1.vsix",
     "uninstall": "code --uninstall-extension Basin.continue",
     "reinstall": "rm -rf ./build && npm run package && npm run uninstall && npm run install-extension"
