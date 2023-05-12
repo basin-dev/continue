@@ -28,13 +28,15 @@ the code that should run when the step is rerun with feedback
 
 #### EditCodeStep
 
+#### ManualEditStep
+
 ### Community
 
 #### CreateTableStep
 
 Create a table in TypeORM
 
-**Q: how can we allow folks to add configurability to their steps (e.g. path where to store generated tests)?**
+**Q: how can we allow folks to add configurability to their steps (e.g. path where to store generated tests)?** likely optional parameters
 
 #### MigrationStep
 
@@ -51,3 +53,5 @@ Write unit tests for this file.
 ##### Parameters
 
 - for_filepath (required): the path of the file that unit tests should be created for
+
+**Q: use plugin? use recipe? use workflow? composed steps step?**
