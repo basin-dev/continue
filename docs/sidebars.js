@@ -16,47 +16,22 @@ const sidebars = {
 
   docsSidebar: [
     'intro',
-    'playground',
-    'installation',
-    'getting-started',
-    'examples',
-    'architecture',
     {
       type: 'category',
       label: 'Concepts',
       items: [
-        'concepts/agents',
-        'concepts/policies',
-        'concepts/observations',
-        'concepts/actions',
-        'concepts/steps',
-        'concepts/filesystem',
-        'concepts/hooks',
-        'concepts/plugins',
+        'concepts/agent',
+        'concepts/core',
+        'concepts/gui',
         'concepts/history',
-        'concepts/additional',
+        'concepts/ide',
+        'concepts/llm',
+        'concepts/policy',
+        'concepts/sdk',
+        'concepts/step',
+        'concepts/utilities',
       ],
     },
-    {
-      type: 'category',
-      label: 'Walkthroughs',
-      items: [
-        'walkthroughs/building-plugin',
-      ],
-    },
-    'api',
-    'languages',
-    'models',
-    'configuration',
-    {
-      type: 'category',
-      label: 'References',
-      items: [
-        'references/telemetry',
-        'references/donation',
-      ],
-    },
-    'random',
   ],
 };
 
