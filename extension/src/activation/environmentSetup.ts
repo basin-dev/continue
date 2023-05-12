@@ -85,7 +85,7 @@ function readEnvFile(path: string) {
 
 function writeEnvFile(path: string, key: string, value: string) {
   if (!fs.existsSync(path)) {
-    fs.writeFileSync(path, `${key}=${value}`);
+    fs.writeFileSync(path, `${key}="${value}"`);
     return;
   }
 
@@ -172,7 +172,7 @@ export function isPythonEnvSetup(): boolean {
 
 export async function setupExtensionEnvironment() {
   console.log("Setting up environment for Continue extension...");
-  await Promise.all([setupPythonEnv(), installNodeModules()]);
+  await Promise.all([setupPythonEnv()]);
 }
 
 export async function downloadPython3() {
