@@ -50,10 +50,17 @@ async function setupPythonEnv() {
   }
   let pipCmd = pythonCmd.endsWith("3") ? "pip3" : "pip";
 
+  let activateCmd = "source env/bin/activate"
+  let pipUpgradeCmd = `${pipCmd} install --upgrade pip`
+  if (process.platform == "win32") {
+    activateCmd = ".\\env\\Scripts\\activate"
+    pipUpgradeCmd = `python -m pip install --upgrade pip`
+  }
+
   let command = `cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
-  )} && ${pythonCmd} -m venv env && source env/bin/activate && ${pipCmd} install --upgrade pip && ${pipCmd} install -r requirements.txt`;
+  )} && ${pythonCmd} -m venv env && ${activateCmd} && ${pipUpgradeCmd} && ${pipCmd} install -r requirements.txt`;
   var [stdout, stderr] = await runCommand(command);
   if (stderr) {
     throw new Error(stderr);
@@ -129,10 +136,15 @@ export async function startContinuePythonServer() {
     }
   } catch (e) {}
 
+  let activateCmd = "source env/bin/activate"
+  if (process.platform == "win32") {
+    activateCmd = ".\\env\\Scripts\\activate"
+  }
+
   let command = `cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
-  )} && source env/bin/activate && cd .. && python3 -m scripts.run_continue_server`;
+  )} && ${activateCmd} && cd .. && python3 -m scripts.run_continue_server`;
   try {
     // exec(command);
     let child = spawn(command, {
