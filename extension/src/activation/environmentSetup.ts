@@ -119,20 +119,15 @@ export async function startContinuePythonServer() {
   writeEnvFile(envFile, "OPENAI_API_KEY", openai_api_key);
 
   console.log("Starting Continue python server...");
-  // Kill any existing python server
+
+  // Check if already running by calling /health
   try {
-    if (process.platform === "darwin") {
-      await exec(
-        "lsof -i tcp:8000 | grep LISTEN | awk '{print $2}' | xargs kill -9"
-      );
-    } else {
-      await exec(
-        "Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -eq 8000 } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }"
-      );
+    let response = await fetch(serverUrl + "/health");
+    if (response.status === 200) {
+      console.log("Continue python server already running");
+      return;
     }
-  } catch (e) {
-    console.log("Failed to kill existing Continue python server", e);
-  }
+  } catch (e) {}
 
   let command = `cd ${path.join(
     getExtensionUri().fsPath,

@@ -13,3 +13,7 @@ Same up until last step and then `python3 -m continue.src.scripts.gen_json_schem
 ## Start the server
 
 Same steps, then `uvicorn continue.src.server.main:app --reload`.
+
+## To build
+
+Run `poetry build` and it will output wheel and tarball files in `./dist`.

@@ -19,6 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 # add cli arg for server port
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--port", help="server port", type=int, default=8000)
