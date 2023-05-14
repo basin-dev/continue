@@ -4,8 +4,6 @@ The `SDK` gives you access to tools (e.g. open a directory, edit a file, call an
 
 ## SDK methods
 
-**Q: are we planning to make models.main, filesystem, filesystem_edit, etc. part of the SDK?** should not import anything but steps they have to import, nate make part of SDK
-
 ### run_step
 
 ### edit_file
@@ -17,8 +15,6 @@ Edits a file
 - `filepath` (required): the location of the file that should be edited
 - `prompt` (required): instructions for how the LLM should edit the file
 
-**Q: what if you want to pass context of previous steps, other files, etc?** observations before, some sort of memory, whole new concept?
-
 ### run
 
 Runs a command
@@ -26,8 +22,6 @@ Runs a command
 #### Parameters
 
 - `command` (required): the command that should be run
-
-**Q: how do we adjust the commands for different operating systems?** likely handled within steps
 
 ### wait_for_user_confirmation
 
