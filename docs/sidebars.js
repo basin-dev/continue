@@ -16,6 +16,7 @@ const sidebars = {
 
   docsSidebar: [
     'intro',
+    'create-a-recipe',
     {
       type: 'category',
       label: 'Concepts',
@@ -27,9 +28,9 @@ const sidebars = {
         'concepts/ide',
         'concepts/llm',
         'concepts/policy',
+        'concepts/recipes',
         'concepts/sdk',
         'concepts/step',
-        'concepts/utilities',
       ],
     },
   ],

@@ -19,5 +19,3 @@ The `SDK` gives you access to tools (e.g. open a directory, edit a file, call an
 The `GUI` enables you to guide steps and makes everything transparent, so you can review all steps that were automated, giving you the opportunity to undo and rerun any that ran incorrectly.
 
 The `Core` connects the SDK and GUI with the IDE (i.e. in VS Code, a web browser, etc), enabling the steps to make changes to your code and accelerate your software development workflows.
-
-**Q: do we continue to use the word plugin? what does it mean?**
