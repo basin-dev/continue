@@ -13,7 +13,7 @@ import {
 } from "./suggestions";
 import * as bridge from "./bridge";
 import { debugPanelWebview, setupDebugPanel } from "./debugPanel";
-import { openCapturedTerminal } from "./terminal/terminalEmulator";
+// import { openCapturedTerminal } from "./terminal/terminalEmulator";
 import { getRightViewColumn } from "./util/vscode";
 import {
   findSuspiciousCode,
@@ -24,6 +24,7 @@ import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { getLanguageLibrary } from "./languages";
 import { SerializedDebugContext } from "./client";
 import { addFileSystemToDebugContext } from "./util/util";
+import { ideProtocolClient } from "./activation/activate";
 
 // Copy everything over from extension.ts
 const commandsMap: { [command: string]: (...args: any) => any } = {
@@ -60,24 +61,20 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
   "continue.suggestionUp": suggestionUpCommand,
   "continue.acceptSuggestion": acceptSuggestionCommand,
   "continue.rejectSuggestion": rejectSuggestionCommand,
-  "continue.openDebugPanel": (context: vscode.ExtensionContext) => {
-    let column = getRightViewColumn();
-    const panel = vscode.window.createWebviewPanel(
-      "continue.debugPanelView",
-      "Continue",
-      column,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-      }
-    );
-
-    // And set its HTML content
-    panel.webview.html = setupDebugPanel(panel, context);
+  "continue.openDebugPanel": () => {
+    ideProtocolClient?.openNotebook();
+  },
+  "continue.focusContinueInput": async () => {
+    if (!debugPanelWebview) {
+      await ideProtocolClient?.openNotebook();
+    }
+    debugPanelWebview?.postMessage({
+      type: "focusContinueInput",
+    });
   },
   "continue.openCapturedTerminal": () => {
     // Happens in webview resolution function
-    openCapturedTerminal();
+    // openCapturedTerminal();
   },
   "continue.findSuspiciousCode": async (
     debugContext: SerializedDebugContext

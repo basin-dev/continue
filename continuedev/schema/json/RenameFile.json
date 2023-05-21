@@ -1,0 +1,24 @@
+{
+  "title": "RenameFile",
+  "$ref": "#/definitions/src__models__main__RenameFile",
+  "definitions": {
+    "src__models__main__RenameFile": {
+      "title": "RenameFile",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        },
+        "new_filepath": {
+          "title": "New Filepath",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filepath",
+        "new_filepath"
+      ]
+    }
+  }
+}

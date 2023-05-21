@@ -26,6 +26,11 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically find relevant code and suggest a fix whenever a traceback is found."
+        },
+        "continue.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "The URL of the Continue server to use."
         }
       }
     },
@@ -94,6 +99,11 @@
         "command": "continue.findSuspiciousCode",
         "title": "Find Suspicious Code",
         "category": "Continue"
+      },
+      {
+        "command": "continue.focusContinueInput",
+        "title": "Focus Continue Input",
+        "category": "Continue"
       }
     ],
     "keybindings": [
@@ -126,6 +136,11 @@
         "command": "continue.acceptSuggestion",
         "mac": "shift+ctrl+enter",
         "key": "shift+ctrl+enter"
+      },
+      {
+        "command": "continue.focusContinueInput",
+        "mac": "cmd+k",
+        "key": "ctrl+k"
       }
     ],
     "menus": {
@@ -149,6 +164,7 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "package": "cp ./config/prod_config.json ./config/config.json && npm run compile && mkdir -p ./build && vsce package --out ./build && chmod 777 ./build/continue-0.0.1.vsix && cp ./config/dev_config.json ./config/config.json",
+    "full-package": "cd ../continuedev && poetry build && cp ./dist/continuedev-0.1.0-py3-none-any.whl ../extension/scripts/continuedev-0.1.0-py3-none-any.whl && cd ../extension && npm run typegen && npm run clientgen && cd react-app && npm run build && cd .. && npm run package",
     "install-extension": "code --install-extension ./build/continue-0.0.1.vsix",
     "uninstall": "code --uninstall-extension Basin.continue",
     "reinstall": "rm -rf ./build && npm run package && npm run uninstall && npm run install-extension"
@@ -174,12 +190,13 @@
     "@electron/rebuild": "^3.2.10",
     "@reduxjs/toolkit": "^1.9.3",
     "@segment/analytics-node": "^0.0.1-beta.16",
+    "@styled-icons/heroicons-outline": "^10.47.0",
     "axios": "^1.2.5",
     "highlight.js": "^11.7.0",
-    "node-pty": "^0.10.1",
     "octokit": "^2.0.11",
     "react-redux": "^8.0.5",
     "strip-ansi": "^7.0.1",
-    "vscode-languageclient": "^8.0.2"
+    "vscode-languageclient": "^8.0.2",
+    "ws": "^8.13.0"
   }
 }

@@ -1,6 +1,6 @@
 {
-  "title": "DebugContext",
-  "$ref": "#/definitions/SerializedDebugContext",
+  "title": "HighlightedCodeResponse",
+  "$ref": "#/definitions/continue__src__server__ide__HighlightedCodeResponse",
   "definitions": {
     "Position": {
       "title": "Position",
@@ -18,8 +18,7 @@
       "required": [
         "line",
         "character"
-      ],
-      "additionalProperties": false
+      ]
     },
     "Range": {
       "title": "Range",
@@ -36,8 +35,7 @@
       "required": [
         "start",
         "end"
-      ],
-      "additionalProperties": false
+      ]
     },
     "RangeInFile": {
       "title": "RangeInFile",
@@ -54,41 +52,27 @@
       "required": [
         "filepath",
         "range"
-      ],
-      "additionalProperties": false
+      ]
     },
-    "SerializedDebugContext": {
-      "title": "SerializedDebugContext",
+    "continue__src__server__ide__HighlightedCodeResponse": {
+      "title": "HighlightedCodeResponse",
       "type": "object",
       "properties": {
-        "traceback": {
-          "title": "Traceback",
+        "messageType": {
+          "title": "Messagetype",
+          "default": "highlightedCode",
           "type": "string"
         },
-        "ranges_in_files": {
-          "title": "Ranges In Files",
+        "highlightedCode": {
+          "title": "Highlightedcode",
           "type": "array",
           "items": {
             "$ref": "#/definitions/RangeInFile"
           }
-        },
-        "filesystem": {
-          "title": "Filesystem",
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "description": {
-          "title": "Description",
-          "type": "string"
         }
       },
       "required": [
-        "traceback",
-        "ranges_in_files",
-        "filesystem",
-        "description"
+        "highlightedCode"
       ]
     }
   }

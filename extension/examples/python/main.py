@@ -1,10 +1,18 @@
-# Welcome to Continue!
-# `main.py` and `sum.py` have been opened to show you the basics of debugging an error with Continue.
-# Try running the example with `python3 ~/.vscode/extensions/basin.continue-0.0.1/examples/python/main.py`
+class Calculator:
+    def __init__(self):
+        pass
 
-from sum import sum
+    def add(self, a, b):
+        return a + b
 
-first = 1
-second = "two"
+    def sub(self, a, b):
+        return a - b
 
-sum(first, second)
+    def mul(self, a, b):
+        return a * b
+
+    def div(self, a, b):
+        return a / b
+
+    def exp(self, num1, num2):
+        return num1 ** num2

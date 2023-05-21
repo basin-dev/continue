@@ -1,0 +1,19 @@
+{
+  "title": "AddDirectory",
+  "$ref": "#/definitions/src__models__main__AddDirectory",
+  "definitions": {
+    "src__models__main__AddDirectory": {
+      "title": "AddDirectory",
+      "type": "object",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    }
+  }
+}

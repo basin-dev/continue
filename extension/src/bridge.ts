@@ -43,13 +43,20 @@ export function get_api_url() {
   let extensionUri = getExtensionUri();
   let configFile = path.join(extensionUri.fsPath, "config/config.json");
   let config = require(configFile);
-  console.log("Loaded config: ", config);
+
   if (config.API_URL) {
     return config.API_URL;
   }
   return "http://localhost:8000";
 }
 const API_URL = get_api_url();
+
+export function getContinueServerUrl() {
+  return (
+    vscode.workspace.getConfiguration("continue").get<string>("serverUrl") ||
+    "http://localhost:8000"
+  );
+}
 
 function build_python_command(cmd: string): string {
   return `cd ${get_python_path()} && source env/bin/activate && ${cmd}`;

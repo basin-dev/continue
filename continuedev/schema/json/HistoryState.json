@@ -1,0 +1,54 @@
+{
+  "title": "HistoryState",
+  "$ref": "#/definitions/src__libs__main__HistoryState",
+  "definitions": {
+    "Action": {
+      "title": "Action",
+      "description": "Helper class that provides a standard way to create an ABC using\ninheritance.",
+      "type": "object",
+      "properties": {}
+    },
+    "FileSystemEdit": {
+      "title": "FileSystemEdit",
+      "type": "object",
+      "properties": {}
+    },
+    "EditDiff": {
+      "title": "EditDiff",
+      "description": "A reversible edit that can be applied to a file.",
+      "type": "object",
+      "properties": {
+        "forward": {
+          "$ref": "#/definitions/FileSystemEdit"
+        },
+        "backward": {
+          "$ref": "#/definitions/FileSystemEdit"
+        }
+      },
+      "required": [
+        "forward",
+        "backward"
+      ]
+    },
+    "src__libs__main__HistoryState": {
+      "title": "HistoryState",
+      "type": "object",
+      "properties": {
+        "action_taken": {
+          "$ref": "#/definitions/Action"
+        },
+        "diffs": {
+          "title": "Diffs",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EditDiff"
+          }
+        }
+      },
+      "required": [
+        "action_taken",
+        "diffs"
+      ]
+    }
+  }
+}

@@ -1,5 +1,11 @@
 import * as vscode from "vscode";
-import { debugApi, get_api_url, runPythonScript, unittestApi } from "./bridge";
+import {
+  debugApi,
+  getContinueServerUrl,
+  get_api_url,
+  runPythonScript,
+  unittestApi,
+} from "./bridge";
 import { writeAndShowUnitTest } from "./decorations";
 import { showSuggestion } from "./suggestions";
 import { getLanguageLibrary } from "./languages";
@@ -87,7 +93,8 @@ let streamManager = new StreamManager();
 export let debugPanelWebview: vscode.Webview | undefined;
 export function setupDebugPanel(
   panel: vscode.WebviewPanel,
-  context: vscode.ExtensionContext | undefined
+  context: vscode.ExtensionContext | undefined,
+  sessionId: string
 ): string {
   debugPanelWebview = panel.webview;
   panel.onDidDispose(() => {
@@ -147,7 +154,8 @@ export function setupDebugPanel(
         panel.webview.postMessage({
           type: "onLoad",
           vscMachineId: vscode.env.machineId,
-          apiUrl: get_api_url(),
+          apiUrl: getContinueServerUrl(),
+          sessionId,
         });
         break;
       }

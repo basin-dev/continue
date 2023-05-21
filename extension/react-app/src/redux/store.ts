@@ -17,8 +17,10 @@ export interface RootStore {
   };
   config: {
     workspacePath: string | undefined;
-    apiUrl: string | undefined;
+    apiUrl: string;
     vscMachineId: string | undefined;
+    sessionId: string | undefined;
+    sessionStarted: number | undefined;
   };
   chat: {
     messages: ChatMessage[];

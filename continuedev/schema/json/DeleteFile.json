@@ -1,0 +1,19 @@
+{
+  "title": "DeleteFile",
+  "$ref": "#/definitions/src__models__main__DeleteFile",
+  "definitions": {
+    "src__models__main__DeleteFile": {
+      "title": "DeleteFile",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filepath"
+      ]
+    }
+  }
+}

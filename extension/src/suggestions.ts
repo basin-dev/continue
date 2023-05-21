@@ -3,7 +3,7 @@ import { sendTelemetryEvent, TelemetryEvent } from "./telemetry";
 import { openEditorAndRevealRange } from "./util/vscode";
 import { translate, readFileAtRange } from "./util/vscode";
 
-interface SuggestionRanges {
+export interface SuggestionRanges {
   oldRange: vscode.Range;
   newRange: vscode.Range;
   newSelected: boolean;

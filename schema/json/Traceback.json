@@ -1,6 +1,6 @@
 {
   "title": "Traceback",
-  "$ref": "#/definitions/package__libs__models__main__Traceback",
+  "$ref": "#/definitions/continue__src__models__main__Traceback",
   "definitions": {
     "TracebackFrame": {
       "title": "TracebackFrame",
@@ -27,20 +27,9 @@
         "filepath",
         "lineno",
         "function"
-      ],
-      "additionalProperties": false
+      ]
     },
-    "ProgrammingLangauge": {
-      "title": "ProgrammingLangauge",
-      "description": "An enumeration.",
-      "enum": [
-        "python",
-        "javascript",
-        "typescript"
-      ],
-      "type": "string"
-    },
-    "package__libs__models__main__Traceback": {
+    "continue__src__models__main__Traceback": {
       "title": "Traceback",
       "type": "object",
       "properties": {
@@ -59,9 +48,6 @@
           "title": "Error Type",
           "type": "string"
         },
-        "language": {
-          "$ref": "#/definitions/ProgrammingLangauge"
-        },
         "full_traceback": {
           "title": "Full Traceback",
           "type": "string"
@@ -70,10 +56,8 @@
       "required": [
         "frames",
         "message",
-        "error_type",
-        "language"
-      ],
-      "additionalProperties": false
+        "error_type"
+      ]
     }
   }
 }

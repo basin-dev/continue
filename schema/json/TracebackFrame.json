@@ -1,8 +1,8 @@
 {
   "title": "TracebackFrame",
-  "$ref": "#/definitions/package__libs__models__main__TracebackFrame",
+  "$ref": "#/definitions/continue__src__models__main__TracebackFrame",
   "definitions": {
-    "package__libs__models__main__TracebackFrame": {
+    "continue__src__models__main__TracebackFrame": {
       "title": "TracebackFrame",
       "type": "object",
       "properties": {
@@ -27,8 +27,7 @@
         "filepath",
         "lineno",
         "function"
-      ],
-      "additionalProperties": false
+      ]
     }
   }
 }

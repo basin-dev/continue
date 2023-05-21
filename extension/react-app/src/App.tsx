@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import store from "./redux/store";
 import WelcomeTab from "./tabs/welcome";
 import ChatTab from "./tabs/chat";
+import Notebook from "./tabs/notebook";
 
 function App() {
   return (
@@ -11,9 +12,13 @@ function App() {
       <Provider store={store}>
         <DebugPanel
           tabs={[
-            { element: <MainTab />, title: "Debug Panel" },
-            { element: <WelcomeTab />, title: "Welcome" },
-            { element: <ChatTab />, title: "Chat" },
+            {
+              element: <Notebook />,
+              title: "Notebook",
+            },
+            // { element: <MainTab />, title: "Debug Panel" },
+            // { element: <WelcomeTab />, title: "Welcome" },
+            // { element: <ChatTab />, title: "Chat" },
           ]}
         ></DebugPanel>
       </Provider>

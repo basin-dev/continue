@@ -1,6 +1,6 @@
 {
   "title": "FileEdit",
-  "$ref": "#/definitions/package__libs__models__main__FileEdit",
+  "$ref": "#/definitions/continue__src__models__filesystem_edit__FileEdit",
   "definitions": {
     "Position": {
       "title": "Position",
@@ -18,8 +18,7 @@
       "required": [
         "line",
         "character"
-      ],
-      "additionalProperties": false
+      ]
     },
     "Range": {
       "title": "Range",
@@ -36,10 +35,9 @@
       "required": [
         "start",
         "end"
-      ],
-      "additionalProperties": false
+      ]
     },
-    "package__libs__models__main__FileEdit": {
+    "continue__src__models__filesystem_edit__FileEdit": {
       "title": "FileEdit",
       "type": "object",
       "properties": {
@@ -59,8 +57,7 @@
         "filepath",
         "range",
         "replacement"
-      ],
-      "additionalProperties": false
+      ]
     }
   }
 }

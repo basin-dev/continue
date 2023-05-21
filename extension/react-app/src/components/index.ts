@@ -84,12 +84,53 @@ const spin = keyframes`
 `;
 
 export const Loader = styled.div`
-  border: 4px solid ${secondaryDark};
+  border: 4px solid transparent;
   border-radius: 50%;
-  border-top: 4px solid ${buttonColor};
+  border-top: 4px solid white;
   width: 36px;
   height: 36px;
   -webkit-animation: ${spin} 1s ease-in-out infinite;
   animation: ${spin} 1s ease-in-out infinite;
   margin: auto;
+`;
+
+export const GradientBorder = styled.div<{ borderWidth?: string }>`
+  border-radius: ${defaultBorderRadius};
+  padding: ${(props) => props.borderWidth || "1px"};
+  background: linear-gradient(
+    101.79deg,
+    #12887a 0%,
+    #87245c 37.64%,
+    #e12637 65.98%,
+    #ffb215 110.45%
+  );
+`;
+
+export const MainContainerWithBorder = styled.div<{ borderWidth?: string }>`
+  border-radius: ${defaultBorderRadius};
+  padding: ${(props) => props.borderWidth || "1px"};
+  background-color: white;
+`;
+
+export const MainTextInput = styled.textarea`
+  padding: 8px;
+  font-size: 16px;
+  border-radius: ${defaultBorderRadius};
+  border: 1px solid #ccc;
+  margin: 8px 8px;
+  background-color: ${vscBackground};
+  color: white;
+  outline: 1px solid orange;
+  resize: none;
+`;
+
+export const appear = keyframes`
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0px);
+    }
 `;

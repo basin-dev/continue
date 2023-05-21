@@ -2,9 +2,14 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { postVscMessage } from "../vscode";
 import { useDispatch } from "react-redux";
-import { setApiUrl, setVscMachineId } from "../redux/slices/configSlice";
+import {
+  setApiUrl,
+  setVscMachineId,
+  setSessionId,
+} from "../redux/slices/configSlice";
 import { setHighlightedCode } from "../redux/slices/miscSlice";
 import { updateFileSystem } from "../redux/slices/debugContexSlice";
+import { buttonColor, defaultBorderRadius, vscBackground } from ".";
 interface DebugPanelProps {
   tabs: {
     element: React.ReactElement;
@@ -13,6 +18,7 @@ interface DebugPanelProps {
 }
 
 const GradientContainer = styled.div`
+  // Uncomment to get gradient border
   background: linear-gradient(
     101.79deg,
     #12887a 0%,
@@ -20,9 +26,20 @@ const GradientContainer = styled.div`
     #e12637 65.98%,
     #ffb215 110.45%
   );
-  padding: 10px;
+  /* padding: 10px; */
   margin: 0;
   height: 100%;
+  /* border: 1px solid white; */
+  border-radius: ${defaultBorderRadius};
+`;
+
+const MainDiv = styled.div`
+  height: 100%;
+  border-radius: ${defaultBorderRadius};
+  overflow: scroll;
+  scrollbar-base-color: transparent;
+  /* background: ${vscBackground}; */
+  background-color: #1e1e1ede;
 `;
 
 const TabBar = styled.div<{ numTabs: number }>`
@@ -44,6 +61,7 @@ function DebugPanel(props: DebugPanelProps) {
         case "onLoad":
           dispatch(setApiUrl(event.data.apiUrl));
           dispatch(setVscMachineId(event.data.vscMachineId));
+          dispatch(setSessionId(event.data.sessionId));
           break;
         case "highlightedCode":
           dispatch(setHighlightedCode(event.data.rangeInFile));
@@ -60,25 +78,27 @@ function DebugPanel(props: DebugPanelProps) {
 
   return (
     <GradientContainer>
-      <div className="h-full rounded-md overflow-scroll bg-vsc-background">
+      <MainDiv>
         <TabsAndBodyDiv>
-          <TabBar numTabs={props.tabs.length}>
-            {props.tabs.map((tab, index) => {
-              return (
-                <div
-                  key={index}
-                  className={`p-2 cursor-pointer text-center ${
-                    index === currentTab
-                      ? "bg-secondary-dark"
-                      : "bg-vsc-background"
-                  }`}
-                  onClick={() => setCurrentTab(index)}
-                >
-                  {tab.title}
-                </div>
-              );
-            })}
-          </TabBar>
+          {props.tabs.length > 1 && (
+            <TabBar numTabs={props.tabs.length}>
+              {props.tabs.map((tab, index) => {
+                return (
+                  <div
+                    key={index}
+                    className={`p-2 cursor-pointer text-center ${
+                      index === currentTab
+                        ? "bg-secondary-dark"
+                        : "bg-vsc-background"
+                    }`}
+                    onClick={() => setCurrentTab(index)}
+                  >
+                    {tab.title}
+                  </div>
+                );
+              })}
+            </TabBar>
+          )}
           {props.tabs.map((tab, index) => {
             return (
               <div
@@ -93,7 +113,7 @@ function DebugPanel(props: DebugPanelProps) {
             );
           })}
         </TabsAndBodyDiv>
-      </div>
+      </MainDiv>
     </GradientContainer>
   );
 }

@@ -4,9 +4,13 @@ import { registerAllCodeLensProviders } from "../lang-server/codeLens";
 import { sendTelemetryEvent, TelemetryEvent } from "../telemetry";
 import { getExtensionUri } from "../util/vscode";
 import * as path from "path";
-import { openCapturedTerminal } from "../terminal/terminalEmulator";
+// import { openCapturedTerminal } from "../terminal/terminalEmulator";
+import IdeProtocolClient from "../continueIdeClient";
+import { getContinueServerUrl } from "../bridge";
 
 export let extensionContext: vscode.ExtensionContext | undefined = undefined;
+
+export let ideProtocolClient: IdeProtocolClient | undefined = undefined;
 
 export function activateExtension(
   context: vscode.ExtensionContext,
@@ -17,7 +21,14 @@ export function activateExtension(
   registerAllCodeLensProviders(context);
   registerAllCommands(context);
 
-  if (showTutorial) {
+  let serverUrl = getContinueServerUrl();
+
+  ideProtocolClient = new IdeProtocolClient(
+    serverUrl.replace("http", "ws") + "/ide/ws",
+    context
+  );
+
+  if (showTutorial && false) {
     Promise.all([
       vscode.workspace
         .openTextDocument(
@@ -48,18 +59,12 @@ export function activateExtension(
             })
         ),
     ]).then(() => {
-      vscode.commands
-        .executeCommand("continue.openDebugPanel", context)
-        .then(() => {
-          openCapturedTerminal();
-        });
+      ideProtocolClient?.openNotebook();
     });
   } else {
-    vscode.commands
-      .executeCommand("continue.openDebugPanel", context)
-      .then(() => {
-        openCapturedTerminal();
-      });
+    // ideProtocolClient?.openNotebook().then(() => {
+    //   // openCapturedTerminal();
+    // });
   }
 
   extensionContext = context;

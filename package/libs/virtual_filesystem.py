@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List
 import os
-from .models.main import SerializedVirtualFileSystem, RangeInFile, Range, FileEdit
+from .models.main import SerializedVirtualFileSystem, RangeInFile, Range, FileEdit, EditDiff
 
 class FileSystem(ABC):
     """An abstract filesystem that can read/write from a set of files."""

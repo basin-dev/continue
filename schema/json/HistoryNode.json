@@ -1,0 +1,42 @@
+{
+  "title": "HistoryNode",
+  "$ref": "#/definitions/continue__src__libs__core__HistoryNode",
+  "definitions": {
+    "Step": {
+      "title": "Step",
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "hide": {
+          "title": "Hide",
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    },
+    "Observation": {
+      "title": "Observation",
+      "type": "object",
+      "properties": {}
+    },
+    "continue__src__libs__core__HistoryNode": {
+      "title": "HistoryNode",
+      "description": "A point in history, a list of which make up History",
+      "type": "object",
+      "properties": {
+        "step": {
+          "$ref": "#/definitions/Step"
+        },
+        "observation": {
+          "$ref": "#/definitions/Observation"
+        }
+      },
+      "required": [
+        "step"
+      ]
+    }
+  }
+}

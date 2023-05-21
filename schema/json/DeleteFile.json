@@ -1,0 +1,19 @@
+{
+  "title": "DeleteFile",
+  "$ref": "#/definitions/continue__src__models__filesystem_edit__DeleteFile",
+  "definitions": {
+    "continue__src__models__filesystem_edit__DeleteFile": {
+      "title": "DeleteFile",
+      "type": "object",
+      "properties": {
+        "filepath": {
+          "title": "Filepath",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filepath"
+      ]
+    }
+  }
+}
