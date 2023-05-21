@@ -1,31 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import "reflect-metadata";
+import { DataSource } from "typeorm";
+import { User } from "./entity/User";
 
-@Entity()
-export class Order {
-  @PrimaryGeneratedColumn()
-  order_id: number;
-
-  @Column({ nullable: true })
-  customer_id: number;
-
-  @Column({ nullable: true })
-  order_date: Date;
-
-  @Column({ nullable: true })
-  order_total: number;
-
-  @Column({ nullable: true })
-  shipping_address: string;
-
-  @Column({ nullable: true })
-  billing_address: string;
-
-  @Column({ nullable: true })
-  payment_method: string;
-
-  @Column({ nullable: true })
-  order_status: string;
-
-  @Column({ nullable: true })
-  tracking_number: string;
-}
+export const AppDataSource = new DataSource({
+  type: "sqlite",
+  database: "database.sqlite",
+  synchronize: true,
+  logging: false,
+  entities: [User],
+  migrations: [],
+  subscribers: [],
+});

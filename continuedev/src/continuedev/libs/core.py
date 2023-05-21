@@ -160,7 +160,7 @@ class Agent(ContinueBaseModel):
 
     async def reverse_to_index(self, index: int):
         try:
-            while self.history.get_current_index() > index:
+            while self.history.get_current_index() >= index:
                 current_step = self.history.get_current().step
                 self.history.step_back()
                 if issubclass(current_step.__class__, ReversibleStep):

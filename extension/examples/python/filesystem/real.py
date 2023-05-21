@@ -32,10 +32,3 @@ class RealFileSystem(FileSystem):
 
     def add_directory(self, path: str):
         os.makedirs(path)
-
-    def walk(self, path: str) -> List[str]:
-        file_list = []
-        for root, dirs, files in os.walk(path):
-            for f in files:
-                file_list.append(os.path.join(root, f))
-        return file_list

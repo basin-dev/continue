@@ -13,6 +13,7 @@ import { HistoryNode } from "../../../schema/HistoryNode";
 import StepContainer from "../components/StepContainer";
 import { useSelector } from "react-redux";
 import { RootStore } from "../redux/store";
+import useContinueWebsocket from "../hooks/useWebsocket";
 
 let TopNotebookDiv = styled.div`
   display: grid;
@@ -32,12 +33,7 @@ interface NotebookProps {
 }
 
 function Notebook(props: NotebookProps) {
-  const sessionId = useSelector((state: RootStore) => state.config.sessionId);
   const serverUrl = useSelector((state: RootStore) => state.config.apiUrl);
-
-  const sessionStarted = useSelector(
-    (state: RootStore) => state.config.sessionStarted
-  );
 
   const [waitingForSteps, setWaitingForSteps] = useState(false);
   const [userInputQueue, setUserInputQueue] = useState<string[]>([]);
@@ -160,49 +156,31 @@ function Notebook(props: NotebookProps) {
   //   current_index: 0,
   // } as any
   // );
-  const [websocket, setWebsocket] = useState<WebSocket | undefined>(undefined);
 
-  useEffect(() => {
-    (async () => {
-      if (sessionId && props.firstObservation) {
-        let resp = await fetch(serverUrl + "/observation", {
-          method: "POST",
-          headers: new Headers({
-            "x-continue-session-id": sessionId,
-          }),
-          body: JSON.stringify({
-            observation: props.firstObservation,
-          }),
-        });
-      }
-    })();
-  }, [props.firstObservation]);
-
-  useEffect(() => {
-    // Connect to a websocket to relay history and user updates
-    if (sessionId) {
-      console.log("Creating websocket", sessionId);
-      let wsUrl =
-        serverUrl.replace("http", "ws") +
-        "/notebook/ws?session_id=" +
-        encodeURIComponent(sessionId);
-      let ws = new WebSocket(wsUrl);
-      setWebsocket(ws);
-      ws.onopen = () => {
-        console.log("Websocket opened");
-        ws.send(JSON.stringify({ sessionId }));
-      };
-      ws.onmessage = (msg) => {
-        console.log("Got message", msg);
-        let data = JSON.parse(msg.data);
-        if (data.messageType === "state") {
-          setWaitingForSteps(data.state.active);
-          setHistory(data.state.history);
-          setUserInputQueue(data.state.user_input_queue);
-        }
-      };
+  const { send: websocketSend } = useContinueWebsocket(serverUrl, (msg) => {
+    let data = JSON.parse(msg.data);
+    if (data.messageType === "state") {
+      setWaitingForSteps(data.state.active);
+      setHistory(data.state.history);
+      setUserInputQueue(data.state.user_input_queue);
     }
-  }, [sessionId]);
+  });
+
+  // useEffect(() => {
+  //   (async () => {
+  //     if (sessionId && props.firstObservation) {
+  //       let resp = await fetch(serverUrl + "/observation", {
+  //         method: "POST",
+  //         headers: new Headers({
+  //           "x-continue-session-id": sessionId,
+  //         }),
+  //         body: JSON.stringify({
+  //           observation: props.firstObservation,
+  //         }),
+  //       });
+  //     }
+  //   })();
+  // }, [props.firstObservation]);
 
   const mainTextInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -221,39 +199,30 @@ function Notebook(props: NotebookProps) {
     }
   }, [mainTextInputRef]);
 
-  const onMainTextInput = useCallback(() => {
-    if (websocket && mainTextInputRef.current) {
+  const onMainTextInput = () => {
+    if (mainTextInputRef.current) {
       let value = mainTextInputRef.current.value;
       setWaitingForSteps(true);
-      websocket.send(
-        JSON.stringify({
-          messageType: "main_input",
-          value: value,
-        })
-      );
+      websocketSend({
+        messageType: "main_input",
+        value: value,
+      });
       setUserInputQueue((queue) => {
         return [...queue, value];
       });
       mainTextInputRef.current.value = "";
       mainTextInputRef.current.style.height = "";
     }
-  }, [websocket]);
+  };
 
-  const onStepUserInput = useCallback(
-    (input: string, index: number) => {
-      console.log("Sending step user input", input, index);
-      if (websocket) {
-        websocket.send(
-          JSON.stringify({
-            messageType: "step_user_input",
-            value: input,
-            index,
-          })
-        );
-      }
-    },
-    [websocket]
-  );
+  const onStepUserInput = (input: string, index: number) => {
+    console.log("Sending step user input", input, index);
+    websocketSend({
+      messageType: "step_user_input",
+      value: input,
+      index,
+    });
+  };
 
   // const iterations = useSelector(selectIterations);
   return (
@@ -268,21 +237,17 @@ function Notebook(props: NotebookProps) {
             inFuture={index > history?.current_index}
             historyNode={node}
             onRefinement={(input: string) => {
-              websocket?.send(
-                JSON.stringify({
-                  messageType: "refinement_input",
-                  value: input,
-                  index,
-                })
-              );
+              websocketSend({
+                messageType: "refinement_input",
+                value: input,
+                index,
+              });
             }}
             onReverse={() => {
-              websocket?.send(
-                JSON.stringify({
-                  messageType: "reverse",
-                  index,
-                })
-              );
+              websocketSend({
+                messageType: "reverse",
+                index,
+              });
             }}
           />
         );

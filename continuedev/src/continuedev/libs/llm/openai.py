@@ -6,6 +6,7 @@
 
 # OR are actions run within a context manager? But don't think this works through functions
 import asyncio
+import time
 from typing import Any, Dict, Generator, List, Union
 import openai
 import aiohttp
@@ -67,6 +68,8 @@ class OpenAI(LLM):
                 yield chunk.choices[0].text
 
     def complete(self, prompt: str, **kwargs) -> str:
+        t1 = time.time()
+
         self.completion_count += 1
         args = {"model": self.default_model, "max_tokens": 512, "temperature": 0.5, "top_p": 1,
                 "frequency_penalty": 0, "presence_penalty": 0, "stream": False} | kwargs
@@ -81,15 +84,19 @@ class OpenAI(LLM):
                     "role": "system",
                     "content": self.system_message
                 })
-            return openai.ChatCompletion.create(
+            resp = openai.ChatCompletion.create(
                 messages=messages,
                 **args,
             ).choices[0].message.content
         else:
-            return openai.Completion.create(
+            resp = openai.Completion.create(
                 prompt=prompt,
                 **args,
             ).choices[0].text
+
+        t2 = time.time()
+        print("Completion time:", t2 - t1)
+        return resp
 
     # def embed(self, input: List[str] | str) -> List[np.ndarray]:
     #     resps = openai.Embedding.create(

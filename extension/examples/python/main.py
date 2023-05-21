@@ -2,20 +2,17 @@ class Calculator:
     def __init__(self):
         pass
 
-    def add(self, num1, num2):
-        return num1 + num2
+    def add(self, a, b):
+        return a + b
 
-    def sub(self, num1, num2):
-        return num1 - num2
+    def sub(self, a, b):
+        return a - b
 
-    def mul(self, num1, num2):
-        return num1 * num2
+    def mul(self, a, b):
+        return a * b
 
-    def div(self, num1, num2):
-        return num1 / num2
+    def div(self, a, b):
+        return a / b
 
     def exp(self, num1, num2):
         return num1 ** num2
-
-    def mod(self, num1, num2):
-        return num1 % num2

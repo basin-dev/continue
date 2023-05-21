@@ -3,7 +3,7 @@ from typing import Callable, Coroutine, List, Union
 
 from ..llm import LLM
 from ...models.main import Traceback, Range
-from ...models.filesystem_edit import EditDiff
+from ...models.filesystem_edit import EditDiff, FileEdit
 from ...models.filesystem import RangeInFile, RangeInFileWithContents
 from ..observation import Observation, TextObservation
 from ..llm.prompt_utils import MarkdownStyleEncoderDecoder
@@ -12,6 +12,7 @@ from ..core import History, Policy, Step, ContinueSDK, Observation
 import subprocess
 from ..util.traceback_parsers import parse_python_traceback
 from ..observation import TracebackObservation
+import json
 
 
 class RunPolicyUntilDoneStep(Step):
@@ -367,7 +368,61 @@ def test_exp(calculator):
     assert calculator.exp(2, 3) == 8
     assert calculator.exp(10, -2) == 0.01
     assert calculator.exp(0, 0) == 1
-'''
+''',
+    "editing the resource function to call the API described by": '''```
+import dlt
+from dlt.sources.helpers import requests
+
+
+@dlt.source
+def weather_api_source(api_secret_key=dlt.secrets.value):
+    return weather_api_resource(api_secret_key)
+
+
+def _create_auth_headers(api_secret_key):
+    """Constructs Bearer type authorization header which is the most common authorization method"""
+    headers = {
+        "Authorization": f"Bearer {api_secret_key}"
+    }
+    return headers
+
+
+@dlt.resource(write_disposition="append")
+def weather_api_resource(api_secret_key=dlt.secrets.value):
+    headers = _create_auth_headers(api_secret_key)
+
+    # check if authentication headers look fine
+    print(headers)
+
+    # make an api call here
+    url = 'https://api.weatherapi.com/v1/forecast.json'
+    params = {'q': 'London', 'days': 7, 'key': api_secret_key}
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    data = response.json()
+
+    # yield the data
+    yield data
+
+
+if __name__ == '__main__':
+    # configure the pipeline with your destination details
+    pipeline = dlt.pipeline(pipeline_name='weather_api',
+                            destination='duckdb', dataset_name='weather_api_data')
+
+    # print credentials by running the resource
+    data = list(weather_api_resource())
+
+    # print the data yielded from resource
+    print(data)
+
+    # run the pipeline with your parameters
+    load_info = pipeline.run(weather_api_source())
+
+    # pretty print the information on data that was loaded
+    print(load_info)
+
+```'''
 }
 
 
@@ -454,6 +509,115 @@ class EditFileStep(Step):
                 self.filepath, file_contents)],
             prompt=self.prompt
         ))
+
+
+class FasterEditHighlightedCodeStep(Step):
+    user_input: str
+    hide = True
+    _completion: str = "Edit Code"
+    _edit_diffs: Union[List[EditDiff], None] = None
+    _prompt: str = dedent("""Below is the code before changes:
+
+{code}
+
+This is the user request:
+
+{user_input}
+
+Edit the code to perfectly satifsfy the user request. Format the changes you want to make as a comma-separated array of JSON objects of the form:
+{{
+    "edits": [{{
+        "filepath": <FILEPATH>,
+        "replace_me": <CODE_TO_REPLACE>,
+        "replace_with": <CODE_TO_REPLACE_WITH>
+    }}]
+}}
+
+For example, if you want to replace the code `x = 1` with `x = 2` in main.py, you would write:
+{{
+    "edits": [{{
+        "filepath": "main.py",
+        "replace_me": "x = 1",
+        "replace_with": "x = 2"
+    }}]
+}}
+If you wanted to delete the code `def sum(a, b):\\n    return a + b` in main.py, you would write:
+{{
+    "edits": [{{
+        "filepath": "main.py",
+        "replace_me": "def sum(a, b):\\n    return a + b",
+        "replace_with": ""
+    }}]
+}}
+
+Respond with only as many edits as needed, and output only the list of json objects, no other text.
+""")
+
+    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
+        return "Editing highlighted code"
+
+    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
+        range_in_files = await sdk.ide.getHighlightedCode()
+        if len(range_in_files) == 0:
+            # Get the full contents of all open files
+            files = await sdk.ide.getOpenFiles()
+            contents = {}
+            for file in files:
+                contents[file] = await sdk.ide.readFile(file)
+
+            range_in_files = [RangeInFile.from_entire_file(
+                filepath, content) for filepath, content in contents.items()]
+
+        rif_with_contents = []
+        for range_in_file in range_in_files:
+            file_contents = await sdk.ide.readRangeInFile(range_in_file)
+            rif_with_contents.append(
+                RangeInFileWithContents.from_range_in_file(range_in_file, file_contents))
+        enc_dec = MarkdownStyleEncoderDecoder(rif_with_contents)
+        code_string = enc_dec.encode()
+        prompt = self._prompt.format(
+            code=code_string, user_input=self.user_input)
+
+        rif_dict = {}
+        for rif in rif_with_contents:
+            rif_dict[rif.filepath] = rif.contents
+
+        used_demo = False
+        for demo_prompt, demo_completion in demo_completions.items():
+            if demo_prompt in prompt:
+                used_demo = True
+                completion = demo_completion
+                time.sleep(3)
+                break
+
+        if not used_demo:
+            completion = sdk.llm.complete(prompt)
+
+        # Temporarily doing this to generate description.
+        self._prompt = prompt
+        self._completion = completion
+
+        # ALTERNATIVE DECODING STEP HERE
+        file_edits = []
+        obj = json.loads(completion.strip())
+        for edit in obj["edits"]:
+            filepath = edit["filepath"]
+            replace_me = edit["replace_me"]
+            replace_with = edit["replace_with"]
+            file_edits.append(
+                FileEdit(filepath=filepath, range=Range.from_snippet_in_file(content=rif_dict[filepath], snippet=replace_me), replacement=replace_with))
+        # ------------------------------
+
+        self._edit_diffs = []
+        for file_edit in file_edits:
+            diff = await sdk.apply_filesystem_edit(file_edit)
+            self._edit_diffs.append(diff)
+
+        for filepath in set([file_edit.filepath for file_edit in file_edits]):
+            await sdk.ide.saveFile(filepath)
+            await sdk.ide.setFileOpen(filepath)
+
+        return None
 
 
 class EditHighlightedCodeStep(Step):

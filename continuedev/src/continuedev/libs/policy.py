@@ -3,8 +3,9 @@ from typing import Generator, List, Tuple, Type
 from .steps.ty import CreatePipelineStep
 from .core import Agent, Step, Validator, Policy, History, UserInputStep
 from .observation import Observation, TracebackObservation, UserInputObservation
-from .steps.main import EditCodeStep, EditHighlightedCodeStep, SolveTracebackStep, RunCodeStep
+from .steps.main import EditCodeStep, EditHighlightedCodeStep, SolveTracebackStep, RunCodeStep, FasterEditHighlightedCodeStep
 from .steps.nate import WritePytestsStep, CreateTableStep
+from .steps.chroma import AnswerQuestionChroma, EditFileChroma
 
 
 class DemoPolicy(Policy):
@@ -21,10 +22,14 @@ class DemoPolicy(Policy):
             # This could be defined with ObservationTypePolicy. Ergonomics not right though.
             if " test" in observation.user_input.lower():
                 return WritePytestsStep(instructions=observation.user_input)
-            elif "dlt" in observation.user_input.lower():
+            elif "/dlt" in observation.user_input.lower() or " dlt" in observation.user_input.lower():
                 return CreatePipelineStep()
             elif "/table" in observation.user_input:
                 return CreateTableStep(sql_str=" ".join(observation.user_input.split(" ")[1:]))
+            elif "/ask" in observation.user_input:
+                return AnswerQuestionChroma(question=" ".join(observation.user_input.split(" ")[1:]))
+            elif "/edit" in observation.user_input:
+                return EditFileChroma(request=" ".join(observation.user_input.split(" ")[1:]))
             return EditHighlightedCodeStep(user_input=observation.user_input)
 
         state = history.get_current()

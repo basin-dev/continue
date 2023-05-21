@@ -9,7 +9,7 @@ import {
 } from "../redux/slices/configSlice";
 import { setHighlightedCode } from "../redux/slices/miscSlice";
 import { updateFileSystem } from "../redux/slices/debugContexSlice";
-import { defaultBorderRadius, vscBackground } from ".";
+import { buttonColor, defaultBorderRadius, vscBackground } from ".";
 interface DebugPanelProps {
   tabs: {
     element: React.ReactElement;
@@ -18,6 +18,7 @@ interface DebugPanelProps {
 }
 
 const GradientContainer = styled.div`
+  // Uncomment to get gradient border
   background: linear-gradient(
     101.79deg,
     #12887a 0%,
@@ -25,15 +26,18 @@ const GradientContainer = styled.div`
     #e12637 65.98%,
     #ffb215 110.45%
   );
-  padding: 10px;
+  /* padding: 10px; */
   margin: 0;
   height: 100%;
+  /* border: 1px solid white; */
+  border-radius: ${defaultBorderRadius};
 `;
 
 const MainDiv = styled.div`
   height: 100%;
   border-radius: ${defaultBorderRadius};
   overflow: scroll;
+  scrollbar-base-color: transparent;
   /* background: ${vscBackground}; */
   background-color: #1e1e1ede;
 `;

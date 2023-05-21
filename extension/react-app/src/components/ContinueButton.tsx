@@ -27,7 +27,9 @@ let StyledButton = styled(Button)`
 function ContinueButton(props: { onClick?: () => void }) {
   return (
     <StyledButton className="m-auto" onClick={props.onClick}>
-      <Play /> Continue
+      <Play />
+      {/* <img src={"/continue_arrow.png"} width="16px"></img> */}
+      Continue
     </StyledButton>
   );
 }

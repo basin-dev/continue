@@ -43,7 +43,3 @@ class FileSystem(ABC):
     @abstractmethod
     def add_directory(self, path: str):
         raise NotImplementedError
-
-    @abstractmethod
-    def walk(self, path: str) -> List[str]:
-        raise NotImplementedError

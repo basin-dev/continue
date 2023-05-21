@@ -7,6 +7,7 @@ import * as fs from "fs";
 import rebuild from "@electron/rebuild";
 import * as vscode from "vscode";
 import { getContinueServerUrl } from "../bridge";
+import fetch from "node-fetch";
 
 async function runCommand(cmd: string): Promise<[string, string | undefined]> {
   var stdout: any = "";
@@ -25,6 +26,14 @@ async function runCommand(cmd: string): Promise<[string, string | undefined]> {
   }
 
   return [stdout, stderr];
+}
+
+async function getPythonCmdAssumingInstalled() {
+  const [, stderr] = await runCommand("python3 --version");
+  if (stderr) {
+    return "python";
+  }
+  return "python3";
 }
 
 async function setupPythonEnv() {
@@ -50,11 +59,11 @@ async function setupPythonEnv() {
   }
   let pipCmd = pythonCmd.endsWith("3") ? "pip3" : "pip";
 
-  let activateCmd = "source env/bin/activate"
-  let pipUpgradeCmd = `${pipCmd} install --upgrade pip`
+  let activateCmd = "source env/bin/activate";
+  let pipUpgradeCmd = `${pipCmd} install --upgrade pip`;
   if (process.platform == "win32") {
-    activateCmd = ".\\env\\Scripts\\activate"
-    pipUpgradeCmd = `python -m pip install --upgrade pip`
+    activateCmd = ".\\env\\Scripts\\activate";
+    pipUpgradeCmd = `${pythonCmd} -m pip install --upgrade pip`;
   }
 
   let command = `cd ${path.join(
@@ -134,17 +143,21 @@ export async function startContinuePythonServer() {
       console.log("Continue python server already running");
       return;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.log("Error checking for existing server", e);
+  }
 
-  let activateCmd = "source env/bin/activate"
+  let activateCmd = "source env/bin/activate";
+  let pythonCmd = "python3";
   if (process.platform == "win32") {
-    activateCmd = ".\\env\\Scripts\\activate"
+    activateCmd = ".\\env\\Scripts\\activate";
+    pythonCmd = "python";
   }
 
   let command = `cd ${path.join(
     getExtensionUri().fsPath,
     "scripts"
-  )} && ${activateCmd} && cd .. && python3 -m scripts.run_continue_server`;
+  )} && ${activateCmd} && cd .. && ${pythonCmd} -m scripts.run_continue_server`;
   try {
     // exec(command);
     let child = spawn(command, {

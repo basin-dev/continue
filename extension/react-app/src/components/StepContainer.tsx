@@ -8,6 +8,7 @@ import {
   MainTextInput,
   secondaryDark,
   vscBackground,
+  GradientBorder,
 } from ".";
 import { RangeInFile, FileEdit } from "../../../src/client";
 import CodeBlock from "./CodeBlock";
@@ -103,7 +104,7 @@ function StepContainer(props: StepContainerProps) {
       }}
       hidden={props.historyNode.step.hide as any}
     >
-      <MainContainerWithBorder
+      <GradientBorder
         className="m-2 overflow-hidden cursor-pointer"
         onClick={() => setOpen((prev) => !prev)}
       >
@@ -167,11 +168,11 @@ function StepContainer(props: StepContainerProps) {
 
           {open && (
             <>
-              {props.historyNode.observation && (
+              {/* {props.historyNode.observation && (
                 <SubContainer title="Error">
                   <CodeBlock>Error Here</CodeBlock>
                 </SubContainer>
-              )}
+              )} */}
               {/* {props.iterationContext.suggestedChanges.map((sc) => {
               return (
                 <SubContainer title="Suggested Change">
@@ -183,7 +184,7 @@ function StepContainer(props: StepContainerProps) {
             </>
           )}
         </StepContainerDiv>
-      </MainContainerWithBorder>
+      </GradientBorder>
 
       <OnHoverDiv hidden={!open}>
         <NaturalLanguageInput
@@ -193,6 +194,10 @@ function StepContainer(props: StepContainerProps) {
             }
           }}
           ref={naturalLanguageInputRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
         ></NaturalLanguageInput>
         <ContinueButton onClick={onTextInput}></ContinueButton>
       </OnHoverDiv>

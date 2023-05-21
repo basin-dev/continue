@@ -244,9 +244,18 @@ class IdeProtocolClient {
   // Respond to request
 
   getOpenFiles(): string[] {
-    return vscode.window.visibleTextEditors.map((editor) => {
-      return editor.document.uri.fsPath;
-    });
+    return vscode.window.visibleTextEditors
+      .filter((editor) => {
+        return !(
+          editor.document.uri.fsPath.endsWith("/1") ||
+          (editor.document.languageId === "plaintext" &&
+            editor.document.getText() ===
+              "accessible-buffer-accessible-buffer-")
+        );
+      })
+      .map((editor) => {
+        return editor.document.uri.fsPath;
+      });
   }
 
   saveFile(filepath: string) {

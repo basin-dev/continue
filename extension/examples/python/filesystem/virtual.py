@@ -37,6 +37,3 @@ class VirtualFileSystem(FileSystem):
 
     def add_directory(self, path: str):
         pass
-
-    def walk(self, path: str) -> List[str]:
-        return [filepath for filepath in self.files if filepath.startswith(path)]

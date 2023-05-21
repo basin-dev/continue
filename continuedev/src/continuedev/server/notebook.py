@@ -55,19 +55,19 @@ class Session:
 
 class DemoAgent(Agent):
     first_seen: bool = False
+    cumulative_edit_string = ""
 
     def handle_manual_edits(self, edits: List[FileEditWithFullContents]):
         for edit in edits:
+            self.cumulative_edit_string += edit.fileEdit.replacement
             self._manual_edits_buffer.append(edit)
             # Note that you're storing a lot of unecessary data here. Can compress into EditDiffs on the spot, and merge.
             # self._manual_edits_buffer = merge_file_edit(self._manual_edits_buffer, edit)
             # FOR DEMO PURPOSES
-            if edit.fileEdit.replacement == ":":
-                if self.first_seen:
-                    asyncio.create_task(self.run_from_step(
-                        ImplementAbstractMethodStep()))
-                else:
-                    self.first_seen = True
+            if edit.fileEdit.filepath.endswith("filesystem.py") and "List" in self.cumulative_edit_string and ":" in edit.fileEdit.replacement:
+                self.cumulative_edit_string = ""
+                asyncio.create_task(self.run_from_step(
+                    ImplementAbstractMethodStep()))
 
 
 class SessionManager:
