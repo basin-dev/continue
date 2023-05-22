@@ -55,7 +55,7 @@ export function getTestFile(
 }
 
 export function getExtensionUri(): vscode.Uri {
-  return vscode.extensions.getExtension("Basin.continue")!.extensionUri;
+  return vscode.extensions.getExtension("Continue.continue")!.extensionUri;
 }
 
 export function getViewColumnOfFile(

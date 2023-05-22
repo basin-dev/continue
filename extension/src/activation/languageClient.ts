@@ -21,16 +21,6 @@ let client: LanguageClient;
 export async function startLanguageClient(context: ExtensionContext) {
   let pythonLS = startPythonLanguageServer(context);
   pythonLS.start();
-
-  //   let params: DefinitionParams = {
-  //     textDocument: {
-  //       uri: "file:///Users/natesesti/Desktop/basin/continue/extension/examples/python/main.py",
-  //     },
-  //     position: { line: 14, character: 2 },
-  //   };
-  // makeRequest("textDocument/definition", params).then((result) => {
-  //   console.log(result);
-  // });
 }
 
 export async function makeRequest(method: string, param: any): Promise<any> {

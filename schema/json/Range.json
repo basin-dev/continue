@@ -1,6 +1,6 @@
 {
   "title": "Range",
-  "$ref": "#/definitions/continue__src__models__main__Range",
+  "$ref": "#/definitions/continuedev__src__continuedev__models__main__Range",
   "definitions": {
     "Position": {
       "title": "Position",
@@ -20,7 +20,7 @@
         "character"
       ]
     },
-    "continue__src__models__main__Range": {
+    "continuedev__src__continuedev__models__main__Range": {
       "title": "Range",
       "description": "A range in a file. 0-indexed.",
       "type": "object",

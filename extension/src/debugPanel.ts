@@ -2,7 +2,6 @@ import * as vscode from "vscode";
 import {
   debugApi,
   getContinueServerUrl,
-  get_api_url,
   runPythonScript,
   unittestApi,
 } from "./bridge";
