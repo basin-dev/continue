@@ -32,7 +32,6 @@ class MarkdownStyleEncoderDecoder:
         return file_edits
 
     def _decode_to_suggestions(self, completion: str) -> Dict[str, str]:
-        # Should do a better job of ensuring the ``` format, but for now the issue is mostly just on single file inputs:
         if len(self.range_in_files) == 0:
             return {}
 

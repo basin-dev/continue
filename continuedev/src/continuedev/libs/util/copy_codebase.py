@@ -11,14 +11,6 @@ from ..libs.steps.main import ManualEditAction
 import shutil
 import difflib
 
-# It would be great if the Agent could race ahead without having to edit your files in place.
-# This way it doesn't mess with git and you can edit in parallel
-# This might be a core piece of what you build
-# At most naive, copy the whole workspace and keep it up to date
-# Less naively, you might copy over all files except those specified by the user to be data or something else that doesn't need to be copied (either because it's fine to edit in place, or because it shouldn't be allowed to be edited.) In this case, you should just symlink to the file/directory from the new folder.
-# Trickiest things will be all the little places where paths could go wrong
-# You might let people create plugins for their "mock codebase". One of those might be just grepping all the files (and changes incrementally) for paths, both relative and absolute, and then mapping to the altered path
-
 
 def create_copy(orig_root: str, copy_root: str = None, ignore: Iterable[str] = []):
     # TODO: Make ignore a spec, like .gitignore
@@ -71,6 +63,7 @@ def calculate_diff(filepath: str, original: str, updated: str) -> List[FileEdit]
     return edits
 
 
+# The whole usage of watchdog here should only be specific to RealFileSystem, you want to have a different "Observer" class for VirtualFileSystem, which would depend on being sent notifications
 class CopyCodebaseEventHandler(PatternMatchingEventHandler):
     def __init__(self, ignore_directories: List[str], ignore_patterns: List[str], agent: Agent, orig_root: str, copy_root: str, filesystem: FileSystem):
         super().__init__(ignore_directories=ignore_directories, ignore_patterns=ignore_patterns)
@@ -79,14 +72,8 @@ class CopyCodebaseEventHandler(PatternMatchingEventHandler):
         self.copy_root = copy_root
         self.filesystem = filesystem
 
-    # Do you want to act differently if the agent is currently working?
-    # Options are:
-    # Invalidate current work, make change (restart work/don't)
-    # Continue work, update when done, then automatically validate
-    # Determine whether the updates care about the change that was made
-    # Given this last point, you should have both capabilities
     # For now, we'll just make the update immediately, but eventually need to sync with agent.
-    # ACTUALLY: It should be the agent that makes the update right? It's just another action, everything comes from a single stream.
+    # It should be the agent that makes the update right? It's just another action, everything comes from a single stream.
 
     def _event_to_edit(self, event) -> Union[FileSystemEdit, None]:
         # NOTE: You'll need to map paths to create both an action within the copy filesystem (the one you take) and one in the original fileystem (the one you'll record and allow the user to accept). Basically just need a converter built in to the FileSystemEdit class
@@ -138,5 +125,3 @@ def maintain_copy_workspace(agent: Agent, filesystem: FileSystem, orig_root: str
     finally:
         observer.stop()
         observer.join()
-
-# The whole usage of watchdog here should only be specific to RealFileSystem, you want to have a different "Observer" class for VirtualFileSystem, which would depend on being sent notifications

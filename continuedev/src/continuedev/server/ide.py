@@ -34,6 +34,7 @@ class AppStatus:
 
 Server.handle_exit = AppStatus.handle_exit
 
+
 # TYPES #
 
 
@@ -116,7 +117,6 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             raise ValueError("Unknown message type", t)
 
     # ------------------------------- #
-
     # Request actions in IDE, doesn't matter which Session
     def showSuggestion():
         pass
@@ -151,6 +151,7 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
         # Just need connect the suggestionId to the IDE (and the notebook)
         return any([r.accepted for r in responses])
 
+    # ------------------------------- #
     # Here needs to pass message onto the Agent OR Agent just subscribes.
     # This is where you might have triggers: plugins can subscribe to certian events
     # like file changes, tracebacks, etc...

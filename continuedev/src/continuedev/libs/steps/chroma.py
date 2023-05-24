@@ -3,8 +3,7 @@ from typing import Coroutine, Union
 from ...models.filesystem_edit import AddDirectory, AddFile
 from ..observation import Observation, TextObservation
 from ..core import Step, ContinueSDK
-from .main import EditCodeStep, EditFileStep, RunCommandStep, ShellCommandsStep, WaitForUserConfirmationStep
-import os
+from .main import EditCodeStep, EditFileStep, RunCommandStep, WaitForUserConfirmationStep
 from ..chroma.query import query_codebase_index
 from .main import EditFileStep
 

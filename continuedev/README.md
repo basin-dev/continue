@@ -4,11 +4,11 @@
 - Make sure packages are installed with `poetry install`
 - `poetry shell`
 - `cd ..`
-- `python3 -m continue.src.continue`
+- `python3 -m continuedev.src.continuedev`
 
 ## Steps to generate JSON Schema
 
-Same up until last step and then `python3 -m continue.src.scripts.gen_json_schema`.
+Same up until last step and then `python3 -m continuedev.src.scripts.gen_json_schema`.
 
 ## Start the server
 

@@ -1,14 +1,10 @@
 import subprocess
-from textwrap import dedent
-from typing import Coroutine
 from ...models.main import Position, Range
 from ...models.filesystem import RangeInFile
 from ...models.filesystem_edit import AddDirectory, AddFile, FileEdit
 from ..observation import DictObservation
 from ..core import History, Step, ContinueSDK, Policy
 from .main import EditCodeStep, RunCommandStep, WaitForUserInputStep, WaitForUserConfirmationStep
-from ..llm import LLM
-import os
 
 source_name = "weather_api"
 
@@ -155,7 +151,3 @@ class CreatePipelineStep(Step):
             SetupPipelineStep(api_description="Load data from the WeatherAPI.com API") >>
             ValidatePipelineStep()
         )
-
-
-# Maybe policy is only something that interjects?
-# Steps always come first, but the policy can do what it wants, add in triggers, check code at every step, etc...

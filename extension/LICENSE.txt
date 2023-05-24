@@ -1,5 +1,5 @@
 /*******************************************************
- * Copyright (C) 2023 Basin <nate@basin.dev>
+ * Copyright (C) 2023 Continue <nate@continue.dev>
  * 
  * All rights reserved.
  *******************************************************/

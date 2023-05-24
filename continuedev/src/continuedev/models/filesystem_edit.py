@@ -87,8 +87,6 @@ class RenameDirectory(AtomicFileSystemEdit):
     def with_mapped_paths(self, orig_root: str, copy_root: str) -> "FileSystemEdit":
         return RenameDirectory(map_path(self.filepath, orig_root, copy_root), map_path(self.new_path, orig_root, copy_root))
 
-# You now have the atomic edits, and any other class needs to provide a generator which emits only these
-
 
 class DeleteDirectoryRecursive(FileSystemEdit):
     path: str
@@ -96,8 +94,6 @@ class DeleteDirectoryRecursive(FileSystemEdit):
     def with_mapped_paths(self, orig_root: str, copy_root: str) -> "FileSystemEdit":
         return DeleteDirectoryRecursive(map_path(self.path, orig_root, copy_root))
 
-    # The thing about this...you need access to a filesystem. And hard to think of what other high-level edits people might invent.
-    # This might just be really unecessary
     def next_edit(self) -> Generator[FileSystemEdit, None, None]:
         yield DeleteDirectory(path=self.path)
         for child in os.listdir(self.path):

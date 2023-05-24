@@ -1,7 +1,7 @@
 from textwrap import dedent
-from ...models.filesystem_edit import AddFile
-from ..core import Step, ContinueSDK
-from .main import WaitForUserInputStep
+from ....models.filesystem_edit import AddFile
+from ...core import Step, ContinueSDK
+from ..main import WaitForUserInputStep
 
 
 class SetupPipelineStep(Step):

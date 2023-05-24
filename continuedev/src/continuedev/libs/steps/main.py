@@ -51,29 +51,6 @@ class RunCommandStep(Step):
             return TextObservation(text=stdout)
 
 
-def ShellCommandsStep(Step):
-    cmds: List[str]
-    name: str = "Run Shell Commands"
-
-    async def describe(self, llm: LLM) -> Coroutine[str, None, None]:
-        return "\n".join(self.cmds)
-
-    async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
-        cwd = await sdk.ide.getWorkspaceDirectory()
-
-        process = subprocess.Popen(
-            '/bin/bash', stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd)
-
-        stdin_input = "\n".join(self.cmds)
-        out, err = process.communicate(stdin_input.encode())
-
-        # If it fails, return the error
-        if err is not None and err != "":
-            return TextObservation(text=err)
-
-        return None
-
-
 class WaitForUserInputStep(Step):
     prompt: str
     name: str = "Waiting for user input"
@@ -124,308 +101,6 @@ class RunCodeStep(Step):
             return None
 
 
-demo_completions = {
-    "File (/Users/natesesti/Desktop/continue/extension/examples/python/filesystem/real.py)": '''import os
-from typing import List
-from filesystem.filesystem import FileSystem
-
-
-class RealFileSystem(FileSystem):
-    """A filesystem that reads/writes from the actual filesystem."""
-
-    def read(self, path) -> str:
-        with open(path, "r") as f:
-            return f.read()
-
-    def readlines(self, path) -> List[str]:
-        with open(path, "r") as f:
-            return f.readlines()
-
-    def write(self, path, content):
-        with open(path, "w") as f:
-            f.write(content)
-
-    def exists(self, path) -> bool:
-        return os.path.exists(path)
-
-    def rename_file(self, filepath: str, new_filepath: str):
-        os.rename(filepath, new_filepath)
-
-    def rename_directory(self, path: str, new_path: str):
-        os.rename(path, new_path)
-
-    def delete_file(self, filepath: str):
-        os.remove(filepath)
-
-    def add_directory(self, path: str):
-        os.makedirs(path)
-    
-    def walk(self, path: str) -> List[str]:
-        file_list = []
-        for root, dirs, files in os.walk(path):
-            for f in files:
-                file_list.append(os.path.join(root, f))
-        return file_list
-    ''',
-    "File (/Users/natesesti/Desktop/continue/extension/examples/python/filesystem/virtual.py)": '''from typing import Dict, List
-from filesystem.filesystem import FileSystem
-
-
-class VirtualFileSystem(FileSystem):
-    """A simulated filesystem from a mapping of filepath to file contents."""
-    files: Dict[str, str]
-
-    def __init__(self, files: Dict[str, str]):
-        self.files = files
-
-    def read(self, path) -> str:
-        return self.files[path]
-
-    def readlines(self, path) -> List[str]:
-        return self.files[path].splitlines()
-
-    def write(self, path, content):
-        self.files[path] = content
-
-    def exists(self, path) -> bool:
-        return path in self.files
-
-    def rename_file(self, filepath: str, new_filepath: str):
-        self.files[new_filepath] = self.files[filepath]
-        del self.files[filepath]
-
-    def rename_directory(self, path: str, new_path: str):
-        for filepath in self.files:
-            if filepath.startswith(path):
-                new_filepath = new_path + filepath[len(path):]
-                self.files[new_filepath] = self.files[filepath]
-                del self.files[filepath]
-
-    def delete_file(self, filepath: str):
-        del self.files[filepath]
-
-    def add_directory(self, path: str):
-        pass
-    
-    def walk(self, path: str) -> List[str]:
-        return [filepath for filepath in self.files if filepath.startswith(path)]
-    ''',
-    "calculator class": '''class Calculator:
-    def __init__(self):
-        pass
-        
-    def add(self, num1, num2):
-        return num1 + num2
-
-    def sub(self, num1, num2):
-        return num1 - num2
-
-    def mul(self, num1, num2):
-        return num1 * num2
-
-    def div(self, num1, num2):
-        return num1 / num2
-        ''',
-    "edge cases": '''@pytest.fixture
-def calculator():
-    return Calculator()
-
-
-def test_add(calculator):
-    assert calculator.add(2, 3) == 5
-    assert calculator.add(2, 0) == 2
-    assert calculator.add(-2, -3) == -5
-    assert calculator.add(0, 0) == 0
-    assert calculator.add(100, 200) == 300
-    assert calculator.add(float('inf'), float('inf')) == float('inf')
-    assert calculator.add(float('-inf'), float('inf')) == float('-inf')
-
-def test_sub(calculator):
-    assert calculator.sub(4, 2) == 2
-    assert calculator.sub(float('inf'), float('inf')) == 0
-    assert calculator.sub(float('-inf'), float('inf')) == float('-inf')
-
-def test_mul(calculator):
-    assert calculator.mul(3, 4) == 12
-    assert calculator.mul(float('inf'), 0) == 0
-    assert calculator.mul(float('-inf'), 0) == 0
-
-def test_div(calculator):
-    assert calculator.div(6, 3) == 2
-    assert calculator.div(float('inf'), float('inf')) == 1
-    assert calculator.div(float('-inf'), float('inf')) == -1
-
-def test_exp(calculator):
-    assert calculator.exp(2, 4) == 16
-    assert calculator.exp(float('inf'), 0) == 1
-    assert calculator.exp(float('-inf'), 0) == 1''',
-    "Fill in the migration": '''import { MigrationInterface, QueryRunner } from "typeorm";
-
-export class CreateOrderTable1682519299910 implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `CREATE TABLE orders (
-            order_id SERIAL PRIMARY KEY,
-            customer_id INTEGER,
-            order_date DATE,
-            order_total NUMERIC,
-            shipping_address TEXT,
-            billing_address TEXT,
-            payment_method TEXT,
-            order_status TEXT,
-            tracking_number TEXT
-        )`
-    );
-  }
-
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE orders`);
-  }
-}
-''',
-    "Add the ": '''import "reflect-metadata";
-import { DataSource } from "typeorm";
-import { User } from "./entity/User";
-import { Order } from "./entity/Order";
-
-export const AppDataSource = new DataSource({
-  type: "sqlite",
-  database: "database.sqlite",
-  synchronize: true,
-  logging: false,
-  entities: [User, Order],
-  migrations: [],
-  subscribers: [],
-});
-''',
-    "nullable": '''import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
-
-@Entity()
-export class Order {
-  @PrimaryGeneratedColumn()
-  order_id: number;
-
-  @Column({ nullable: true })
-  customer_id: number;
-
-  @Column({ nullable: true })
-  order_date: Date;
-
-  @Column({ nullable: true })
-  order_total: number;
-
-  @Column({ nullable: true })
-  shipping_address: string;
-
-  @Column({ nullable: true })
-  billing_address: string;
-
-  @Column({ nullable: true })
-  payment_method: string;
-
-  @Column({ nullable: true })
-  order_status: string;
-
-  @Column({ nullable: true })
-  tracking_number: string;
-}''',
-    "complete set of pytest": '''
-import pytest
-
-from ..calculator import Calculator
-
-
-@pytest.fixture
-def calculator():
-    return Calculator()
-
-
-def test_add(calculator):
-    assert calculator.add(2, 3) == 5
-    assert calculator.add(10, -2) == 8
-    assert calculator.add(0, 0) == 0
-
-
-def test_sub(calculator):
-    assert calculator.sub(2, 3) == -1
-    assert calculator.sub(10, -2) == 12
-    assert calculator.sub(0, 0) == 0
-
-
-def test_mul(calculator):
-    assert calculator.mul(2, 3) == 6
-    assert calculator.mul(10, -2) == -20
-    assert calculator.mul(0, 0) == 0
-
-
-def test_div(calculator):
-    assert calculator.div(2, 3) == 0.6666666666666666
-    assert calculator.div(10, -2) == -5
-    assert calculator.div(0, 1) == 0
-
-
-def test_exp(calculator):
-    assert calculator.exp(2, 3) == 8
-    assert calculator.exp(10, -2) == 0.01
-    assert calculator.exp(0, 0) == 1
-''',
-    "editing the resource function to call the API described by": '''```
-import dlt
-from dlt.sources.helpers import requests
-
-
-@dlt.source
-def weather_api_source(api_secret_key=dlt.secrets.value):
-    return weather_api_resource(api_secret_key)
-
-
-def _create_auth_headers(api_secret_key):
-    """Constructs Bearer type authorization header which is the most common authorization method"""
-    headers = {
-        "Authorization": f"Bearer {api_secret_key}"
-    }
-    return headers
-
-
-@dlt.resource(write_disposition="append")
-def weather_api_resource(api_secret_key=dlt.secrets.value):
-    headers = _create_auth_headers(api_secret_key)
-
-    # check if authentication headers look fine
-    print(headers)
-
-    # make an api call here
-    url = 'https://api.weatherapi.com/v1/forecast.json'
-    params = {'q': 'London', 'days': 7, 'key': api_secret_key}
-    response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
-    data = response.json()
-
-    # yield the data
-    yield data
-
-
-if __name__ == '__main__':
-    # configure the pipeline with your destination details
-    pipeline = dlt.pipeline(pipeline_name='weather_api',
-                            destination='duckdb', dataset_name='weather_api_data')
-
-    # print credentials by running the resource
-    data = list(weather_api_resource())
-
-    # print the data yielded from resource
-    print(data)
-
-    # run the pipeline with your parameters
-    load_info = pipeline.run(weather_api_source())
-
-    # pretty print the information on data that was loaded
-    print(load_info)
-
-```'''
-}
-
-
 class EditCodeStep(Step):
     # Might make an even more specific atomic step, which is "apply file edit"
     range_in_files: List[RangeInFile]
@@ -447,14 +122,6 @@ class EditCodeStep(Step):
                 Maximally concise summary of changes in bullet points (can use markdown):
             """))
 
-        # Description should be generated from the sub-steps. That, or can be defined specially by the developer with sdk.describe
-        # To make the generator: By mixing runner and Step, you keep track of the Step's output as properties, which can be accessed after the yield (we can guarantee this)
-        # so something like
-        # next_step = SomeStep()
-        # yield next_step
-        # observation = next_step.observation
-        # This is also nicer because it feels less like you're always taking the last step's observation only.
-
     async def run(self, sdk: ContinueSDK) -> Coroutine[Observation, None, None]:
         rif_with_contents = []
         for range_in_file in self.range_in_files:
@@ -465,16 +132,7 @@ class EditCodeStep(Step):
         code_string = enc_dec.encode()
         prompt = self.prompt.format(code=code_string)
 
-        used_demo = False
-        for demo_prompt, demo_completion in demo_completions.items():
-            if demo_prompt in prompt:
-                used_demo = True
-                completion = demo_completion
-                time.sleep(3)
-                break
-
-        if not used_demo:
-            completion = sdk.llm.complete(prompt)
+        completion = sdk.llm.complete(prompt)
 
         # Temporarily doing this to generate description.
         self._prompt = prompt
@@ -582,16 +240,7 @@ Respond with only as many edits as needed, and output only the list of json obje
         for rif in rif_with_contents:
             rif_dict[rif.filepath] = rif.contents
 
-        used_demo = False
-        for demo_prompt, demo_completion in demo_completions.items():
-            if demo_prompt in prompt:
-                used_demo = True
-                completion = demo_completion
-                time.sleep(3)
-                break
-
-        if not used_demo:
-            completion = sdk.llm.complete(prompt)
+        completion = sdk.llm.complete(prompt)
 
         # Temporarily doing this to generate description.
         self._prompt = prompt
@@ -694,12 +343,3 @@ class SolveTracebackStep(Step):
         await sdk.run_step(EditCodeStep(
             range_in_files=range_in_files, prompt=prompt))
         return None
-
-# There should be an entire langauge-agnostic pipeline through the 1. running command, 2. parsing traceback, 3. generating edit
-
-
-# Include the prompter inside of the encoder/decoder?
-# Then you have layers -> LLM -> Prompter -> Encoder/Decoder
-# Seems more like encoder/decoder should be subsumed by the prompter
-
-# How to make actions composable??
