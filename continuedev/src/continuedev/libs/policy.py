@@ -1,7 +1,7 @@
-from typing import Generator, List, Tuple, Type
+from typing import List, Tuple, Type
 
 from .steps.ty import CreatePipelineStep
-from .core import Agent, Step, Validator, Policy, History, UserInputStep
+from .core import Step, Validator, Policy, History
 from .observation import Observation, TracebackObservation, UserInputObservation
 from .steps.main import EditCodeStep, EditHighlightedCodeStep, SolveTracebackStep, RunCodeStep, FasterEditHighlightedCodeStep
 from .steps.nate import WritePytestsStep, CreateTableStep
@@ -9,10 +9,6 @@ from .steps.chroma import AnswerQuestionChroma, EditFileChroma
 
 
 class DemoPolicy(Policy):
-    """
-    This is the simplest policy I can think of.
-    Will alternate between running and fixing code.
-    """
     ran_code_last: bool = False
     cmd: str
 
@@ -42,24 +38,6 @@ class DemoPolicy(Policy):
             return SolveTracebackStep(traceback=observation.traceback)
         else:
             return None
-        # if self.ran_code_last:
-        #     # A nicer way to define this with the Continue SDK: continue_sdk.on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
-        #     # This is a way to iteratively define policies.
-        #     """
-        #     policy = BasePolicy().on_observation_type(TracebackObservation, SolveTracebackStep, lambda obs: obs.traceback)
-        #         .on_observation_type(OtherObservation, SolveOtherStep, lambda obs: obs.other)
-        #         .with_validators([Validator1, Validator2])
-        #         ...etc...
-        #     """
-        #     # This is a really akward way to have to check the observation type.
-        #     if observation is not None and isinstance(observation, TracebackObservation):
-        #         self.ran_code_last = False
-        #         return SolveTracebackStep(traceback=observation.traceback)
-        #     else:
-        #         return None
-        # else:
-        #     self.ran_code_last = True
-        #     return RunCodeStep(cmd=self.cmd)
 
 
 class ObservationTypePolicy(Policy):
@@ -111,40 +89,3 @@ class PolicyWrappedWithValidators(Policy):
             else:
                 _, step_type = self.pairs[self.index]
                 return step_type(observation)
-
-# Problem is how to yield a Step while also getting its observation. You'd have to run the step within the policy in order to get its observation.
-# This can be done from within a step, right?
-# It was really ugly to write the above class, and ideally it would look like the below:
-
-# @validator_from_generator
-# def policy_with_validator(validators: List[Type[Validator]]):
-#     a_validator_failed = False
-#     for validator in validators:
-#         passed = yield validator
-#         passed = self.fix_validator(validator)
-#         if not passed:
-#             a_validator_failed = True
-#             break
-
-#     return a_validator_failed
-
-# class ReActPolicy(Policy):
-#     llm: LLM
-#     prompt: str = dedent("""The available actions are:
-#             {actions}
-
-#             The next action I should take is:
-#     """)
-
-#     def __init__(self, llm: LLM):
-#         self.llm = llm
-#         self.prompter = FormatStringPrompter(self.prompt)
-#         # This should be an EncoderDecoder Prompter subclass that parses for a single action name from a list of available actions
-
-#     def next(self) -> Step:
-#         pass
-
-# # One question: there seem to be two ways to phrase validators: 1. is that they are like guardrails, considered more of a part of the prompt.
-# # 2. They are just other actions that iteratively get to fixes.
-# # I think certain things like type-checker errors can easily be a part of something like the Guardrails project, because they are mostly syntax-based.
-# # But something like running the code shouldn't be

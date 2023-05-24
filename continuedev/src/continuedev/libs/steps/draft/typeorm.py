@@ -1,5 +1,5 @@
 from textwrap import dedent
-from ..core import Step, ContinueSDK
+from ...core import Step, ContinueSDK
 
 
 class CreateTableStep(Step):

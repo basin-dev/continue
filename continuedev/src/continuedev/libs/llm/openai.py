@@ -1,10 +1,3 @@
-# This file contains actions that communicate with a language model.
-# You might end up wanting to integrate llms more tightly because of wanting to stream, etc...
-
-# Actually, the language model used should be a part of the agent, so the agent should be passed to the action
-# Something like "run this action with this agent" instead of "have this agent run this action"
-
-# OR are actions run within a context manager? But don't think this works through functions
 import asyncio
 import time
 from typing import Any, Dict, Generator, List, Union
@@ -97,16 +90,6 @@ class OpenAI(LLM):
         t2 = time.time()
         print("Completion time:", t2 - t1)
         return resp
-
-    # def embed(self, input: List[str] | str) -> List[np.ndarray]:
-    #     resps = openai.Embedding.create(
-    #         model="text-embedding-ada-002",
-    #         input=input,
-    #     )["data"]
-    #     return [np.array(resp["embedding"]) for resp in resps]
-
-    # def single_embed(self, input: str) -> np.ndarray:
-    #     return self.embed([input])[0]
 
     def edit(self, inp: str, instruction: str) -> str:
         try:

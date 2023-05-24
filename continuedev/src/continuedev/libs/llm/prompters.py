@@ -1,21 +1,6 @@
-# This file contains prompts to use for generating pytests
-# Other ideas:
-# Purposefully clean up anything that was created during the test (this can be done deterministically at least for files)
-# Edit mode on fixtures or however you make a mock class in pytest
-# Need to do something about digests - for now, they just won't pass
-# Sometimes the completion is just cut short. Should be able to identify this
-# Sometimes errors because of undefined variables being hallucinated. You can parse to detect whether they are undefined, then perhaps replace with something that does exist. Probably not useful though.
-# Messed up a few times by using file_storage fixture as a variable instead of calling it like the function it should...or something
-# Can we deduplicate fixtures if there a multiple which do the same thing? Deduplicating by meaning instead of just string matching is important. Also intelligently combining them. Don't want to change order of tests though probably.
-# Check for coverage, generate more tests intelligently if not 100%
-# Add stop token
-
-import ast
 from typing import Any, Callable, List, Tuple, Union
 from ..llm import LLM
 from .openai import OpenAI
-
-# Helpers
 
 
 def cls_method_to_str(cls_name: str, init: str, method: str) -> str:
@@ -58,8 +43,6 @@ class Prompter:
         resps = self.llm.parallel_complete(
             [prompt + prefix for prompt, prefix in zip(prompts, prefixes)], suffixes=suffixes)
         return [prefix + resp + (suffix or "") for prefix, resp, suffix in zip(prefixes, resps, suffixes)]
-
-# Note that this can be used hierarchically : )
 
 
 class MixedPrompter(Prompter):

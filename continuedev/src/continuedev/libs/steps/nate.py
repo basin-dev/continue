@@ -8,7 +8,7 @@ from ...models.filesystem import RangeInFile
 from ...models.filesystem_edit import AddDirectory, AddFile
 from ..observation import Observation, TextObservation
 from ..core import Step, ContinueSDK
-from .main import EditCodeStep, EditFileStep, RunCommandStep, ShellCommandsStep, WaitForUserConfirmationStep
+from .main import EditCodeStep, EditFileStep, RunCommandStep, WaitForUserConfirmationStep
 import os
 
 

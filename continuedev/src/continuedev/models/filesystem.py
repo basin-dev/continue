@@ -273,24 +273,6 @@ class RealFileSystem(FileSystem):
         return diff
 
 
-# class IdeProtocolFileSystem(RealFileSystem):
-#     """A filesystem that works through the IDE Protocol"""
-#     ide: AbstractIdeProtocolServer
-
-#     class Config:
-#         arbitrary_types_allowed = True
-
-#     def read(self, path) -> str:
-#         return await self.ide.readFile(path)
-
-#     def readlines(self, path) -> List[str]:
-#         return self.read(path).splitlines()
-
-#     def write(self, path, content):
-#         with open(path, "w") as f:
-#             f.write(content)
-
-
 class VirtualFileSystem(FileSystem):
     """A simulated filesystem from a mapping of filepath to file contents."""
     files: Dict[str, str]
@@ -343,4 +325,4 @@ class VirtualFileSystem(FileSystem):
             original=original
         )
 
-# A big todo in this file is to have uniform errors thrown by any FileSystem subclass.
+# TODO: Uniform errors thrown by any FileSystem subclass.

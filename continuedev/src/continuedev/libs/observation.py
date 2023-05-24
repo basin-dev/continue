@@ -1,12 +1,9 @@
-from typing import List
 from pydantic import BaseModel, validator
 from ..models.main import Traceback
 
 
 class Observation(BaseModel):
     pass
-
-# People can make new observations by making new pydantic types.
 
 
 class TracebackObservation(Observation):

@@ -1,7 +1,5 @@
-from typing import Any, Coroutine, List
+from typing import Any, List
 from abc import ABC, abstractmethod
-
-from pydantic import BaseModel
 
 from ..models.main import Traceback
 from ..models.filesystem_edit import FileEdit, FileSystemEdit, EditDiff
