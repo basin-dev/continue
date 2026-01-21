@@ -3,7 +3,7 @@
 // import * as vscode from "vscode";
 // import pty = require("node-pty");
 // import os = require("os");
-// import { extensionContext } from "../activation/activate";
+// import { extensionContext, ideProtocolClient } from "../activation/activate";
 // import { debugPanelWebview } from "../debugPanel"; // Need to consider having multiple panels, where to store this state.
 // import {
 //   CommandCaptureSnooper,
@@ -12,6 +12,9 @@
 // } from "./snoopers";
 
 // export function tracebackToWebviewAction(traceback: string) {
+//   // Send traceback to the Continue server
+//   ideProtocolClient?.sendTraceback(traceback);
+//
 //   if (debugPanelWebview) {
 //     debugPanelWebview.postMessage({
 //       type: "traceback",
