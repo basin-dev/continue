@@ -333,6 +333,10 @@ class IdeProtocolClient {
     vscode.window.terminals[0].sendText(command, true);
     // But need to know when it's done executing...
   }
+
+  sendTraceback(traceback: string) {
+    this.send("traceback", { traceback });
+  }
 }
 
 export default IdeProtocolClient;

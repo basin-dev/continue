@@ -111,6 +111,8 @@ const commandsMap: { [command: string]: (...args: any) => any } = {
       vscode.window.showInformationMessage("The test passes!");
       return;
     }
+    // Send traceback to the Continue server
+    ideProtocolClient?.sendTraceback(traceback);
     vscode.commands.executeCommand("continue.openDebugPanel").then(() => {
       setTimeout(() => {
         debugPanelWebview?.postMessage({

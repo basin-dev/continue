@@ -7,6 +7,7 @@ from fastapi import WebSocket, Body, APIRouter
 from uvicorn.main import Server
 
 from ..libs.util.queue import AsyncSubscriptionQueue
+from ..libs.util.traceback_parsers import parse_python_traceback
 from ..models.filesystem import FileSystem, RangeInFile, EditDiff, RealFileSystem
 from ..models.main import Traceback
 from ..models.filesystem_edit import AddDirectory, AddFile, DeleteDirectory, DeleteFile, FileSystemEdit, FileEdit, FileEditWithFullContents, RenameDirectory, RenameFile, SequentialFileSystemEdit
@@ -111,6 +112,10 @@ class IdeProtocolServer(AbstractIdeProtocolServer):
             fileEdits = list(
                 map(lambda d: FileEditWithFullContents.parse_obj(d), data["fileEdits"]))
             self.onFileEdits(fileEdits)
+        elif t == "traceback":
+            traceback = parse_python_traceback(data["traceback"])
+            if traceback is not None:
+                self.onTraceback(traceback)
         elif t in ["highlightedCode", "openFiles", "readFile", "editFile", "workspaceDirectory"]:
             self.sub_queue.post(t, data)
         else:
