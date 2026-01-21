@@ -7,16 +7,51 @@ const tracebackEnd = (buf: string): string | undefined => {
     .split("\n")
     .filter((line: string) => line.trim() !== "~~^~~")
     .filter((line: string) => line.trim() !== "");
+  
+  // Find the last "File" line to identify where the error message starts
+  let lastFileLineIndex = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (
-      lines[i].startsWith("  File") &&
-      i + 2 < lines.length &&
-      lines[i + 2][0] !== " "
-    ) {
-      return lines.slice(0, i + 3).join("\n");
+    if (lines[i].startsWith("  File")) {
+      lastFileLineIndex = i;
     }
   }
-  return undefined;
+  
+  if (lastFileLineIndex === -1) {
+    return undefined;
+  }
+  
+  // The error line should be at lastFileLineIndex + 2 (after the code line)
+  // We need to ensure there's at least an error line
+  if (lastFileLineIndex + 2 >= lines.length) {
+    return undefined;
+  }
+  
+  // Check that the error line doesn't start with a space (it's the exception line)
+  if (lines[lastFileLineIndex + 2][0] === " ") {
+    return undefined;
+  }
+  
+  // Now capture all lines from the error line onwards that are part of the error message
+  // Error continuation lines typically start with spaces or are non-empty text
+  let endIndex = lastFileLineIndex + 3;
+  while (endIndex < lines.length) {
+    const line = lines[endIndex];
+    // Stop if we hit what looks like a new prompt or unrelated output
+    // Error message continuation lines typically don't start with common prompt patterns
+    // and don't look like new tracebacks or file references
+    if (line.startsWith("Traceback ") || 
+        line.startsWith("  File") ||
+        line.match(/^[a-zA-Z]:\\/) ||  // Windows path
+        line.match(/^\$\s/) ||  // Shell prompt
+        line.match(/^>>>\s/) ||  // Python REPL prompt
+        line.match(/^\(.*\)\s*\$/) ||  // Virtualenv prompt
+        line.match(/^\[.*\]\s*\$/)) {  // Other prompt patterns
+      break;
+    }
+    endIndex++;
+  }
+  
+  return lines.slice(0, endIndex).join("\n");
 };
 
 function parseFirstStacktrace(stdout: string): string | undefined {
